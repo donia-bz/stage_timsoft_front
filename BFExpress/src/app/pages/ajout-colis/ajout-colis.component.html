@@ -76,18 +76,18 @@
           <option>Virement</option>
         </select>
       </div>
+      <div class="field-group">
+        <label>Type de Service</label>
+        <select [(ngModel)]="typeService">
+          <option value="STANDARD">Standard</option>
+          <option value="EXPRESS">Express (+30% plus rapide)</option>
+        </select>
+      </div>
       <div class="field-group field-radio">
-        <label>Ouvrir le colis au client avant le paiement ?</label>
+        <label>Ouvrir le colis avant le paiement ?</label>
         <div class="radio-row">
           <label><input type="radio" name="openBeforePayment" value="Non" [(ngModel)]="openBeforePayment" /> Non</label>
           <label><input type="radio" name="openBeforePayment" value="Oui" [(ngModel)]="openBeforePayment" /> Oui</label>
-        </div>
-      </div>
-      <div class="field-group field-radio">
-        <label>Échange</label>
-        <div class="radio-row">
-          <label><input type="radio" name="exchange" value="Non" [(ngModel)]="exchange" /> Non</label>
-          <label><input type="radio" name="exchange" value="Oui" [(ngModel)]="exchange" /> Oui</label>
         </div>
       </div>
     </div>
@@ -97,8 +97,14 @@
       <textarea [(ngModel)]="remarks" placeholder="Remarques"></textarea>
     </div>
 
+    <div class="error-banner" *ngIf="errorMessage" style="background:#fee2e2;color:#dc2626;padding:12px;border-radius:12px;margin-bottom:15px;font-weight:bold;">
+      ⚠️ {{ errorMessage }}
+    </div>
+
     <div class="actions-row">
-      <button class="primary" (click)="submitPickup()">Ajouter</button>
+      <button class="primary" (click)="submitPickup()" [disabled]="loading">
+        {{ loading ? 'Enregistrement...' : 'Ajouter le colis' }}
+      </button>
     </div>
   </div>
 </section>

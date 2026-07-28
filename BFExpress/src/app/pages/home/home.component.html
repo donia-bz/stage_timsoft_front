@@ -1,37 +1,162 @@
-<section class="hero">
-  <div class="container hero-grid">
-    <div class="hero-copy">
-      <span class="eyebrow">BFExpress</span>
-      <h1>LE CHOIX GAGNANT<br/>DE VOTRE LIVRAISON</h1>
-      <p>BFExpress fournit des solutions de livraison rapides, sécurisées et transparentes, inspirées visuellement par Navex.</p>
-      <div class="hero-actions">
-        <button
-          class="primary"
-          [class.active]="selectedMode === 'client'"
-          routerLink="/devenir-client"
-          (click)="setMode('client')">
-          Devenir Client
-        </button>
-        <button
-          class="secondary"
-          [class.active]="selectedMode === 'livreur'"
-          routerLink="/devenir-livreur"
-          (click)="setMode('livreur')">
-          Devenir Livreur
-        </button>
+<!-- Hero Section -->
+<section class="hero-section animate-slide-down">
+  <div class="container hero-container">
+    
+    <div class="hero-text-content">
+      <div class="hero-badge">
+        <span class="pulse-dot"></span>
+        Plateforme N°1 de Livraison en Tunisie
+      </div>
+      
+      <h1 class="hero-title">
+        Livraison Rapide, <br/>
+        <span class="gradient-text">Sécurisée & Intelligente</span>
+      </h1>
+      
+      <p class="hero-description">
+        Expédiez vos colis en toute sérénité. Grâce à nos microservices connectés et l'intelligence artificielle, vos livraisons sont acheminées avec une précision chirurgicale.
+      </p>
+
+      <!-- Quick Parcel Search -->
+      <div class="quick-track-card">
+        <div class="track-input-group">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Entrez votre numéro de suivi (ex: #CMD-1029)..." routerLink="/suivi" />
+          <button class="btn-track" routerLink="/suivi">Suivre Colis</button>
+        </div>
+      </div>
+
+      <!-- Action Cards (Client / Livreur) -->
+      <div class="hero-mode-cards">
+        <a class="mode-card client-mode" routerLink="/devenir-client">
+          <div class="mode-icon">📦</div>
+          <div class="mode-info">
+            <h3>Espace Client / Expéditeur</h3>
+            <p>Créez vos colis et suivez l'acheminement en temps réel.</p>
+          </div>
+          <span class="arrow">→</span>
+        </a>
+
+        <a class="mode-card livreur-mode" routerLink="/devenir-livreur">
+          <div class="mode-icon">🚚</div>
+          <div class="mode-info">
+            <h3>Rejoindre comme Livreur</h3>
+            <p>Devenez partenaire et commencez vos missions validées.</p>
+          </div>
+          <span class="arrow">→</span>
+        </a>
       </div>
     </div>
 
-    <div class="hero-image">
-      <img [src]="activeImage" alt="Illustration BFExpress" />
-      <div class="hero-label">{{ selectedMode === 'client' ? 'Client / expéditeur' : 'Livreur / partenaire' }}</div>
+    <!-- Hero Visual / Floating Stats -->
+    <div class="hero-visual">
+      <div class="floating-glass-card glass-top">
+        <span class="icon">⚡</span>
+        <div>
+          <strong>Délai Estimé IA</strong>
+          <small>Moins de 45 minutes</small>
+        </div>
+      </div>
+
+      <div class="main-hero-graphic">
+        <div class="circle-glow"></div>
+        <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80" alt="BFExpress Delivery" class="hero-img-main" />
+      </div>
+
+      <div class="floating-glass-card glass-bottom">
+        <span class="icon">🛡️</span>
+        <div>
+          <strong>Compte Sécurisé</strong>
+          <small>Validation par Administrateur</small>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Workflow Section (Comment ça marche) -->
+<section class="workflow-section">
+  <div class="container">
+    <div class="section-header text-center">
+      <span class="section-tag">Processus Clé</span>
+      <h2>Comment ça fonctionne ?</h2>
+      <p class="section-subtitle">Un parcours fluide en 3 étapes simples et sécurisées pour garantir la confidentialité et la fiabilité des opérations.</p>
+    </div>
+
+    <div class="grid grid-3 workflow-grid">
+      <div class="step-card">
+        <div class="step-number">01</div>
+        <div class="step-icon">📝</div>
+        <h3>Demande d'Inscription</h3>
+        <p>Inscrivez-vous en tant que client ou livreur. Vos informations sont soumises à la direction pour validation.</p>
+      </div>
+
+      <div class="step-card highlight">
+        <div class="step-number">02</div>
+        <div class="step-icon">🔐</div>
+        <h3>Approbation Admin</h3>
+        <p>Un administrateur valide votre dossier et vous délivre vos identifiants d'accès par SMS et Email.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">03</div>
+        <div class="step-icon">🎯</div>
+        <h3>Dispatching & Suivi IA</h3>
+        <p>L'intelligence artificielle affecte automatiquement le meilleur livreur et calcule le trajet le plus rapide.</p>
+      </div>
     </div>
   </div>
 </section>
 
-<section class="intro-section">
+<!-- Features Grid -->
+<section class="features-section">
   <div class="container">
-    <h2>Votre Livraison, Notre Priorité</h2>
-    <p>BFExpress fournit des solutions de livraison rapides, sécurisées et transparentes, inspirées visuellement par Navex.</p>
+    <div class="section-header text-center">
+      <span class="section-tag">Avantages</span>
+      <h2>Pourquoi choisir BFExpress ?</h2>
+    </div>
+
+    <div class="grid grid-3 features-grid">
+      <div class="feature-card">
+        <div class="feature-icon bg-blue">🤖</div>
+        <h3>Algorithmes Avancés</h3>
+        <p>Notre IA calcule le scoring de proximité des livreurs et prédit le temps d'arrivée exact avec l'algorithme Haversine.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon bg-green">📱</div>
+        <h3>Dashboards Dédiés</h3>
+        <p>Trois espaces complets et adaptés pour l'Administration, les Clients et les Livreurs pour un contrôle total.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon bg-purple">⚡</div>
+        <h3>Microservices Resilients</h3>
+        <p>Une architecture Cloud découpée en microservices indépendants garantissant une réactivité maximale.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ Section -->
+<section class="faq-section">
+  <div class="container">
+    <div class="section-header text-center">
+      <span class="section-tag">Questions Fréquentes</span>
+      <h2>Besoin d'aide ?</h2>
+    </div>
+
+    <div class="faq-accordion">
+      <div class="faq-item">
+        <h3>Quels sont les délais d'approbation d'un nouveau compte ?</h3>
+        <p>La validation est effectuée par nos équipes sous un délai de quelques heures. Dès approbation, vos accès vous sont transmis immédiatement par SMS et Email.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>Comment l'IA attribue-t-elle la livraison au livreur ?</h3>
+        <p>Notre service IA évalue en temps réel la géolocalisation du livreur, sa note moyenne et la proximité du point de départ du colis pour une affectation optimale.</p>
+      </div>
+    </div>
   </div>
 </section>

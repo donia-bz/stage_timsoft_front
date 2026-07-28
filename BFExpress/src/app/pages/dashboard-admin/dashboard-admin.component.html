@@ -1,0 +1,280 @@
+<section class="dashboard-page">
+  <div class="dashboard-shell">
+    
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar">
+      <div class="dashboard-brand">
+        <span>BFExpress Admin</span>
+      </div>
+      <div class="sidebar-section">
+        <h3>Gestion Administrative</h3>
+        <nav>
+          <a class="sidebar-link" [class.active]="activeTab === 'commandes'" (click)="activeTab = 'commandes'">
+            <span class="icon">📦</span> Commandes & Affectation
+          </a>
+          <a class="sidebar-link" [class.active]="activeTab === 'inscriptions'" (click)="activeTab = 'inscriptions'">
+            <span class="icon">👤</span> Demandes d'inscription 
+            <span class="count-badge" *ngIf="getPendingApprovals().length > 0">{{ getPendingApprovals().length }}</span>
+          </a>
+          <a class="sidebar-link" [class.active]="activeTab === 'livreurs'" (click)="activeTab = 'livreurs'">
+            <span class="icon">🚚</span> Liv Livreurs Actifs
+          </a>
+        </nav>
+      </div>
+      <div class="sidebar-section">
+        <h3>Retour au site</h3>
+        <nav>
+          <a class="sidebar-link" routerLink="/">Page d'accueil</a>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-content">
+      
+      <!-- Top header -->
+      <div class="dashboard-header">
+        <div>
+          <h1>Espace Administration</h1>
+          <div class="dashboard-greeting">Pilotez l'activité globale de BFExpress</div>
+        </div>
+        <button class="btn-primary" (click)="refreshData()">Actualiser les données</button>
+      </div>
+
+      <!-- Quick Metrics Grid -->
+      <div class="dashboard-grid">
+        <div class="status-card status-blue">
+          <span class="status-icon">📦</span>
+          <div>
+            <div class="status-title">Total Commandes</div>
+            <div class="status-value">{{ commandes.length }}</div>
+          </div>
+        </div>
+        <div class="status-card status-yellow">
+          <span class="status-icon">⏳</span>
+          <div>
+            <div class="status-title">En attente d'affectation</div>
+            <div class="status-value">{{ getOrderCountByStatus('EN_ATTENTE') }}</div>
+          </div>
+        </div>
+        <div class="status-card status-green">
+          <span class="status-icon">🚚</span>
+          <div>
+            <div class="status-title">En cours de livraison</div>
+            <div class="status-value">{{ getOrderCountByStatus('EN_LIVRAISON') }}</div>
+          </div>
+        </div>
+        <div class="status-card status-teal-dark">
+          <span class="status-icon">💵</span>
+          <div>
+            <div class="status-title">Chiffre d'Affaires</div>
+            <div class="status-value">{{ getTotalRevenue() | number:'1.2-2' }} DT</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content Area -->
+      <div class="page-card mt-4">
+        
+        <!-- Tab 1: Commandes & Affectations -->
+        <div *ngIf="activeTab === 'commandes'">
+          <div class="tab-header">
+            <h2>Suivi des Commandes & Dispatching</h2>
+            <p>Assignez manuellement ou via notre IA optimisée les colis en attente aux livreurs disponibles.</p>
+          </div>
+
+          <div class="table-container">
+            <table class="premium-table">
+              <thead>
+                <tr>
+                  <th>Réf Commande</th>
+                  <th>Date Création</th>
+                  <th>Départ / Arrivée</th>
+                  <th>Type Service</th>
+                  <th>Montant</th>
+                  <th>Statut</th>
+                  <th>Affectation Livreur</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let order of commandes">
+                  <td><strong>#{{ order.id ? order.id.substring(order.id.length - 6) : 'N/A' }}</strong></td>
+                  <td>{{ order.dateCreation ? (order.dateCreation | date:'dd/MM/yyyy HH:mm') : 'N/A' }}</td>
+                  <td>
+                    <div class="path-details">
+                      <span class="tag-dep">D: {{ order.adresseDepart.ville }}</span>
+                      <span class="tag-arr">A: {{ order.adresseArrivee.ville }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="service-badge" [class.express]="order.typeService === 'EXPRESS'">
+                      {{ order.typeService }}
+                    </span>
+                  </td>
+                  <td>{{ order.montantTotal }} DT</td>
+                  <td>
+                    <span class="status-pill" [ngClass]="'status-' + order.statut.toLowerCase()">
+                      {{ order.statut }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="action-dispatch" *ngIf="order.statut === 'EN_ATTENTE'">
+                      <!-- AI dispatch -->
+                      <button class="btn-ai" (click)="assignDriverAI(order)">
+                        🤖 Affectation IA
+                      </button>
+                      
+                      <!-- Manual dispatch -->
+                      <div class="manual-group">
+                        <select [(ngModel)]="selectedDrivers[order.id || '']">
+                          <option value="" disabled>Livreur...</option>
+                          <option *ngFor="let l of livreurs" [value]="l.id" [disabled]="l.statut !== 'disponible'">
+                            {{ l.nom }} {{ l.prenom }} ({{ l.statut }})
+                          </option>
+                        </select>
+                        <button class="btn-dispatch" (click)="assignDriverManually(order)">Go</button>
+                      </div>
+                    </div>
+                    
+                    <div *ngIf="order.statut !== 'EN_ATTENTE'" class="assigned-text">
+                      <span class="icon">✅</span> Commande traitée
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngIf="commandes.length === 0">
+                  <td colspan="7" class="text-center">Aucune commande enregistrée dans le système.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 2: Demandes d'inscription -->
+        <div *ngIf="activeTab === 'inscriptions'">
+          <div class="tab-header">
+            <h2>Approbation des nouveaux comptes</h2>
+            <p>Les clients et livreurs doivent être validés par l'administration avant de pouvoir se connecter.</p>
+          </div>
+
+          <!-- Pending Requests -->
+          <div class="sub-section">
+            <h3>Demandes en attente d'approbation ({{ getPendingApprovals().length }})</h3>
+            <div class="table-container">
+              <table class="premium-table">
+                <thead>
+                  <tr>
+                    <th>Nom Complet</th>
+                    <th>Email</th>
+                    <th>Téléphone</th>
+                    <th>Rôle Demandé</th>
+                    <th>Détails Spécifiques</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let user of getPendingApprovals()">
+                    <td><strong>{{ user.nom }} {{ user.prenom }}</strong></td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.telephone }}</td>
+                    <td>
+                      <span class="role-badge" [ngClass]="user.role.toLowerCase()">
+                        {{ user.role }}
+                      </span>
+                    </td>
+                    <td>
+                      <span *ngIf="user.role === 'CLIENT'">Entreprise : {{ user.entreprise || 'Individu' }}</span>
+                      <span *ngIf="user.role === 'LIVREUR'">Véhicule par défaut</span>
+                    </td>
+                    <td>
+                      <button class="btn-approve" (click)="approveUser(user.id)">
+                        Approuver et envoyer accès
+                      </button>
+                    </td>
+                  </tr>
+                  <tr *ngIf="getPendingApprovals().length === 0">
+                    <td colspan="6" class="text-center text-muted">Aucune demande d'inscription en attente.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Approved Users -->
+          <div class="sub-section mt-5">
+            <h3>Membres Actifs ({{ getApprovedUsers().length }})</h3>
+            <div class="table-container">
+              <table class="premium-table">
+                <thead>
+                  <tr>
+                    <th>Nom Complet</th>
+                    <th>Email</th>
+                    <th>Téléphone</th>
+                    <th>Rôle</th>
+                    <th>Statut</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let user of getApprovedUsers()">
+                    <td>{{ user.nom }} {{ user.prenom }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.telephone }}</td>
+                    <td>
+                      <span class="role-badge" [ngClass]="user.role.toLowerCase()">
+                        {{ user.role }}
+                      </span>
+                    </td>
+                    <td><span class="badge-active">Actif</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Livreurs -->
+        <div *ngIf="activeTab === 'livreurs'">
+          <div class="tab-header">
+            <h2>Statut & Localisation des Livreurs</h2>
+            <p>Supervisez en temps réel le statut, les coordonnées GPS et les notations moyennes de votre équipe de livraison.</p>
+          </div>
+
+          <div class="table-container">
+            <table class="premium-table">
+              <thead>
+                <tr>
+                  <th>Nom Complet</th>
+                  <th>ID Livreur</th>
+                  <th>Statut Courant</th>
+                  <th>Position Actuelle</th>
+                  <th>Note Moyenne</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let l of livreurs">
+                  <td><strong>{{ l.nom }} {{ l.prenom }}</strong></td>
+                  <td>#{{ l.id ? l.id.substring(l.id.length - 6) : 'N/A' }}</td>
+                  <td>
+                    <span class="status-pill" [ngClass]="'status-' + l.statut">
+                      {{ l.statut === 'disponible' ? 'Disponible' : (l.statut === 'en_course' ? 'En course' : 'Hors-ligne') }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="coord-tag">Lat: {{ l.latitudeActuelle || 0.0 }}, Lon: {{ l.longitudeActuelle || 0.0 }}</span>
+                  </td>
+                  <td>
+                    <span class="star-rating">⭐ {{ l.noteMoyenne || '5.0' }}/5</span>
+                  </td>
+                </tr>
+                <tr *ngIf="livreurs.length === 0">
+                  <td colspan="5" class="text-center">Aucun livreur répertorié.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+  </div>
+</section>

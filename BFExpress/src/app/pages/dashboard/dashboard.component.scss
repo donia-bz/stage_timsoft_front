@@ -161,3 +161,72 @@
     padding: 0.75rem 0.9rem;
   }
 }
+
+.table-container {
+  overflow-x: auto;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  margin-top: 1.5rem;
+}
+
+.premium-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.95rem;
+
+  th {
+    background: #f8fafc;
+    color: var(--muted);
+    font-weight: 700;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  }
+
+  td {
+    padding: 1.25rem;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+    background: white;
+    vertical-align: middle;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+.service-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: #e2e8f0;
+  color: #475569;
+
+  &.express {
+    background: #ffe4e6;
+    color: #e11d48;
+  }
+}
+
+.status-pill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: inline-block;
+
+  &.status-en_attente { background: #fef3c7; color: #d97706; }
+  &.status-validee { background: #dbeafe; color: #2563eb; }
+  &.status-en_livraison { background: #f3e8ff; color: #9333ea; }
+  &.status-livree { background: #d1fae5; color: #059669; }
+  &.status-annulee { background: #fee2e2; color: #dc2626; }
+}
+
+.mt-4 { margin-top: 1.5rem; }
+.tab-header {
+  margin-top: 2rem;
+  h2 { margin: 0; font-size: 1.35rem; font-weight: 700; color: #102a43; }
+  p { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.9rem; }
+}
+

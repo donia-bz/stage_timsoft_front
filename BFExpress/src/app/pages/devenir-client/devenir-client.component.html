@@ -1,24 +1,50 @@
-<section class="devenir-page">
-  <div class="container">
-    <h1>Devenir Client - expéditeur</h1>
-    <div class="panel">
-      <div class="left">
-        <h2>Prenons<br/>contact!</h2>
-        <p>Nous sommes impatients de travailler avec vous et de vous offrir des services de livraison exceptionnels pour répondre à tous vos besoins.</p>
+<section class="page-section">
+  <div class="container page-card">
+    <div class="grid grid-2">
+      <div>
+        <span class="badge">Client & Expéditeur</span>
+        <h2 class="section-title">Rejoignez BFExpress</h2>
+        <p class="section-subtitle">Déposez votre demande et bénéficiez d’un service dédié pour vos envois personnels et professionnels.</p>
       </div>
-      <div class="right">
-        <form>
-          <div class="row name-row">
-            <input placeholder="Prénom" />
-            <input placeholder="Nom" />
+      <div class="form-card">
+        <form (submit)="onSubmit()">
+          <div class="grid grid-2">
+            <div class="field-group">
+              <label>Prénom</label>
+              <input name="prenom" [(ngModel)]="prenom" placeholder="Prénom" required />
+            </div>
+            <div class="field-group">
+              <label>Nom</label>
+              <input name="nom" [(ngModel)]="nom" placeholder="Nom" required />
+            </div>
           </div>
-          <label>Email *</label>
-          <input placeholder="Email" />
-          <label>Téléphone *</label>
-          <input placeholder="Téléphone" />
-          <label>Plus de détail</label>
-          <textarea placeholder="Dites-nous en plus..."></textarea>
-          <button type="submit" class="primary">Envoyer</button>
+          <div class="field-group">
+            <label>Email</label>
+            <input type="email" name="email" [(ngModel)]="email" placeholder="Email" required />
+          </div>
+          <div class="field-group">
+            <label>Mot de passe</label>
+            <input type="password" name="motDePasse" [(ngModel)]="motDePasse" placeholder="Choisissez un mot de passe" required />
+          </div>
+          <div class="field-group">
+            <label>Téléphone</label>
+            <input name="telephone" [(ngModel)]="telephone" placeholder="Téléphone" required />
+          </div>
+          <div class="field-group">
+            <label>Nom de l'entreprise (Optionnel)</label>
+            <input name="entreprise" [(ngModel)]="entreprise" placeholder="Ex: Timsoft" />
+          </div>
+          
+          <div class="error-banner" *ngIf="errorMessage">
+            ⚠️ {{ errorMessage }}
+          </div>
+          <div class="success-banner" *ngIf="successMessage">
+            🎉 {{ successMessage }}
+          </div>
+
+          <button type="submit" class="btn-primary" [disabled]="loading">
+            {{ loading ? 'Envoi en cours...' : 'Envoyer ma demande' }}
+          </button>
         </form>
       </div>
     </div>

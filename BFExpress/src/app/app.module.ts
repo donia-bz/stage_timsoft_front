@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { RouterModule, Routes } from '@angular/router';
+import { HttpClientModule } from '@angular/common/http';
 import { AppComponent } from './app.component';
 import { HeaderComponent } from './layout/header/header.component';
 import { FooterComponent } from './layout/footer/footer.component';
@@ -13,6 +14,8 @@ import { DevenirLivreurComponent } from './pages/devenir-livreur/devenir-livreur
 import { SuiviComponent } from './pages/suivi/suivi.component';
 import { LoginComponent } from './pages/login/login.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
+import { DashboardLivreurComponent } from './pages/dashboard-livreur/dashboard-livreur.component';
+import { DashboardAdminComponent } from './pages/dashboard-admin/dashboard-admin.component';
 import { RechercheColisComponent } from './pages/recherche-colis/recherche-colis.component';
 import { ReclamationsComponent } from './pages/reclamations/reclamations.component';
 import { AjoutColisComponent } from './pages/ajout-colis/ajout-colis.component';
@@ -29,6 +32,8 @@ const routes: Routes = [
   { path: 'reclamations', component: ReclamationsComponent },
   { path: 'ajout-colis', component: AjoutColisComponent },
   { path: 'paiements', component: PaiementsComponent },
+  { path: 'dashboard-livreur', component: DashboardLivreurComponent },
+  { path: 'dashboard-admin', component: DashboardAdminComponent },
   { path: 'login', component: LoginComponent },
   { path: 'dashboard', component: DashboardComponent },
   { path: 'devenir-client', component: DevenirClientComponent },
@@ -48,6 +53,8 @@ const routes: Routes = [
     SuiviComponent,
     LoginComponent,
     DashboardComponent,
+    DashboardLivreurComponent,
+    DashboardAdminComponent,
     DevenirClientComponent,
     DevenirLivreurComponent,
     RechercheColisComponent,
@@ -55,7 +62,7 @@ const routes: Routes = [
     AjoutColisComponent,
     PaiementsComponent
   ],
-  imports: [BrowserModule, FormsModule, RouterModule.forRoot(routes)],
+  imports: [BrowserModule, FormsModule, HttpClientModule, RouterModule.forRoot(routes)],
   providers: [],
   bootstrap: [AppComponent]
 })

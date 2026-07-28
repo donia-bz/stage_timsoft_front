@@ -1,159 +1,121 @@
 <section class="dashboard-page">
   <div class="dashboard-shell">
+    
+    <!-- Sidebar -->
     <aside class="dashboard-sidebar">
       <div class="dashboard-brand">
         <span>BFExpress</span>
       </div>
       <div class="sidebar-section">
-        <h3>Mes pickups</h3>
+        <h3>Espace Client</h3>
         <nav>
           <a class="sidebar-link active">Tableau de bord</a>
-          <a class="sidebar-link" routerLink="/recherche-colis">Rechercher colis</a>
-          <a class="sidebar-link" routerLink="/suivi">Page de suivi public</a>
+          <a class="sidebar-link" routerLink="/ajout-colis">Ajouter Colis</a>
+          <a class="sidebar-link" routerLink="/recherche-colis">Suivi public</a>
           <a class="sidebar-link" routerLink="/reclamations">Mes réclamations</a>
-          <a class="sidebar-link">Service client</a>
           <a class="sidebar-link" routerLink="/faq">FAQ</a>
         </nav>
       </div>
       <div class="sidebar-section">
-        <h3>Pickup</h3>
-        <nav>
-          <a class="sidebar-link" routerLink="/ajout-colis">Ajouter Colis</a>
-          <a class="sidebar-link">Importer fichier</a>
-          <a class="sidebar-link">Créer Manifeste</a>
-          <a class="sidebar-link">Imprimer Manifeste</a>
-          <a class="sidebar-link">Colis en attente</a>
-        </nav>
-      </div>
-      <div class="sidebar-section">
-        <h3>Finance</h3>
+        <h3>Finances</h3>
         <nav>
           <a class="sidebar-link" routerLink="/paiements">Mes paiements</a>
-          <a class="sidebar-link">Statut financier</a>
-          <a class="sidebar-link">Rapports</a>
         </nav>
       </div>
     </aside>
 
+    <!-- Main Content -->
     <main class="dashboard-content">
       <div class="dashboard-header">
-        <h1>Dashboard</h1>
-        <div class="dashboard-greeting">Bonjour, client BFExpress</div>
-      </div>
-      <div class="dashboard-grid">
-        <div class="status-card status-red">
-          <span class="status-icon">⛔</span>
-          <div>
-            <div class="status-title">Non sérieux</div>
-            <div class="status-value">0</div>
-          </div>
+        <div>
+          <h1>Tableau de Bord</h1>
+          <div class="dashboard-greeting">Bonjour, {{ clientName }}</div>
         </div>
+        <button class="btn-primary" routerLink="/ajout-colis">➕ Nouveau Colis</button>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="dashboard-grid">
         <div class="status-card status-yellow">
           <span class="status-icon">⏳</span>
           <div>
-            <div class="status-title">En attente</div>
-            <div class="status-value">0</div>
-          </div>
-        </div>
-        <div class="status-card status-purple">
-          <span class="status-icon">🛍️</span>
-          <div>
-            <div class="status-title">À enlever</div>
-            <div class="status-value">144</div>
-          </div>
-        </div>
-        <div class="status-card status-purple-light">
-          <span class="status-icon">↪️</span>
-          <div>
-            <div class="status-title">Enlevés</div>
-            <div class="status-value">0</div>
+            <div class="status-title">En attente / Validés</div>
+            <div class="status-value">{{ enAttenteCount }}</div>
           </div>
         </div>
         <div class="status-card status-blue">
-          <span class="status-icon">🏠</span>
-          <div>
-            <div class="status-title">Au dépôt</div>
-            <div class="status-value">0</div>
-          </div>
-        </div>
-        <div class="status-card status-blue-light">
-          <span class="status-icon">🏠</span>
-          <div>
-            <div class="status-title">Retour dépôt</div>
-            <div class="status-value">1</div>
-          </div>
-        </div>
-        <div class="status-card status-green">
           <span class="status-icon">🚚</span>
           <div>
             <div class="status-title">En cours</div>
-            <div class="status-value">16</div>
+            <div class="status-value">{{ enCoursCount }}</div>
           </div>
         </div>
-        <div class="status-card status-pink">
-          <span class="status-icon">❓</span>
-          <div>
-            <div class="status-title">À vérifier</div>
-            <div class="status-value">8</div>
-          </div>
-        </div>
-        <div class="status-card status-teal">
+        <div class="status-card status-green">
           <span class="status-icon">✔️</span>
           <div>
             <div class="status-title">Livrés</div>
-            <div class="status-value">0</div>
+            <div class="status-value">{{ livreeCount }}</div>
           </div>
         </div>
-        <div class="status-card status-teal-dark">
-          <span class="status-icon">💵</span>
+        <div class="status-card status-red">
+          <span class="status-icon">⛔</span>
           <div>
-            <div class="status-title">Livrés payés</div>
-            <div class="status-value">2966</div>
-          </div>
-        </div>
-        <div class="status-card status-olive">
-          <span class="status-icon">🔄</span>
-          <div>
-            <div class="status-title">Échanges</div>
-            <div class="status-value">1</div>
-          </div>
-        </div>
-        <div class="status-card status-olive-light">
-          <span class="status-icon">🔄</span>
-          <div>
-            <div class="status-title">Remboursés</div>
-            <div class="status-value">0</div>
-          </div>
-        </div>
-        <div class="status-card status-red-dark">
-          <span class="status-icon">⬅️</span>
-          <div>
-            <div class="status-title">Retour définitif</div>
-            <div class="status-value">5</div>
-          </div>
-        </div>
-        <div class="status-card status-red-dark-light">
-          <span class="status-icon">⬅️</span>
-          <div>
-            <div class="status-title">Retour inter-agence</div>
-            <div class="status-value">1</div>
-          </div>
-        </div>
-        <div class="status-card status-red-dark-light2">
-          <span class="status-icon">⬅️</span>
-          <div>
-            <div class="status-title">Retour Expéditeurs</div>
-            <div class="status-value">35</div>
-          </div>
-        </div>
-        <div class="status-card status-red-dark-light3">
-          <span class="status-icon">⬅️</span>
-          <div>
-            <div class="status-title">Retour reçu</div>
-            <div class="status-value">231</div>
+            <div class="status-title">Annulés</div>
+            <div class="status-value">{{ annuleeCount }}</div>
           </div>
         </div>
       </div>
+
+      <!-- Shipments List -->
+      <div class="page-card mt-4">
+        <div class="tab-header">
+          <h2>Mes Expéditions</h2>
+          <p>Voici la liste complète et le statut de vos commandes passées.</p>
+        </div>
+
+        <div class="table-container">
+          <table class="premium-table">
+            <thead>
+              <tr>
+                <th>Réf Commande</th>
+                <th>Départ</th>
+                <th>Arrivée</th>
+                <th>Service</th>
+                <th>Délai Estimé</th>
+                <th>Montant</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let order of commandes">
+                <td><strong>#{{ order.id ? order.id.substring(order.id.length - 6) : 'N/A' }}</strong></td>
+                <td>{{ order.adresseDepart.ville }}</td>
+                <td>{{ order.adresseArrivee.ville }}</td>
+                <td>
+                  <span class="service-badge" [class.express]="order.typeService === 'EXPRESS'">
+                    {{ order.typeService }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge" style="background:#f0fdf4;color:#166534;font-size:0.75rem;">
+                    {{ order.delaiEstimeMin || '45' }} min
+                  </span>
+                </td>
+                <td>{{ order.montantTotal }} DT</td>
+                <td>
+                  <span class="status-pill" [ngClass]="'status-' + order.statut.toLowerCase()">
+                    {{ order.statut }}
+                  </span>
+                </td>
+              </tr>
+              <tr *ngIf="commandes.length === 0">
+                <td colspan="7" class="text-center">Vous n'avez pas encore d'expéditions. Cliquez sur "Nouveau Colis" pour commencer.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </main>
+
   </div>
 </section>

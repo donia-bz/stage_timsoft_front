@@ -1,0 +1,107 @@
+<section class="dashboard-page">
+  <div class="dashboard-shell">
+    
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar">
+      <div class="dashboard-brand">
+        <span>BFExpress Driver</span>
+      </div>
+      <div class="sidebar-section">
+        <h3>Espace Livreur</h3>
+        <nav>
+          <a class="sidebar-link active">Mes Courses</a>
+          <a class="sidebar-link" routerLink="/">Page d'accueil</a>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <div>
+          <h1>Espace Livreur</h1>
+          <div class="dashboard-greeting">Bonjour, {{ driverName }}</div>
+        </div>
+        <div class="statut-toggle">
+          <span>Statut actuel : </span>
+          <span class="status-pill" [ngClass]="'status-' + (driverInfo?.statut || 'disponible')">
+            {{ driverInfo?.statut || 'Disponible' }}
+          </span>
+          <button class="btn-sm btn-green" (click)="toggleStatut('disponible')">Disponible</button>
+          <button class="btn-sm btn-gray" (click)="toggleStatut('hors_ligne')">Hors ligne</button>
+        </div>
+      </div>
+
+      <!-- Position Update Box -->
+      <div class="page-card mb-4" style="background:#f8fafc;padding:1.25rem;border-radius:16px;border:1px solid #e2e8f0;">
+        <h3>📍 Mise à jour de votre position GPS</h3>
+        <div style="display:flex;gap:1rem;align-items:center;margin-top:0.5rem;flex-wrap:wrap;">
+          <div>
+            <label style="font-size:0.85rem;font-weight:bold;">Latitude : </label>
+            <input type="number" step="0.0001" [(ngModel)]="latitude" style="padding:6px;border-radius:8px;border:1px solid #cbd5e1;width:120px;" />
+          </div>
+          <div>
+            <label style="font-size:0.85rem;font-weight:bold;">Longitude : </label>
+            <input type="number" step="0.0001" [(ngModel)]="longitude" style="padding:6px;border-radius:8px;border:1px solid #cbd5e1;width:120px;" />
+          </div>
+          <button class="btn-primary" (click)="updateGPS()" style="padding:6px 14px;font-size:0.85rem;">Actualiser GPS</button>
+        </div>
+      </div>
+
+      <!-- Deliveries Grid -->
+      <div class="page-card mt-4">
+        <div class="tab-header">
+          <h2>Vos Courses & Missions Affectées</h2>
+          <p>Démarrer les livraisons dès prise en charge et marquer comme livrées après confirmation client.</p>
+        </div>
+
+        <div class="table-container">
+          <table class="premium-table">
+            <thead>
+              <tr>
+                <th>Réf Livraison</th>
+                <th>Destination</th>
+                <th>Statut Course</th>
+                <th>Commande Liée</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let l of livraisons">
+                <td><strong>#{{ l.id ? l.id.substring(l.id.length - 6) : 'N/A' }}</strong></td>
+                <td>
+                  <div *ngIf="commandesMap[l.commandeId]">
+                    <div><strong>{{ commandesMap[l.commandeId].adresseArrivee.ville }}</strong></div>
+                    <div style="font-size:0.8rem;color:#64748b;">{{ commandesMap[l.commandeId].adresseArrivee.rue }}</div>
+                  </div>
+                  <div *ngIf="!commandesMap[l.commandeId]" style="color:#94a3b8;">Chargement...</div>
+                </td>
+                <td>
+                  <span class="status-pill" [ngClass]="'status-' + l.statut">
+                    {{ l.statut === 'affectee' ? 'Affectée' : (l.statut === 'en_cours' ? 'En cours' : 'Livrée') }}
+                  </span>
+                </td>
+                <td>#{{ l.commandeId ? l.commandeId.substring(l.commandeId.length - 6) : 'N/A' }}</td>
+                <td>
+                  <button *ngIf="l.statut === 'affectee'" class="btn-ai" (click)="demarrer(l)">
+                    ▶️ Démarrer la course
+                  </button>
+                  <button *ngIf="l.statut === 'en_cours'" class="btn-approve" (click)="terminer(l)" style="background:#10b981;">
+                    ✅ Terminer la livraison
+                  </button>
+                  <span *ngIf="l.statut === 'livree'" style="color:#059669;font-weight:bold;">
+                    🎉 Course complétée
+                  </span>
+                </td>
+              </tr>
+              <tr *ngIf="livraisons.length === 0">
+                <td colspan="5" class="text-center">Aucune course affectée pour le moment.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+  </div>
+</section>

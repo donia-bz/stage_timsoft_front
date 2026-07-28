@@ -1,20 +1,45 @@
-<section class="row">
-  <div style="flex:1">
-    <h2>Nous Contacter</h2>
-    <form>
-      <div style="display:flex; gap:10px;">
-        <input placeholder="Prénom" />
-        <input placeholder="Nom" />
+<section class="page-section">
+  <div class="container page-card">
+    <div class="grid grid-2">
+      <div>
+        <p class="badge">Contactez notre équipe</p>
+        <h2 class="section-title">Nous Contacter</h2>
+        <p class="section-subtitle">Pour toute question de livraison, de suivi ou de réclamation, notre équipe est à votre disposition.</p>
+        <form class="form-card">
+          <div class="grid grid-2">
+            <div class="field-group">
+              <label>Prénom</label>
+              <input placeholder="Prénom" />
+            </div>
+            <div class="field-group">
+              <label>Nom</label>
+              <input placeholder="Nom" />
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Email</label>
+            <input placeholder="Email" />
+          </div>
+          <div class="field-group">
+            <label>Téléphone</label>
+            <input placeholder="Téléphone" />
+          </div>
+          <div class="field-group">
+            <label>Message</label>
+            <textarea placeholder="Expliquez votre demande"></textarea>
+          </div>
+          <button type="submit" class="btn-primary">Envoyer</button>
+        </form>
       </div>
-      <input placeholder="Email" style="width:100%; margin-top:12px;" />
-      <input placeholder="Téléphone" style="width:100%; margin-top:12px;" />
-      <textarea placeholder="Plus de détail" style="width:100%; margin-top:12px; height:120px"></textarea>
-      <button style="margin-top:12px; background:var(--accent); padding:10px 16px; border:none; color:white">Envoyer</button>
-    </form>
-  </div>
-  <div style="flex:1">
-    <div style="background:var(--brand-mint); padding:20px; margin-bottom:16px">Adresse: Rue de l'énergie ...</div>
-    <div style="background:var(--brand-mint); padding:20px; margin-bottom:16px">E-Mail: contact@bfexpress.tn</div>
-    <div style="background:var(--brand-mint); padding:20px;">Téléphone: +216 31 26 26 26</div>
+      <div class="info-panel">
+        <span>i</span>
+        <div>
+          <h3>Informations utiles</h3>
+          <p>Adresse: Rue de l'énergie, Tunis</p>
+          <p>Email: contact@bfexpress.tn</p>
+          <p>Téléphone: +216 31 26 26 26</p>
+        </div>
+      </div>
+    </div>
   </div>
 </section>

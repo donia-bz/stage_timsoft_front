@@ -1,21 +1,233 @@
-/* Global styles and basic theme inspired by Navex (mint + dark) */
 :root {
-  --brand-dark: #082635;
-  --brand-mint: #89f0d6;
-  --accent: #19e6c6;
-  --muted: #7b8a8f;
+  color-scheme: dark;
+  --bg: #f3f6fb;
+  --surface: #ffffff;
+  --surface-strong: #edf2f7;
+  --surface-soft: #f8fbff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --brand: #0c4a6e;
+  --brand-soft: #7dd3fc;
+  --accent: #14b8a6;
+  --accent-strong: #0f766e;
+  --border: #dbeafe;
+  --shadow: 0 24px 80px rgba(15, 23, 42, 0.08);
+  --radius: 24px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
   margin: 0;
-  color: var(--brand-dark);
-  background: #fff;
+  min-height: 100vh;
+  color: var(--text);
+  font-family: Inter, 'Segoe UI', sans-serif;
+  background: radial-gradient(circle at top, rgba(29, 78, 216, 0.08), transparent 36%),
+    linear-gradient(180deg, #f8fbff 0%, #eef4fb 42%, #fdfdff 100%);
 }
 
-main { padding: 32px; }
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
 
-.container { max-width: 1200px; margin: 0 auto; }
+a {
+  color: inherit;
+}
 
-/* basic utility */
-.row { display:flex; gap:24px; align-items:center; }
+main {
+  padding: 24px 20px 40px;
+}
+
+.container {
+  width: min(1200px, calc(100% - 40px));
+  margin: 0 auto;
+}
+
+.page-card,
+.form-card,
+.info-panel,
+.hero-card,
+.paiements-card,
+.suivi-card {
+  background: var(--surface);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.75rem;
+}
+
+.section-title {
+  margin: 0 0 1.25rem;
+  font-size: clamp(1.8rem, 2.3vw, 2.5rem);
+  letter-spacing: -0.04em;
+}
+
+.section-subtitle {
+  margin: 0;
+  color: var(--muted);
+  max-width: 760px;
+  line-height: 1.8;
+}
+
+.row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 860px) {
+  .grid-2,
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: var(--surface);
+  border-radius: 22px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 1.5rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.65rem;
+  color: var(--text);
+  font-weight: 700;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 0.95rem 1rem;
+  background: #f8fbff;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent-strong);
+  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.14);
+}
+
+textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.95rem 1.8rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-strong), var(--brand));
+  color: white;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.14);
+}
+
+.btn-secondary {
+  background: white;
+  color: var(--brand);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  color: var(--text);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(20, 184, 166, 0.12);
+  color: var(--accent-strong);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.hero-card {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.16), rgba(16, 185, 129, 0.12));
+}
+
+.info-panel {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 1.5rem 1.75rem;
+}
+
+.info-panel span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  width: 40px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-weight: 700;
+}
+
+.info-panel p {
+  margin: 0;
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  main { padding: 20px 16px 36px; }
+}
+
+@keyframes slideDownFade {
+  0% {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slideDownFade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
