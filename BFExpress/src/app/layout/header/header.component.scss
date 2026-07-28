@@ -1,0 +1,9 @@
+.site-header { background: linear-gradient(180deg, rgba(8,38,53,0.95), rgba(8,38,53,0.95)); color: white; padding: 14px 0; }
+.main-nav { display: flex; align-items: center; }
+.main-nav a { margin-left: 18px; color: #bfeee0; text-decoration: none; font-weight:600; padding: 8px 12px; border-radius: 6px; }
+.main-nav a:hover { color: white; }
+.main-nav a.nav-button { background: rgba(25, 230, 198, 0.15); color: #19e6c6; border: 1px solid rgba(25, 230, 198, 0.3); }
+.main-nav a.nav-button:hover { background: rgba(25, 230, 198, 0.25); }
+.main-nav a.login-button { background: #19e6c6; color: #082635; }
+.main-nav a.login-button:hover { background: #13c2a3; color: #082635; }
+.brand img { filter: brightness(1.1); }

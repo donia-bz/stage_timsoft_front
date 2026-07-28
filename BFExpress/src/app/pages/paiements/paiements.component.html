@@ -1,0 +1,29 @@
+<section class="paiements-page">
+  <div class="paiements-card">
+    <div class="paiements-header">
+      <h2>Mes Paiements</h2>
+    </div>
+    <div class="paiements-body">
+      <div class="paiement-row">
+        <div class="field-group">
+          <label>Mois</label>
+          <select [(ngModel)]="month">
+            <option *ngFor="let monthOption of months" [value]="monthOption">{{ monthOption }}</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>Année</label>
+          <select [(ngModel)]="year">
+            <option *ngFor="let yearOption of years" [value]="yearOption">{{ yearOption }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions-row">
+        <button class="primary" (click)="validatePayments()">
+          <span class="check-icon">✔</span>
+          Valider
+        </button>
+      </div>
+    </div>
+  </div>
+</section>

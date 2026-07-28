@@ -1,0 +1,51 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "projects": {
+    "bfexpress": {
+      "projectType": "application",
+      "root": "",
+      "sourceRoot": "src",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:browser",
+          "options": {
+            "outputPath": "dist/bfexpress",
+            "index": "src/index.html",
+            "main": "src/main.ts",
+            "polyfills": "src/polyfills.ts",
+            "tsConfig": "tsconfig.app.json",
+            "assets": ["src/favicon.ico", "src/assets"],
+            "styles": ["src/styles.scss"],
+            "scripts": []
+          },
+          "defaultConfiguration": "development",
+          "configurations": {
+            "development": {
+              "optimization": false,
+              "sourceMap": true,
+              "vendorChunk": true,
+              "extractLicenses": false,
+              "buildOptimizer": false
+            },
+            "production": {
+              "optimization": true,
+              "sourceMap": false,
+              "vendorChunk": false,
+              "extractLicenses": true,
+              "buildOptimizer": true
+            }
+          }
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": { "browserTarget": "bfexpress:build" }
+        }
+      }
+    }
+  },
+  "defaultProject": "bfexpress",
+  "cli": {
+    "analytics": "4c22c9f4-b9d8-4f68-b307-ec8143bd9e34"
+  }
+}

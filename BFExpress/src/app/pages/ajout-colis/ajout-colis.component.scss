@@ -1,0 +1,108 @@
+.pickup-page {
+  padding: 2rem 1rem;
+}
+
+.pickup-card {
+  max-width: 1100px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 1.25rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
+  padding: 2rem;
+}
+
+.pickup-header h2 {
+  margin: 0 0 1rem;
+  font-size: 1.75rem;
+  color: #0f172a;
+}
+
+.pickup-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.field-group,
+.field-full {
+  display: flex;
+  flex-direction: column;
+}
+
+.field-full {
+  grid-column: 1 / -1;
+}
+
+.field-group label,
+.field-full label {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.field-group input,
+.field-group select,
+.field-full input,
+.field-full textarea,
+.field-button-group button,
+.field-group textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  padding: 0.9rem 1rem;
+  font-size: 1rem;
+  background: #f8fafc;
+}
+
+.field-button-group {
+  display: flex;
+  align-items: flex-end;
+}
+
+.secondary {
+  border: none;
+  background: #16a34a;
+  color: white;
+  padding: 0.95rem 1.25rem;
+  border-radius: 0.85rem;
+  cursor: pointer;
+  width: 100%;
+}
+
+.radio-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.radio-row label {
+  font-weight: 500;
+  color: #334155;
+}
+
+textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.actions-row {
+  margin-top: 1.5rem;
+}
+
+.primary {
+  border: none;
+  background: #2563eb;
+  color: white;
+  padding: 0.95rem 1.75rem;
+  border-radius: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 960px) {
+  .pickup-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,13 @@
+<section class="claims-page">
+  <div class="claims-card">
+    <h2>Réclamation</h2>
+    <p>Décrivez votre problème et notre équipe vous contactera rapidement.</p>
+    <div class="claims-form">
+      <label>Nom / Société</label>
+      <input type="text" [(ngModel)]="customerName" placeholder="Votre nom" />
+      <label>Description du problème</label>
+      <textarea [(ngModel)]="issueDescription" placeholder="Expliquez votre réclamation"></textarea>
+      <button class="primary" (click)="submitClaim()">Envoyer la réclamation</button>
+    </div>
+  </div>
+</section>

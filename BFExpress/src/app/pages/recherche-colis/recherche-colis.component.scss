@@ -1,0 +1,51 @@
+.search-page {
+  padding: 2rem 1rem;
+}
+
+.search-card {
+  max-width: 900px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 1.25rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
+  padding: 2rem;
+}
+
+.search-card h2 {
+  margin-top: 0;
+  color: #0f172a;
+}
+
+.search-card p {
+  color: #475569;
+  margin-bottom: 1.5rem;
+}
+
+.search-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.search-form label {
+  font-weight: 600;
+  color: #334155;
+}
+
+.search-form input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  padding: 0.95rem 1rem;
+  font-size: 1rem;
+}
+
+.primary {
+  border: none;
+  background: #059669;
+  color: white;
+  padding: 0.95rem 1.5rem;
+  border-radius: 0.85rem;
+  cursor: pointer;
+  font-weight: 700;
+}

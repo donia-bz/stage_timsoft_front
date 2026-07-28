@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480">
+  <defs>
+    <linearGradient id="b" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#19e6c6"/>
+      <stop offset="100%" stop-color="#089ea0"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="480" rx="32" fill="#0b2640"/>
+  <rect x="100" y="240" width="240" height="120" rx="18" fill="#0d3a5a"/>
+  <rect x="340" y="220" width="180" height="100" rx="18" fill="url(#b)"/>
+  <circle cx="180" cy="380" r="36" fill="#0f4566"/>
+  <circle cx="480" cy="380" r="36" fill="#0f4566"/>
+  <circle cx="180" cy="380" r="20" fill="#89f0d6"/>
+  <circle cx="480" cy="380" r="20" fill="#89f0d6"/>
+  <path d="M320 220l-24-36-32 44" fill="#fff" opacity="0.18"/>
+  <text x="360" y="260" font-family="Arial, Helvetica, sans-serif" font-size="38" fill="#fff" font-weight="700">Livreur</text>
+</svg>

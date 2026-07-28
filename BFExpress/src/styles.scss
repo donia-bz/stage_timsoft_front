@@ -1,0 +1,21 @@
+/* Global styles and basic theme inspired by Navex (mint + dark) */
+:root {
+  --brand-dark: #082635;
+  --brand-mint: #89f0d6;
+  --accent: #19e6c6;
+  --muted: #7b8a8f;
+}
+
+body {
+  font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  margin: 0;
+  color: var(--brand-dark);
+  background: #fff;
+}
+
+main { padding: 32px; }
+
+.container { max-width: 1200px; margin: 0 auto; }
+
+/* basic utility */
+.row { display:flex; gap:24px; align-items:center; }

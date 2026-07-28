@@ -1,0 +1,11 @@
+<section class="search-page">
+  <div class="search-card">
+    <h2>Recherche Colis</h2>
+    <p>Entrez le code à barre ou le numéro de téléphone pour suivre un colis.</p>
+    <div class="search-form">
+      <label>Code à barre / Téléphone</label>
+      <input type="text" [(ngModel)]="packageCode" placeholder="Entrez le code ou le numéro" />
+      <button class="primary" (click)="onSearch()">Rechercher</button>
+    </div>
+  </div>
+</section>

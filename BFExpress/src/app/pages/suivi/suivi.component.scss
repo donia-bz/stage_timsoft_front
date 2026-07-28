@@ -1,0 +1,21 @@
+.suivi-page { padding: 48px 0; }
+
+.suivi-card { background: #fff; border-radius: 22px; box-shadow: 0 20px 60px rgba(0,0,0,0.08); padding: 32px; }
+
+.suivi-header { background: #0f3d79; color: white; padding: 32px; border-radius: 18px; margin-bottom: 24px; }
+
+.suivi-header h1 { margin: 0 0 8px; font-size: 2.75rem; }
+
+.suivi-header p { margin: 0; color: rgba(255,255,255,0.8); font-size: 1.05rem; }
+
+.suivi-form { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+
+.suivi-form input { flex: 1 1 360px; padding: 18px 20px; border: 1px solid #c3d0e8; border-radius: 14px; font-size: 1rem; }
+
+.suivi-form button { background: #1b5db8; border: none; color: white; padding: 18px 30px; border-radius: 14px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+
+.info-box { display: flex; align-items: center; gap: 14px; background: #fff5d8; border: 1px solid #f6e1a2; border-radius: 14px; padding: 18px; }
+
+.info-box span { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; background: #f2d977; border-radius: 50%; color: #5c4200; font-weight: 700; }
+
+.info-box p { margin: 0; color: #5c4200; line-height: 1.6; }

@@ -1,0 +1,104 @@
+<section class="pickup-page">
+  <div class="pickup-card">
+    <div class="pickup-header">
+      <h2>Nouveau Pickup</h2>
+    </div>
+
+    <div class="pickup-form-grid">
+      <div class="field-group">
+        <label>Nom complet</label>
+        <input type="text" [(ngModel)]="clientName" placeholder="Nom complet" />
+      </div>
+      <div class="field-group">
+        <label>Gouvernerat</label>
+        <select [(ngModel)]="governorate">
+          <option value="">Sélectionner</option>
+          <option value="Tunis">Tunis</option>
+          <option value="Ariana">Ariana</option>
+          <option value="Sousse">Sousse</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Ville</label>
+        <input type="text" [(ngModel)]="city" placeholder="Ville" />
+      </div>
+      <div class="field-group">
+        <label>Localité</label>
+        <input type="text" [(ngModel)]="locality" placeholder="Localité" />
+      </div>
+    </div>
+
+    <div class="field-full">
+      <label>Adresse complète</label>
+      <input type="text" [(ngModel)]="address" placeholder="Adresse complète" />
+    </div>
+
+    <div class="pickup-form-grid">
+      <div class="field-group">
+        <label>Téléphone</label>
+        <input type="text" [(ngModel)]="phone1" placeholder="Téléphone" />
+      </div>
+      <div class="field-group">
+        <label>Téléphone 2</label>
+        <input type="text" [(ngModel)]="phone2" placeholder="Téléphone 2" />
+      </div>
+      <div class="field-button-group">
+        <button class="secondary">Vérifier Client</button>
+      </div>
+    </div>
+
+    <div class="field-full">
+      <label>Désignation</label>
+      <input type="text" [(ngModel)]="designation" placeholder="Désignation" />
+    </div>
+
+    <div class="pickup-form-grid">
+      <div class="field-group">
+        <label>Prix en DT</label>
+        <input type="text" [(ngModel)]="price" placeholder="Prix en DT" />
+      </div>
+      <div class="field-group">
+        <label>Nombre d'article</label>
+        <input type="number" [(ngModel)]="itemCount" min="1" />
+      </div>
+      <div class="field-group">
+        <label>Nombre de colis</label>
+        <input type="number" [(ngModel)]="packageCount" min="1" />
+      </div>
+    </div>
+
+    <div class="pickup-form-grid">
+      <div class="field-group">
+        <label>Mode de paiement</label>
+        <select [(ngModel)]="paymentMode">
+          <option>Espèce seulement</option>
+          <option>Carte</option>
+          <option>Virement</option>
+        </select>
+      </div>
+      <div class="field-group field-radio">
+        <label>Ouvrir le colis au client avant le paiement ?</label>
+        <div class="radio-row">
+          <label><input type="radio" name="openBeforePayment" value="Non" [(ngModel)]="openBeforePayment" /> Non</label>
+          <label><input type="radio" name="openBeforePayment" value="Oui" [(ngModel)]="openBeforePayment" /> Oui</label>
+        </div>
+      </div>
+      <div class="field-group field-radio">
+        <label>Échange</label>
+        <div class="radio-row">
+          <label><input type="radio" name="exchange" value="Non" [(ngModel)]="exchange" /> Non</label>
+          <label><input type="radio" name="exchange" value="Oui" [(ngModel)]="exchange" /> Oui</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="field-full">
+      <label>Remarques</label>
+      <textarea [(ngModel)]="remarks" placeholder="Remarques"></textarea>
+    </div>
+
+    <div class="actions-row">
+      <button class="primary" (click)="submitPickup()">Ajouter</button>
+    </div>
+  </div>
+</section>

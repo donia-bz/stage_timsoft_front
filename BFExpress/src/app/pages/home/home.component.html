@@ -1,0 +1,37 @@
+<section class="hero">
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow">BFExpress</span>
+      <h1>LE CHOIX GAGNANT<br/>DE VOTRE LIVRAISON</h1>
+      <p>BFExpress fournit des solutions de livraison rapides, sécurisées et transparentes, inspirées visuellement par Navex.</p>
+      <div class="hero-actions">
+        <button
+          class="primary"
+          [class.active]="selectedMode === 'client'"
+          routerLink="/devenir-client"
+          (click)="setMode('client')">
+          Devenir Client
+        </button>
+        <button
+          class="secondary"
+          [class.active]="selectedMode === 'livreur'"
+          routerLink="/devenir-livreur"
+          (click)="setMode('livreur')">
+          Devenir Livreur
+        </button>
+      </div>
+    </div>
+
+    <div class="hero-image">
+      <img [src]="activeImage" alt="Illustration BFExpress" />
+      <div class="hero-label">{{ selectedMode === 'client' ? 'Client / expéditeur' : 'Livreur / partenaire' }}</div>
+    </div>
+  </div>
+</section>
+
+<section class="intro-section">
+  <div class="container">
+    <h2>Votre Livraison, Notre Priorité</h2>
+    <p>BFExpress fournit des solutions de livraison rapides, sécurisées et transparentes, inspirées visuellement par Navex.</p>
+  </div>
+</section>
