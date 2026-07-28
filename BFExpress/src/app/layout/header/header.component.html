@@ -18,6 +18,16 @@
       <!-- Login / Logout controls -->
       <a *ngIf="!authService.isLoggedIn()" routerLink="/login" class="nav-button login-button">Se connecter</a>
       <button *ngIf="authService.isLoggedIn()" (click)="logout()" class="nav-button" style="background:#e2e8f0;color:#334155;border:none;cursor:pointer;">Déconnexion</button>
+      <div *ngIf="authService.isLoggedIn()" class="user-panel">
+        <div *ngIf="authService.getRole() === 'CLIENT'" class="id-label">ID Expediteur : {{ authService.getCurrentUser()?.id }}</div>
+
+        <button class="icon-btn notif" title="Notifications">
+          <span class="bell">🔔</span>
+          <span class="notif-dot" aria-hidden="true"></span>
+        </button>
+
+        <button (click)="logout()" class="icon-btn power" title="Déconnexion">⏻</button>
+      </div>
     </nav>
   </div>
 </header>

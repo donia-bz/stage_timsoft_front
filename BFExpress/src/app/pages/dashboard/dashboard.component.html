@@ -1,78 +1,248 @@
-<section class="dashboard-page">
-  <div class="dashboard-shell">
-    
-    <!-- Sidebar -->
-    <aside class="dashboard-sidebar">
-      <div class="dashboard-brand">
-        <span>BFExpress</span>
-      </div>
-      <div class="sidebar-section">
-        <h3>Espace Client</h3>
-        <nav>
-          <a class="sidebar-link active">Tableau de bord</a>
-          <a class="sidebar-link" routerLink="/ajout-colis">Ajouter Colis</a>
-          <a class="sidebar-link" routerLink="/recherche-colis">Suivi public</a>
-          <a class="sidebar-link" routerLink="/reclamations">Mes réclamations</a>
-          <a class="sidebar-link" routerLink="/faq">FAQ</a>
-        </nav>
-      </div>
-      <div class="sidebar-section">
-        <h3>Finances</h3>
-        <nav>
-          <a class="sidebar-link" routerLink="/paiements">Mes paiements</a>
-        </nav>
-      </div>
-    </aside>
+<div class="full-viewport-dashboard">
+  
+  <!-- Full Height Dark Sidebar Menu (Exact Screenshot match) -->
+  <aside class="full-sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-title">BFExpress</span>
+    </div>
 
-    <!-- Main Content -->
-    <main class="dashboard-content">
+    <div class="sidebar-scroll-area">
+      <!-- Main Nav Items -->
+      <nav class="nav-group">
+        <a class="nav-item" [class.active]="activeTab === 'dashboard'" (click)="setTab('dashboard')">
+          <span class="icon">🎛️</span>
+          <span>Tableau de bord</span>
+        </a>
+
+        <a class="nav-item" [class.active]="activeTab === 'rechercher'" (click)="setTab('rechercher')">
+          <span class="icon">🔍</span>
+          <span>Rechercher colis</span>
+        </a>
+
+        <a class="nav-item" routerLink="/suivi">
+          <span class="icon">📍</span>
+          <span>Page de suivi public</span>
+        </a>
+
+        <a class="nav-item" [class.active]="activeTab === 'reclamations'" (click)="setTab('reclamations')">
+          <span class="icon">❓</span>
+          <span>Mes réclamations</span>
+        </a>
+
+        <a class="nav-item" [class.active]="activeTab === 'service-client'" (click)="setTab('service-client')">
+          <span class="icon">🎧</span>
+          <span>Service client</span>
+        </a>
+
+        <a class="nav-item" routerLink="/faq">
+          <span class="icon">❓</span>
+          <span>FAQ</span>
+        </a>
+      </nav>
+
+      <!-- Category: PICKUP -->
+      <div class="category-header">PICKUP</div>
+      <nav class="nav-group">
+        <a class="nav-item" routerLink="/ajout-colis">
+          <span class="icon">📄</span>
+          <span>Ajouter Colis</span>
+        </a>
+
+        <a class="nav-item" [class.active]="activeTab === 'importer'" (click)="setTab('importer')">
+          <span class="icon">📊</span>
+          <span>Importer fichier</span>
+        </a>
+
+        <a class="nav-item" [class.active]="activeTab === 'manifeste'" (click)="setTab('manifeste')">
+          <span class="icon">📑</span>
+          <span>Créer Manifeste</span>
+        </a>
+
+        <a class="nav-item" (click)="imprimerManifeste()">
+          <span class="icon">🖨️</span>
+          <span>Imprimer Manifeste</span>
+        </a>
+
+        <a class="nav-item" [class.active]="activeTab === 'colis-attente'" (click)="setTab('colis-attente')">
+          <span class="icon">🖨️</span>
+          <span>Colis en attente</span>
+        </a>
+      </nav>
+
+      <!-- Category: FINANCE -->
+      <div class="category-header">FINANCE</div>
+      <nav class="nav-group">
+        <a class="nav-item" routerLink="/paiements">
+          <span class="icon">💵</span>
+          <span>Mes paiements</span>
+        </a>
+
+        <a class="nav-item" [class.active]="activeTab === 'frais'" (click)="setTab('frais')">
+          <span class="icon">💵</span>
+          <span>Frais de recouvrement</span>
+        </a>
+
+        <a class="nav-item" [class.active]="activeTab === 'retours'" (click)="setTab('retours')">
+          <span class="icon">⬅️</span>
+          <span>Mes retours</span>
+        </a>
+      </nav>
+    </div>
+  </aside>
+
+  <!-- Main Content Body -->
+  <main class="full-content-area">
+    
+    <!-- TAB 1: TABLEAU DE BORD (GRID MATCHING SCREENSHOT 1) -->
+    <div *ngIf="activeTab === 'dashboard'">
       <div class="dashboard-header">
         <div>
-          <h1>Tableau de Bord</h1>
+          <h1>Tableau de bord</h1>
           <div class="dashboard-greeting">Bonjour, {{ clientName }}</div>
         </div>
-        <button class="btn-primary" routerLink="/ajout-colis">➕ Nouveau Colis</button>
+        <button class="btn-primary" routerLink="/ajout-colis">➕ Ajouter Colis</button>
       </div>
 
-      <!-- Stats Grid -->
-      <div class="dashboard-grid">
-        <div class="status-card status-yellow">
-          <span class="status-icon">⏳</span>
-          <div>
-            <div class="status-title">En attente / Validés</div>
-            <div class="status-value">{{ enAttenteCount }}</div>
+      <!-- 4x4 Multi-color Grid matching Screenshot 1 -->
+      <div class="stats-matrix-grid">
+        <!-- Row 1 -->
+        <div class="matrix-card card-red">
+          <div class="card-icon">🚫</div>
+          <div class="card-content">
+            <span class="val">{{ nonSerieuxCount }}</span>
+            <span class="lbl">Non sérieux</span>
           </div>
         </div>
-        <div class="status-card status-blue">
-          <span class="status-icon">🚚</span>
-          <div>
-            <div class="status-title">En cours</div>
-            <div class="status-value">{{ enCoursCount }}</div>
+
+        <div class="matrix-card card-yellow">
+          <div class="card-icon">⚙️</div>
+          <div class="card-content">
+            <span class="val">{{ enAttenteCount }}</span>
+            <span class="lbl">En attente</span>
           </div>
         </div>
-        <div class="status-card status-green">
-          <span class="status-icon">✔️</span>
-          <div>
-            <div class="status-title">Livrés</div>
-            <div class="status-value">{{ livreeCount }}</div>
+
+        <div class="matrix-card card-purple">
+          <div class="card-icon">🛍️</div>
+          <div class="card-content">
+            <span class="val">{{ aEnleverCount }}</span>
+            <span class="lbl">À enlever</span>
           </div>
         </div>
-        <div class="status-card status-red">
-          <span class="status-icon">⛔</span>
-          <div>
-            <div class="status-title">Annulés</div>
-            <div class="status-value">{{ annuleeCount }}</div>
+
+        <div class="matrix-card card-purple">
+          <div class="card-icon">↗️</div>
+          <div class="card-content">
+            <span class="val">{{ enlevesCount }}</span>
+            <span class="lbl">Enlevés</span>
+          </div>
+        </div>
+
+        <!-- Row 2 -->
+        <div class="matrix-card card-blue">
+          <div class="card-icon">🏠</div>
+          <div class="card-content">
+            <span class="val">{{ auDepotCount }}</span>
+            <span class="lbl">Au dépôt</span>
+          </div>
+        </div>
+
+        <div class="matrix-card card-blue">
+          <div class="card-icon">🏠</div>
+          <div class="card-content">
+            <span class="val">{{ retourDepotCount }}</span>
+            <span class="lbl">Retour dépôt</span>
+          </div>
+        </div>
+
+        <div class="matrix-card card-green-light">
+          <div class="card-icon">🚚</div>
+          <div class="card-content">
+            <span class="val">{{ enCoursCount }}</span>
+            <span class="lbl">En cours</span>
+          </div>
+        </div>
+
+        <div class="matrix-card card-pink">
+          <div class="card-icon">❓</div>
+          <div class="card-content">
+            <span class="val">{{ aVerifierCount }}</span>
+            <span class="lbl">À vérifier</span>
+          </div>
+        </div>
+
+        <!-- Row 3 -->
+        <div class="matrix-card card-teal">
+          <div class="card-icon">✔️</div>
+          <div class="card-content">
+            <span class="val">{{ livreeCount }}</span>
+            <span class="lbl">Livrés</span>
+          </div>
+        </div>
+
+        <div class="matrix-card card-teal">
+          <div class="card-icon">💵</div>
+          <div class="card-content">
+            <span class="val">{{ livresPayesTotal }} <small style="font-size:1rem;">DT</small></span>
+            <span class="lbl">Livrés payés</span>
+          </div>
+        </div>
+
+        <div class="matrix-card card-olive">
+          <div class="card-icon">🔄</div>
+          <div class="card-content">
+            <span class="val">{{ echangesCount }}</span>
+            <span class="lbl">Échanges</span>
+          </div>
+        </div>
+
+        <div class="matrix-card card-olive">
+          <div class="card-icon">🔄</div>
+          <div class="card-content">
+            <span class="val">{{ remboursesCount }}</span>
+            <span class="lbl">Remboursés</span>
+          </div>
+        </div>
+
+        <!-- Row 4 -->
+        <div class="matrix-card card-red">
+          <div class="card-icon">⬅️</div>
+          <div class="card-content">
+            <span class="val">{{ retourDefinitifCount }}</span>
+            <span class="lbl">Retour définitif</span>
+          </div>
+        </div>
+
+        <div class="matrix-card card-red">
+          <div class="card-icon">⬅️</div>
+          <div class="card-content">
+            <span class="val">{{ retourInterAgenceCount }}</span>
+            <span class="lbl">Retour Inter-agence</span>
+          </div>
+        </div>
+
+        <div class="matrix-card card-red">
+          <div class="card-icon">⬅️</div>
+          <div class="card-content">
+            <span class="val">{{ retourExpediteursCount }}</span>
+            <span class="lbl">Retour Expéditeurs</span>
+          </div>
+        </div>
+
+        <div class="matrix-card card-red">
+          <div class="card-icon">⬅️</div>
+          <div class="card-content">
+            <span class="val">{{ retourRecuCount }}</span>
+            <span class="lbl">Retour reçu</span>
           </div>
         </div>
       </div>
 
-      <!-- Shipments List -->
+      <!-- General Table -->
       <div class="page-card mt-4">
         <div class="tab-header">
           <h2>Mes Expéditions</h2>
-          <p>Voici la liste complète et le statut de vos commandes passées.</p>
         </div>
-
         <div class="table-container">
           <table class="premium-table">
             <thead>
@@ -81,7 +251,6 @@
                 <th>Départ</th>
                 <th>Arrivée</th>
                 <th>Service</th>
-                <th>Délai Estimé</th>
                 <th>Montant</th>
                 <th>Statut</th>
               </tr>
@@ -91,16 +260,7 @@
                 <td><strong>#{{ order.id ? order.id.substring(order.id.length - 6) : 'N/A' }}</strong></td>
                 <td>{{ order.adresseDepart.ville }}</td>
                 <td>{{ order.adresseArrivee.ville }}</td>
-                <td>
-                  <span class="service-badge" [class.express]="order.typeService === 'EXPRESS'">
-                    {{ order.typeService }}
-                  </span>
-                </td>
-                <td>
-                  <span class="badge" style="background:#f0fdf4;color:#166534;font-size:0.75rem;">
-                    {{ order.delaiEstimeMin || '45' }} min
-                  </span>
-                </td>
+                <td><span class="service-badge" [class.express]="order.typeService === 'EXPRESS'">{{ order.typeService }}</span></td>
                 <td>{{ order.montantTotal }} DT</td>
                 <td>
                   <span class="status-pill" [ngClass]="'status-' + order.statut.toLowerCase()">
@@ -109,13 +269,194 @@
                 </td>
               </tr>
               <tr *ngIf="commandes.length === 0">
-                <td colspan="7" class="text-center">Vous n'avez pas encore d'expéditions. Cliquez sur "Nouveau Colis" pour commencer.</td>
+                <td colspan="6" class="text-center">Aucun colis disponible.</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
-    </main>
+    </div>
 
-  </div>
-</section>
+
+    <!-- TAB: CRÉER / IMPRIMER MANIFESTE & COLIS EN ATTENTE -->
+    <div *ngIf="activeTab === 'manifeste' || activeTab === 'colis-attente'">
+      <div class="dashboard-header">
+        <h1>Créer un manifeste</h1>
+        <div class="dashboard-greeting">Bonjour {{ clientName }}</div>
+      </div>
+
+      <div class="page-card mt-2">
+        <h3 class="box-title">Liste des colis en attente</h3>
+
+        <div class="table-toolbar">
+          <div>
+            Show <select><option>10</option><option>25</option></select> entries
+          </div>
+          <div>
+            Search: <input type="text" [(ngModel)]="searchTerm" placeholder="Rechercher..." class="search-input" />
+          </div>
+        </div>
+
+        <div class="table-container mt-3">
+          <table class="premium-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Code à barre</th>
+                <th>Nom</th>
+                <th>Adresse</th>
+                <th>Téléphone</th>
+                <th>Prix</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of filteredPendingCommandes">
+                <td>{{ p.dateCreation ? (p.dateCreation | date:'dd/MM/yyyy') : 'Aujourd\'hui' }}</td>
+                <td><strong>#{{ p.id ? p.id.substring(p.id.length - 6) : 'N/A' }}</strong></td>
+                <td>{{ clientName }}</td>
+                <td>{{ p.adresseArrivee.rue }}, {{ p.adresseArrivee.ville }}</td>
+                <td>+216 22 000 000</td>
+                <td>{{ p.montantTotal }} DT</td>
+              </tr>
+              <tr *ngIf="filteredPendingCommandes.length === 0">
+                <td colspan="6" class="text-center" style="padding:2.5rem;color:#64748b;">
+                  No data available in table
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="actions-row mt-4">
+          <button class="btn-valider-manifeste" (click)="validerManifeste()">
+            Valider Manifeste
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- TAB: RÉCLAMATIONS (MATCHING SCREENSHOT 2) -->
+    <div *ngIf="activeTab === 'reclamations'">
+      <div class="dashboard-header">
+        <h1>Gestion des Réclamations</h1>
+      </div>
+
+      <div class="page-card">
+        <h3 class="box-title" style="border-bottom:1px solid #e2e8f0;padding-bottom:0.75rem;margin-bottom:1.5rem;">
+          Nouvelle réclamation
+        </h3>
+
+        <div class="form-grid-reclamation">
+          <div class="field-group">
+            <label>Objet</label>
+            <select [(ngModel)]="reclamationObjet" class="form-control">
+              <option value="">Sélectionner un objet...</option>
+              <option *ngFor="let obj of objetOptions" [value]="obj">{{ obj }}</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label>Code à barre (Réf Colis)</label>
+            <input type="text" [(ngModel)]="reclamationCodeBarre" placeholder="Saisir la référence ou code à barre" class="form-control" />
+          </div>
+
+          <div class="field-full">
+            <label>Description détaillée du problème</label>
+            <textarea [(ngModel)]="reclamationDescription" placeholder="Précisez votre demande..." class="form-control"></textarea>
+          </div>
+        </div>
+
+        <div class="success-banner mt-3" *ngIf="reclamationSuccessMsg" style="background:#d1fae5;color:#047857;padding:12px;border-radius:10px;font-weight:bold;">
+          🎉 {{ reclamationSuccessMsg }}
+        </div>
+
+        <div class="actions-row mt-3" style="justify-content:flex-end;">
+          <button class="btn-ajouter-reclamation" (click)="ajouterReclamation()">
+            ➕ Ajouter
+          </button>
+        </div>
+      </div>
+
+      <div class="page-card mt-4" *ngIf="reclamationsList.length > 0">
+        <h3>Mes réclamations soumises</h3>
+        <div class="table-container mt-2">
+          <table class="premium-table">
+            <thead>
+              <tr>
+                <th>Réf</th>
+                <th>Objet</th>
+                <th>Code à barre</th>
+                <th>Date</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of reclamationsList">
+                <td><strong>{{ r.id }}</strong></td>
+                <td>{{ r.objet }}</td>
+                <td>{{ r.codeBarre }}</td>
+                <td>{{ r.dateCreation | date:'dd/MM/yyyy HH:mm' }}</td>
+                <td><span class="status-pill status-en_attente">{{ r.statut }}</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- TAB: SERVICE CLIENT (MATCHING SCREENSHOT 3) -->
+    <div *ngIf="activeTab === 'service-client'">
+      <div class="service-client-banner">
+        <h2>🎧 Service Client</h2>
+        <p>Nous sommes là pour vous aider. Notre équipe dévouée est à votre disposition.</p>
+      </div>
+
+      <div class="mt-4">
+        <h2 class="team-title">Notre Équipe</h2>
+
+        <div class="grid grid-4 team-grid mt-3">
+          <div class="team-card" *ngFor="let m of teamMembers">
+            <div class="avatar-circle">
+              {{ m.initials }}
+            </div>
+            <h3 class="member-name">{{ m.nom }}</h3>
+            <div class="member-role">{{ m.poste }}</div>
+            
+            <div class="phone-box">
+              <span class="phone-icon">📞</span>
+              <span>{{ m.tel }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- TAB: IMPORTER FICHIER -->
+    <div *ngIf="activeTab === 'importer'">
+      <div class="dashboard-header">
+        <h1>Importer un fichier de colis</h1>
+      </div>
+      <div class="page-card text-center" style="padding:4rem;">
+        <span style="font-size:4rem;">📊</span>
+        <h2>Importation Excel / CSV</h2>
+        <p style="color:#64748b;max-width:500px;margin:1rem auto;">Glissez-déposez votre fichier de commandes au format Excel (.xlsx) ou CSV pour ajouter plusieurs colis simultanément.</p>
+        <input type="file" style="display:none;" #fileInput />
+        <button class="btn-primary" (click)="fileInput.click()">📁 Parcourir un fichier</button>
+      </div>
+    </div>
+
+    <!-- TAB: FRAIS & RETOURS -->
+    <div *ngIf="activeTab === 'frais' || activeTab === 'retours'">
+      <div class="dashboard-header">
+        <h1>{{ activeTab === 'frais' ? 'Frais de recouvrement' : 'Mes Retours' }}</h1>
+      </div>
+      <div class="page-card">
+        <p>Aucun frais ou retour enregistré pour la période actuelle.</p>
+      </div>
+    </div>
+
+  </main>
+</div>
