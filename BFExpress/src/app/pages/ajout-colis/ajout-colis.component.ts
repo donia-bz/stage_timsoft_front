@@ -54,24 +54,12 @@ export class AjoutColisComponent implements OnInit {
     const user = this.authService.getCurrentUser();
     const clientId = user ? user.id : 'client-default-id';
 
+    // Pour simplifier, on utilise des IDs d'adresses par défaut
+    // Dans une vraie application, l'utilisateur devrait sélectionner ses adresses enregistrées
     const commande: Commande = {
       clientId: clientId,
-      adresseDepart: {
-        rue: 'Entrepôt Central BFExpress',
-        ville: 'Tunis',
-        codePostal: '1000',
-        pays: 'Tunisie',
-        latitude: 36.8065,
-        longitude: 10.1815
-      },
-      adresseArrivee: {
-        rue: this.address + (this.locality ? ', ' + this.locality : ''),
-        ville: this.city || this.governorate,
-        codePostal: '2000',
-        pays: 'Tunisie',
-        latitude: 36.8500,
-        longitude: 10.2000
-      },
+      adresseDepartId: 'adresse-depart-default-id',
+      adresseArriveeId: 'adresse-arrivee-default-id',
       statut: 'EN_ATTENTE',
       typeService: this.typeService,
       montantTotal: parseFloat(this.price) || 25.0

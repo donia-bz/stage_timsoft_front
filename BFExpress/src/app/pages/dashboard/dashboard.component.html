@@ -93,186 +93,132 @@
   <!-- Main Content Body -->
   <main class="full-content-area">
     
-    <!-- TAB 1: TABLEAU DE BORD (GRID MATCHING SCREENSHOT 1) -->
+    <!-- TAB 1: TABLEAU DE BORD (CLIENT) -->
     <div *ngIf="activeTab === 'dashboard'">
       <div class="dashboard-header">
         <div>
-          <h1>Tableau de bord</h1>
-          <div class="dashboard-greeting">Bonjour, {{ clientName }}</div>
+          <h1>Bonjour, {{ clientName }}</h1>
+          <p class="dashboard-sub">Voici l'état de vos livraisons aujourd'hui</p>
         </div>
-        <button class="btn-primary" routerLink="/ajout-colis">➕ Ajouter Colis</button>
+        <div class="header-right">
+          <button class="connection-chip" [class.online]="isConnected" [class.offline]="!isConnected" (click)="toggleConnection()">
+            <span class="connection-indicator"></span>
+            {{ isConnected ? 'Connexion active' : 'Déconnecté' }}
+          </button>
+          <button class="btn-primary" routerLink="/ajout-colis">+ Nouvelle commande</button>
+        </div>
       </div>
 
-      <!-- 4x4 Multi-color Grid matching Screenshot 1 -->
-      <div class="stats-matrix-grid">
-        <!-- Row 1 -->
-        <div class="matrix-card card-red">
-          <div class="card-icon">🚫</div>
-          <div class="card-content">
-            <span class="val">{{ nonSerieuxCount }}</span>
-            <span class="lbl">Non sérieux</span>
+      <div class="grid" style="grid-template-columns:1.4fr 1fr; gap:1.5rem;">
+        <div class="page-card">
+          <h3>Vue d'ensemble de mes commandes</h3>
+          <div class="tile-grid">
+            <div class="tile c1">
+              <div class="top"><span class="label">Non sérieux</span></div>
+              <div class="count">{{ nonSerieuxCount }}</div>
+            </div>
+            <div class="tile c2">
+              <div class="top"><span class="label">En attente</span></div>
+              <div class="count">{{ enAttenteCount }}</div>
+            </div>
+            <div class="tile c3">
+              <div class="top"><span class="label">À enlever</span></div>
+              <div class="count">{{ aEnleverCount }}</div>
+            </div>
+            <div class="tile c4">
+              <div class="top"><span class="label">En cours</span></div>
+              <div class="count">{{ enCoursCount }}</div>
+            </div>
+            <div class="tile c5">
+              <div class="top"><span class="label">Livrés</span></div>
+              <div class="count">{{ livreeCount }}</div>
+            </div>
+            <div class="tile c6">
+              <div class="top"><span class="label">Livrés payés</span></div>
+              <div class="count">{{ livresPayesTotal }} DT</div>
+            </div>
+            <div class="tile c7">
+              <div class="top"><span class="label">Retours</span></div>
+              <div class="count">{{ retourDepotCount + retourDefinitifCount + retourInterAgenceCount + retourExpediteursCount + retourRecuCount }}</div>
+            </div>
+            <div class="tile c8">
+              <div class="top"><span class="label">Réclamations</span></div>
+              <div class="count">{{ reclamationsList.length }}</div>
+            </div>
           </div>
         </div>
 
-        <div class="matrix-card card-yellow">
-          <div class="card-icon">⚙️</div>
-          <div class="card-content">
-            <span class="val">{{ enAttenteCount }}</span>
-            <span class="lbl">En attente</span>
+        <div class="page-card">
+          <h3>Livraison en cours</h3>
+          <div class="waybill">
+            <div class="top-row">
+              <div class="order-id">{{ ongoingOrder?.id ? ongoingOrder.id.substring(ongoingOrder.id.length - 6) : 'Aucune' }} <span>· Express</span></div>
+              <div class="eta"><div class="num">{{ ongoingOrder ? '18 min' : '—' }}</div><div class="lbl">arrivée estimée</div></div>
+            </div>
+            <div class="steps">
+              <div class="step done"><div class="line"></div><div class="node"></div><div class="lbl">En attente</div></div>
+              <div class="step" [class.done]="ongoingOrder"><div class="line"></div><div class="node"></div><div class="lbl">Confirmée</div></div>
+              <div class="step" [class.now]="ongoingOrder"><div class="line"></div><div class="node"></div><div class="lbl">En livraison</div></div>
+              <div class="step"><div class="line"></div><div class="node"></div><div class="lbl">Livrée</div></div>
+            </div>
           </div>
-        </div>
 
-        <div class="matrix-card card-purple">
-          <div class="card-icon">🛍️</div>
-          <div class="card-content">
-            <span class="val">{{ aEnleverCount }}</span>
-            <span class="lbl">À enlever</span>
-          </div>
-        </div>
-
-        <div class="matrix-card card-purple">
-          <div class="card-icon">↗️</div>
-          <div class="card-content">
-            <span class="val">{{ enlevesCount }}</span>
-            <span class="lbl">Enlevés</span>
-          </div>
-        </div>
-
-        <!-- Row 2 -->
-        <div class="matrix-card card-blue">
-          <div class="card-icon">🏠</div>
-          <div class="card-content">
-            <span class="val">{{ auDepotCount }}</span>
-            <span class="lbl">Au dépôt</span>
-          </div>
-        </div>
-
-        <div class="matrix-card card-blue">
-          <div class="card-icon">🏠</div>
-          <div class="card-content">
-            <span class="val">{{ retourDepotCount }}</span>
-            <span class="lbl">Retour dépôt</span>
-          </div>
-        </div>
-
-        <div class="matrix-card card-green-light">
-          <div class="card-icon">🚚</div>
-          <div class="card-content">
-            <span class="val">{{ enCoursCount }}</span>
-            <span class="lbl">En cours</span>
-          </div>
-        </div>
-
-        <div class="matrix-card card-pink">
-          <div class="card-icon">❓</div>
-          <div class="card-content">
-            <span class="val">{{ aVerifierCount }}</span>
-            <span class="lbl">À vérifier</span>
-          </div>
-        </div>
-
-        <!-- Row 3 -->
-        <div class="matrix-card card-teal">
-          <div class="card-icon">✔️</div>
-          <div class="card-content">
-            <span class="val">{{ livreeCount }}</span>
-            <span class="lbl">Livrés</span>
-          </div>
-        </div>
-
-        <div class="matrix-card card-teal">
-          <div class="card-icon">💵</div>
-          <div class="card-content">
-            <span class="val">{{ livresPayesTotal }} <small style="font-size:1rem;">DT</small></span>
-            <span class="lbl">Livrés payés</span>
-          </div>
-        </div>
-
-        <div class="matrix-card card-olive">
-          <div class="card-icon">🔄</div>
-          <div class="card-content">
-            <span class="val">{{ echangesCount }}</span>
-            <span class="lbl">Échanges</span>
-          </div>
-        </div>
-
-        <div class="matrix-card card-olive">
-          <div class="card-icon">🔄</div>
-          <div class="card-content">
-            <span class="val">{{ remboursesCount }}</span>
-            <span class="lbl">Remboursés</span>
-          </div>
-        </div>
-
-        <!-- Row 4 -->
-        <div class="matrix-card card-red">
-          <div class="card-icon">⬅️</div>
-          <div class="card-content">
-            <span class="val">{{ retourDefinitifCount }}</span>
-            <span class="lbl">Retour définitif</span>
-          </div>
-        </div>
-
-        <div class="matrix-card card-red">
-          <div class="card-icon">⬅️</div>
-          <div class="card-content">
-            <span class="val">{{ retourInterAgenceCount }}</span>
-            <span class="lbl">Retour Inter-agence</span>
-          </div>
-        </div>
-
-        <div class="matrix-card card-red">
-          <div class="card-icon">⬅️</div>
-          <div class="card-content">
-            <span class="val">{{ retourExpediteursCount }}</span>
-            <span class="lbl">Retour Expéditeurs</span>
-          </div>
-        </div>
-
-        <div class="matrix-card card-red">
-          <div class="card-icon">⬅️</div>
-          <div class="card-content">
-            <span class="val">{{ retourRecuCount }}</span>
-            <span class="lbl">Retour reçu</span>
+          <div class="map-placeholder">
+            <div class="route"></div>
+            <div class="pin start"></div>
+            <div class="pin end"></div>
+            <div class="tag">MAJ il y a 12s</div>
           </div>
         </div>
       </div>
 
-      <!-- General Table -->
-      <div class="page-card mt-4">
-        <div class="tab-header">
-          <h2>Mes Expéditions</h2>
+      <div class="grid" style="grid-template-columns:1.4fr 1fr; gap:1.5rem; margin-top:1.5rem;">
+        <div class="page-card">
+          <h3>Historique des commandes</h3>
+          <div class="table-container">
+            <table class="premium-table">
+              <thead>
+                <tr><th>Commande</th><th>Statut</th><th>Montant</th><th>Date</th></tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let order of commandes.slice(0, 5)">
+                  <td class="mono">#{{ order.id ? order.id.substring(order.id.length - 6) : 'N/A' }}</td>
+                  <td><span class="badge" [ngClass]="{
+                    'cours': order.statut === 'EN_LIVRAISON',
+                    'livree': order.statut === 'LIVREE',
+                    'att': order.statut === 'EN_ATTENTE',
+                    'echec': order.statut === 'ANNULEE'
+                  }">{{ order.statut }}</span></td>
+                  <td>{{ order.montantTotal }} DT</td>
+                  <td class="mono">{{ order.dateCreation ? (order.dateCreation | date:'dd/MM') : '—' }}</td>
+                </tr>
+                <tr *ngIf="commandes.length === 0"><td colspan="4" class="text-center">Aucune commande à afficher.</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-        <div class="table-container">
-          <table class="premium-table">
-            <thead>
-              <tr>
-                <th>Réf Commande</th>
-                <th>Départ</th>
-                <th>Arrivée</th>
-                <th>Service</th>
-                <th>Montant</th>
-                <th>Statut</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let order of commandes">
-                <td><strong>#{{ order.id ? order.id.substring(order.id.length - 6) : 'N/A' }}</strong></td>
-                <td>{{ order.adresseDepart.ville }}</td>
-                <td>{{ order.adresseArrivee.ville }}</td>
-                <td><span class="service-badge" [class.express]="order.typeService === 'EXPRESS'">{{ order.typeService }}</span></td>
-                <td>{{ order.montantTotal }} DT</td>
-                <td>
-                  <span class="status-pill" [ngClass]="'status-' + order.statut.toLowerCase()">
-                    {{ order.statut }}
-                  </span>
-                </td>
-              </tr>
-              <tr *ngIf="commandes.length === 0">
-                <td colspan="6" class="text-center">Aucun colis disponible.</td>
-              </tr>
-            </tbody>
-          </table>
+
+        <div class="page-card">
+          <h3>Notifications & adresses</h3>
+          <div class="list-row">
+            <div class="ic">🔔</div>
+            <div class="info"><div class="t1">Votre colis #{{ commandes[0]?.id?.substring(commandes[0].id.length - 6) || '000' }} est en route</div><div class="t2">il y a 4 min · SMS</div></div>
+          </div>
+          <div class="list-row">
+            <div class="ic">📍</div>
+            <div class="info"><div class="t1">Livreur affecté : Karim T.</div><div class="t2">il y a 22 min · Email</div></div>
+          </div>
+          <div class="list-row">
+            <div class="ic">✅</div>
+            <div class="info"><div class="t1">Réclamation traitée</div><div class="t2">il y a 1h · Email</div></div>
+          </div>
+
+          <div style="margin-top:1.5rem;">
+            <h4>Adresses rapides</h4>
+            <div class="list-row"><div class="ic">🏠</div><div class="info"><div class="t1">Domicile</div><div class="t2">12 rue Ibn Khaldoun, La Marsa</div></div></div>
+            <div class="list-row"><div class="ic">🏢</div><div class="info"><div class="t1">Bureau</div><div class="t2">Lac 1, Tunis</div></div></div>
+            <div class="list-row"><div class="ic">🏡</div><div class="info"><div class="t1">Chez mes parents</div><div class="t2">Sokra, Ariana</div></div></div>
+          </div>
         </div>
       </div>
     </div>

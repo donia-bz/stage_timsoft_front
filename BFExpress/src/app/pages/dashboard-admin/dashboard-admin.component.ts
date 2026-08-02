@@ -48,27 +48,20 @@ export class DashboardAdminComponent implements OnInit {
     });
   }
 
-  // Filter pending approvals
+  // Filter pending approvals - tous les utilisateurs sont approuvés par défaut maintenant
   getPendingApprovals(): UserProfile[] {
-    return this.usersList.filter(u => u.approuve === false);
+    return []; // Plus de filtre approuve
   }
 
-  // Filter approved users
+  // Filter approved users - tous les utilisateurs sont approuvés
   getApprovedUsers(): UserProfile[] {
-    return this.usersList.filter(u => u.approuve === true);
+    return this.usersList;
   }
 
-  // Approve a user
+  // Approve a user - méthode conservée pour compatibilité mais ne fait rien
   approveUser(userId: string): void {
-    this.authService.approuverUtilisateur(userId).subscribe({
-      next: (res) => {
-        alert(`Utilisateur ${res.nom} ${res.prenom} a été approuvé avec succès! Un SMS/Mail de notification lui a été envoyé.`);
-        this.refreshData();
-      },
-      error: (err) => {
-        alert("Erreur lors de l'approbation de l'utilisateur: " + (err.error?.message || err.message));
-      }
-    });
+    // Plus nécessaire, tous les utilisateurs sont approuvés par défaut
+    alert('Tous les utilisateurs sont approuvés par défaut.');
   }
 
   // Manual delivery driver assignment
@@ -85,8 +78,8 @@ export class DashboardAdminComponent implements OnInit {
         // Update order status to VALIDEE on successful assignment
         this.apiService.updateCommandeStatut(orderId, 'VALIDEE').subscribe({
           next: () => {
-            // Also update driver status to "en_course"
-            this.apiService.updateLivreurStatut(driverId, 'en_course').subscribe({
+            // Also update driver status to "EN_COURS"
+            this.apiService.updateLivreurStatut(driverId, 'EN_COURS').subscribe({
               next: () => {
                 alert('Livreur affecté manuellement avec succès!');
                 this.refreshData();
@@ -105,16 +98,16 @@ export class DashboardAdminComponent implements OnInit {
     if (!orderId) return;
 
     // Get available drivers
-    const availableDrivers = this.livreurs.filter(l => l.statut === 'disponible');
+    const availableDrivers = this.livreurs.filter(l => l.statut === 'DISPONIBLE');
     if (availableDrivers.length === 0) {
       alert("Aucun livreur disponible pour l'affectation IA.");
       return;
     }
 
     // Call AI service to choose the best driver
-    // We pass order id as colisId, coordinates or fallback to default coordinates
-    const lat = order.adresseDepart.latitude || 36.8;
-    const lon = order.adresseDepart.longitude || 10.1;
+    // We pass order id as commandeId, coordinates or fallback to default coordinates
+    const lat = 36.8; // Coordonnées par défaut Tunis
+    const lon = 10.1;
 
     this.apiService.affecterLivreur(orderId, lat, lon, availableDrivers).subscribe({
       next: (aiRes) => {
@@ -135,7 +128,7 @@ export class DashboardAdminComponent implements OnInit {
             next: () => {
               this.apiService.updateCommandeStatut(orderId, 'VALIDEE').subscribe({
                 next: () => {
-                  this.apiService.updateLivreurStatut(bestDriver.id, 'en_course').subscribe({
+                  this.apiService.updateLivreurStatut(bestDriver.id, 'EN_COURS').subscribe({
                     next: () => {
                       alert('Affectation IA validée et enregistrée!');
                       this.refreshData();

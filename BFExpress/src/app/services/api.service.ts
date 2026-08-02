@@ -3,47 +3,99 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface Adresse {
+  id?: string;
   rue: string;
   ville: string;
   codePostal: string;
-  pays: string;
   latitude?: number;
   longitude?: number;
+  adressePrincipale?: boolean;
 }
 
 export interface Commande {
   id?: string;
-  clientId: string;
-  adresseDepart: Adresse;
-  adresseArrivee: Adresse;
-  statut: string; // EN_ATTENTE, VALIDEE, EN_LIVRAISON, LIVREE, ANNULEE
+  clientId?: string;
+  adresseDepartId: string;
+  adresseArriveeId: string;
+  statut: string; // EN_ATTENTE, CONFIRMEE, EN_LIVRAISON, LIVREE, ANNULEE
   typeService: string; // STANDARD, EXPRESS
   dateCreation?: string;
   delaiEstimeMin?: number;
   montantTotal: number;
+  predictionDelaiId?: string;
+  affectationIAId?: string;
+  colis?: Colis[];
+  clientNom?: string; // Pour compatibilité avec les composants existants
+}
+
+export interface Colis {
+  id?: string;
+  commandeId?: string;
+  clientId?: string;
+  destinataireId?: string;
+  depotId?: string;
+  poids: number;
+  dimensions?: string;
+  fragile?: boolean;
+  statut: string; // EN_ATTENTE, NON_SERIEUX, A_VERIFIER, A_ENLEVER, ENLEVE, AU_DEPOT, RETOUR_DEPOT, EN_TRANSIT, LIVRE, LIVRE_PAYE, ECHANGE, REMBOURSE
+}
+
+export interface Destinataire {
+  id?: string;
+  nom: string;
+  telephone: string;
+  adresseId?: string;
+}
+
+export interface Manifeste {
+  id?: string;
+  clientId: string;
+  nombreColis: number;
+  statut: string; // BROUILLON, IMPRIME, CLOTURE
   colisIds?: string[];
+  dateCreation?: string;
+}
+
+export interface Enlevement {
+  id?: string;
+  clientId: string;
+  manifesteId: string;
+  livreurId?: string;
+  dateDemandee: string;
+  dateReelle?: string;
+  statut: string; // EN_ATTENTE, PLANIFIE, EFFECTUE, ANNULE
+  adresseEnlevementId: string;
 }
 
 export interface Livreur {
   id: string;
   nom: string;
   prenom: string;
-  statut: string; // disponible, en_course, hors_ligne
+  statut: string; // DISPONIBLE, EN_COURSE, HORS_LIGNE
   latitudeActuelle: number;
   longitudeActuelle: number;
-  vehiculeId?: string;
+  depotId?: string;
   noteMoyenne?: number;
 }
 
 export interface Livraison {
   id: string;
-  commandeId: string;
+  colisId: string;
+  commandeId?: string; // Pour compatibilité avec les composants existants
   livreurId: string;
-  statut: string; // affectee, en_cours, livree
+  statut: string; // AFFECTEE, EN_COURS, LIVREE, ECHOUEE
   dateAffectation?: string;
   dateDebut?: string;
   dateFin?: string;
   distanceKm?: number;
+}
+
+export interface PositionTracking {
+  id?: string;
+  livraisonId: string;
+  latitude: number;
+  longitude: number;
+  horodatage: string;
 }
 
 export interface PredictionDelai {
@@ -56,7 +108,7 @@ export interface PredictionDelai {
 
 export interface AffectationIA {
   id?: string;
-  colisId: string;
+  commandeId: string;
   livreurId: string;
   score: number;
   dateCalcul: string;
@@ -66,38 +118,120 @@ export interface AffectationIA {
   providedIn: 'root'
 })
 export class ApiService {
-  private commandesUrl = 'http://localhost:8081/api/commandes';
+  private commandesUrl = 'http://localhost:8081/api';
   private livreursUrl = 'http://localhost:8084/api';
   private trackingUrl = 'http://localhost:8083/api';
-  private iaUrl = 'http://localhost:8085/api/ia';
+  private iaUrl = 'http://localhost:8086/api/ia';
+  private adressesUrl = 'http://localhost:8082/api/adresses';
 
   constructor(private http: HttpClient) {}
 
+  // --- Adresses ---
+  creerAdresse(adresse: Adresse): Observable<Adresse> {
+    return this.http.post<Adresse>(this.adressesUrl, adresse);
+  }
+
+  getAdresseById(id: string): Observable<Adresse> {
+    return this.http.get<Adresse>(`${this.adressesUrl}/${id}`);
+  }
+
+  getAllAdresses(): Observable<Adresse[]> {
+    return this.http.get<Adresse[]>(this.adressesUrl);
+  }
+
+  updateAdresse(id: string, adresse: Adresse): Observable<Adresse> {
+    return this.http.put<Adresse>(`${this.adressesUrl}/${id}`, adresse);
+  }
+
+  deleteAdresse(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.adressesUrl}/${id}`);
+  }
+
   // --- Commandes ---
   creerCommande(commande: Commande): Observable<Commande> {
-    return this.http.post<Commande>(this.commandesUrl, commande);
+    return this.http.post<Commande>(`${this.commandesUrl}/commandes`, commande);
   }
 
   getCommandeById(id: string): Observable<Commande> {
-    return this.http.get<Commande>(`${this.commandesUrl}/${id}`);
+    return this.http.get<Commande>(`${this.commandesUrl}/commandes/${id}`);
   }
 
   getAllCommandes(): Observable<Commande[]> {
-    return this.http.get<Commande[]>(this.commandesUrl);
+    return this.http.get<Commande[]>(`${this.commandesUrl}/commandes`);
   }
 
   getCommandesByClient(clientId: string): Observable<Commande[]> {
-    return this.http.get<Commande[]>(`${this.commandesUrl}/client/${clientId}`);
+    return this.http.get<Commande[]>(`${this.commandesUrl}/commandes/client/${clientId}`);
   }
 
   updateCommandeStatut(id: string, statut: string): Observable<Commande> {
-    return this.http.patch<Commande>(`${this.commandesUrl}/${id}/statut`, null, {
+    return this.http.patch<Commande>(`${this.commandesUrl}/commandes/${id}/statut`, null, {
       params: new HttpParams().set('statut', statut)
     });
   }
 
   deleteCommande(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.commandesUrl}/${id}`);
+    return this.http.delete<void>(`${this.commandesUrl}/commandes/${id}`);
+  }
+
+  // --- Colis ---
+  creerColis(colis: Colis): Observable<Colis> {
+    return this.http.post<Colis>(`${this.commandesUrl}/colis`, colis);
+  }
+
+  getColisById(id: string): Observable<Colis> {
+    return this.http.get<Colis>(`${this.commandesUrl}/colis/${id}`);
+  }
+
+  getColisByCommande(commandeId: string): Observable<Colis[]> {
+    return this.http.get<Colis[]>(`${this.commandesUrl}/colis/commande/${commandeId}`);
+  }
+
+  getColisByClient(clientId: string): Observable<Colis[]> {
+    return this.http.get<Colis[]>(`${this.commandesUrl}/colis/client/${clientId}`);
+  }
+
+  // --- Destinataires ---
+  creerDestinataire(destinataire: Destinataire): Observable<Destinataire> {
+    return this.http.post<Destinataire>(`${this.commandesUrl}/destinataires`, destinataire);
+  }
+
+  getDestinataireById(id: string): Observable<Destinataire> {
+    return this.http.get<Destinataire>(`${this.commandesUrl}/destinataires/${id}`);
+  }
+
+  getAllDestinataires(): Observable<Destinataire[]> {
+    return this.http.get<Destinataire[]>(`${this.commandesUrl}/destinataires`);
+  }
+
+  // --- Manifestes ---
+  creerManifeste(manifeste: Manifeste): Observable<Manifeste> {
+    return this.http.post<Manifeste>(`${this.commandesUrl}/manifestes`, manifeste);
+  }
+
+  getManifesteById(id: string): Observable<Manifeste> {
+    return this.http.get<Manifeste>(`${this.commandesUrl}/manifestes/${id}`);
+  }
+
+  getManifestesByClient(clientId: string): Observable<Manifeste[]> {
+    return this.http.get<Manifeste[]>(`${this.commandesUrl}/manifestes/client/${clientId}`);
+  }
+
+  // --- Enlèvements ---
+  creerEnlevement(enlevement: Enlevement): Observable<Enlevement> {
+    return this.http.post<Enlevement>(`${this.commandesUrl}/enlevements`, enlevement);
+  }
+
+  getEnlevementById(id: string): Observable<Enlevement> {
+    return this.http.get<Enlevement>(`${this.commandesUrl}/enlevements/${id}`);
+  }
+
+  getEnlevementsByClient(clientId: string): Observable<Enlevement[]> {
+    return this.http.get<Enlevement[]>(`${this.commandesUrl}/enlevements/client/${clientId}`);
+  }
+
+  getEnlevementsByLivreur(livreurId: string): Observable<Enlevement[]> {
+    return this.http.get<Enlevement[]>(`${this.commandesUrl}/enlevements/livreur/${livreurId}`);
   }
 
   // --- Livreurs ---
@@ -110,7 +244,7 @@ export class ApiService {
   }
 
   getLivreursDisponibles(): Observable<Livreur[]> {
-    return this.http.get<Livreur[]>(`${this.livreursUrl}/livreurs/disponibles`);
+    return this.http.get<Livreur[]>(`${this.livreursUrl}/livreurs/statut/DISPONIBLE`);
   }
 
   updateLivreurStatut(id: string, statut: string): Observable<Livreur> {
@@ -126,9 +260,9 @@ export class ApiService {
   }
 
   // --- Livraisons & Tracking ---
-  creerLivraison(commandeId: string, livreurId: string): Observable<Livraison> {
+  creerLivraison(colisId: string, livreurId: string): Observable<Livraison> {
     return this.http.post<Livraison>(`${this.trackingUrl}/livraisons`, null, {
-      params: new HttpParams().set('commandeId', commandeId).set('livreurId', livreurId)
+      params: new HttpParams().set('colisId', colisId).set('livreurId', livreurId)
     });
   }
 
@@ -138,6 +272,10 @@ export class ApiService {
 
   terminerLivraison(id: string): Observable<Livraison> {
     return this.http.patch<Livraison>(`${this.trackingUrl}/livraisons/${id}/terminer`, null);
+  }
+
+  echouerLivraison(id: string): Observable<Livraison> {
+    return this.http.patch<Livraison>(`${this.trackingUrl}/livraisons/${id}/echouer`, null);
   }
 
   getLivraisonById(id: string): Observable<Livraison> {
@@ -152,8 +290,19 @@ export class ApiService {
     return this.http.get<Livraison[]>(`${this.trackingUrl}/livraisons/livreur/${livreurId}`);
   }
 
-  getLivraisonsByCommande(commandeId: string): Observable<Livraison[]> {
-    return this.http.get<Livraison[]>(`${this.trackingUrl}/livraisons/commande/${commandeId}`);
+  getLivraisonsByColis(colisId: string): Observable<Livraison[]> {
+    return this.http.get<Livraison[]>(`${this.trackingUrl}/livraisons/colis/${colisId}`);
+  }
+
+  // --- Position Tracking ---
+  ajouterPosition(livraisonId: string, latitude: number, longitude: number): Observable<PositionTracking> {
+    return this.http.post<PositionTracking>(`${this.trackingUrl}/tracking`, null, {
+      params: new HttpParams().set('livraisonId', livraisonId).set('latitude', latitude.toString()).set('longitude', longitude.toString())
+    });
+  }
+
+  getPositions(livraisonId: string): Observable<PositionTracking[]> {
+    return this.http.get<PositionTracking[]>(`${this.trackingUrl}/tracking/livraison/${livraisonId}`);
   }
 
   // --- IA ---
@@ -175,16 +324,15 @@ export class ApiService {
   }
 
   affecterLivreur(
-    colisId: string,
+    commandeId: string,
     latColis?: number,
     longColis?: number,
     livreurs: Livreur[] = []
   ): Observable<AffectationIA> {
-    let params = new HttpParams().set('colisId', colisId);
+    let params = new HttpParams().set('commandeId', commandeId);
     if (latColis !== undefined) params = params.set('latColis', latColis.toString());
     if (longColis !== undefined) params = params.set('longColis', longColis.toString());
 
-    // Utiliser un format DTO compatible avec le backend
     const livreurDTOs = livreurs.map(l => ({
       id: l.id,
       nom: l.nom,

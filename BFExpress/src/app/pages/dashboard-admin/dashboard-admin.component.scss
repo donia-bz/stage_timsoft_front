@@ -2,86 +2,87 @@
   padding: 0;
   margin: 0;
   min-height: calc(100vh - 74px);
-  background: #f3f6fb;
+  background: #0b1116;
+  color: #e9ecee;
 }
 
 .dashboard-shell {
-  display: flex;
+  display: grid;
+  grid-template-columns: 280px 1fr;
   min-height: calc(100vh - 74px);
 }
 
 .dashboard-sidebar {
   width: 280px;
-  background: var(--brand);
-  color: white;
+  background: #081826;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
   padding: 2rem 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  box-shadow: 4px 0 20px rgba(15, 23, 42, 0.05);
 }
 
 .dashboard-brand {
   font-size: 1.5rem;
   font-weight: 800;
-  letter-spacing: -0.03em;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  letter-spacing: 0.05em;
+  color: #f8fafc;
+  text-transform: uppercase;
 }
 
 .sidebar-section {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
 
-  h3 {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: rgba(255, 255, 255, 0.5);
-    margin: 0;
-  }
+.sidebar-section h3 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.45);
+  margin: 0;
+}
 
-  nav {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-  }
+.sidebar-section nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .sidebar-link {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
   text-decoration: none;
   font-weight: 600;
   font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.75);
+  color: #a5b4fc;
   cursor: pointer;
   transition: all 0.2s ease;
+}
 
-  &:hover {
-    color: white;
-    background: rgba(255, 255, 255, 0.08);
-  }
+.sidebar-link:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
 
-  &.active {
-    color: var(--brand);
-    background: white;
-    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.1);
-  }
+.sidebar-link.active {
+  color: #0f172a;
+  background: #22c55e;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
+}
 
-  .icon {
-    font-size: 1.1rem;
-  }
+.sidebar-link .icon {
+  font-size: 1.1rem;
 }
 
 .count-badge {
-  background: #ef4444;
-  color: white;
-  padding: 2px 6px;
+  background: #22c55e;
+  color: #081f2d;
+  padding: 2px 8px;
   font-size: 0.75rem;
   font-weight: 700;
   border-radius: 999px;
@@ -89,7 +90,6 @@
 }
 
 .dashboard-content {
-  flex: 1;
   padding: 2.5rem;
   overflow-y: auto;
   display: flex;

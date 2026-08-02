@@ -22,7 +22,8 @@ export class DashboardComponent implements OnInit {
   commandes: Commande[] = [];
   pendingCommandes: Commande[] = [];
 
-  activeTab: string = 'dashboard';
+  activeTab = 'dashboard';
+  isConnected = true;
 
   // Stats Grid matching exact screenshot requirements
   nonSerieuxCount = 0;
@@ -78,6 +79,8 @@ export class DashboardComponent implements OnInit {
     private authService: AuthService
   ) {}
 
+  ongoingOrder?: Commande;
+
   ngOnInit(): void {
     const user = this.authService.getCurrentUser();
     if (user) {
@@ -91,6 +94,10 @@ export class DashboardComponent implements OnInit {
     this.activeTab = tab;
   }
 
+  toggleConnection(): void {
+    this.isConnected = !this.isConnected;
+  }
+
   loadClientCommandes(): void {
     if (!this.clientId) return;
 
@@ -98,6 +105,7 @@ export class DashboardComponent implements OnInit {
       next: (res) => {
         this.commandes = res;
         this.pendingCommandes = res.filter(c => c.statut === 'EN_ATTENTE' || c.statut === 'VALIDEE');
+        this.ongoingOrder = res.find(c => c.statut === 'EN_LIVRAISON');
         this.calculateStats();
       },
       error: (err) => console.error('Error loading client orders:', err)
@@ -172,7 +180,7 @@ export class DashboardComponent implements OnInit {
     if (!this.searchTerm) return this.pendingCommandes;
     return this.pendingCommandes.filter(c => 
       (c.id && c.id.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
-      (c.adresseArrivee.ville && c.adresseArrivee.ville.toLowerCase().includes(this.searchTerm.toLowerCase()))
+      (c.adresseArriveeId && c.adresseArriveeId.toLowerCase().includes(this.searchTerm.toLowerCase()))
     );
   }
 }

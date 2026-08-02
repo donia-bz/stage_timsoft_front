@@ -34,6 +34,51 @@
   padding: 36px;
 }
 
+.location-card {
+  background: white;
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 18px;
+  border: 1px solid rgba(15,23,42,0.04);
+}
+
+.location-card .loc-icon {
+  font-size: 1.6rem;
+  margin-bottom: 8px;
+}
+
+.location-card h3 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+}
+
+.btn-location {
+  background: #0f7b6b;
+  color: white;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 700;
+  border: none;
+  display: inline-block;
+  margin: 8px 0 6px 0;
+}
+
+.location-card .muted {
+  display: block;
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+}
+
+.manual-link {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--brand);
+  text-decoration: underline;
+}
+
+.loc-message { margin-top: 8px; color: #065f46; font-weight: 600; }
+
 .login-box h2 {
   margin-top: 0;
   margin-bottom: 28px;

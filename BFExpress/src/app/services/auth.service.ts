@@ -18,9 +18,10 @@ export interface UserProfile {
   email: string;
   telephone: string;
   role: string;
-  approuve?: boolean;
   entreprise?: string;
-  adresseDefautId?: string;
+  matriculeFiscal?: string;
+  adressesEnregistreesIds?: string[];
+  adressesRamassageIds?: string[];
 }
 
 @Injectable({

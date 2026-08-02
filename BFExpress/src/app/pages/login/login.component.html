@@ -7,8 +7,32 @@
       </div>
       <div class="login-right">
         <div class="login-box">
+            <div class="location-card">
+              <div class="loc-icon">📍</div>
+              <h3>Bonjour, ravi de vous rencontrer !</h3>
+              <p>Définissez votre localisation pour faciliter la collecte et la livraison de vos colis.</p>
+              <button class="btn-location" (click)="useCurrentLocation()" [disabled]="loadingLocation">
+                {{ loadingLocation ? 'Localisation...' : 'Utiliser ma position actuelle' }}
+              </button>
+              <small class="muted">Nous accédons à votre position uniquement lorsque vous utilisez l'application.</small>
+              <button type="button" class="manual-link" (click)="toggleManual()">ou définir votre position manuellement</button>
+              <div class="loc-message" *ngIf="locationMessage">{{ locationMessage }}</div>
+
+              <div class="manual-form" *ngIf="showManual">
+                <label>Latitude</label>
+                <input type="number" [(ngModel)]="manualLat" step="any" />
+
+                <label>Longitude</label>
+                <input type="number" [(ngModel)]="manualLon" step="any" />
+
+                <div class="manual-actions">
+                  <button class="btn-location" (click)="saveManualLocation()">Enregistrer la position</button>
+                  <button type="button" class="btn-secondary" (click)="autoFillLocation()">Me localiser</button>
+                </div>
+              </div>
+            </div>
           <h2>Connexion</h2>
-          <form (submit)="onSubmit()">
+          <form (ngSubmit)="onSubmit()">
             <label>Adresse Email</label>
             <input type="email" name="email" [(ngModel)]="email" placeholder="Entrez votre email" required />
             

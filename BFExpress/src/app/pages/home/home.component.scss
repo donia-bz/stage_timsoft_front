@@ -399,6 +399,40 @@
   }
 }
 
+/* Styles for green feature boxes similar to design */
+.feature-card.green-box {
+  background: #e8fdf6;
+  border: none;
+  box-shadow: none;
+  position: relative;
+  padding: 2rem 5.5rem 2rem 2rem; /* reserve space on the right for the large number */
+  border-radius: 18px;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.feature-card.green-box .feature-number {
+  position: absolute;
+  top: 50%;
+  right: 36px;
+  transform: translateY(-50%);
+  font-size: 3rem;
+  font-weight: 900;
+  color: rgba(7,48,71,0.95);
+  line-height: 1;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.feature-card.green-box h3 {
+  font-size: 1.25rem;
+  margin-right: 1rem; /* avoid text touching the absolute number */
+}
+
+.feature-card.green-box p { color: rgba(7,48,71,0.75); }
+
 .text-center {
   text-align: center;
 }

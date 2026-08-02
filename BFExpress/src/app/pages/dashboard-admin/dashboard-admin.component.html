@@ -128,7 +128,7 @@
                       <div class="manual-group">
                         <select [(ngModel)]="selectedDrivers[order.id || '']">
                           <option value="" disabled>Livreur...</option>
-                          <option *ngFor="let l of livreurs" [value]="l.id" [disabled]="l.statut !== 'disponible'">
+                          <option *ngFor="let l of livreurs" [value]="l.id" [disabled]="l.statut !== 'DISPONIBLE'">
                             {{ l.nom }} {{ l.prenom }} ({{ l.statut }})
                           </option>
                         </select>
@@ -254,8 +254,8 @@
                   <td><strong>{{ l.nom }} {{ l.prenom }}</strong></td>
                   <td>#{{ l.id ? l.id.substring(l.id.length - 6) : 'N/A' }}</td>
                   <td>
-                    <span class="status-pill" [ngClass]="'status-' + l.statut">
-                      {{ l.statut === 'disponible' ? 'Disponible' : (l.statut === 'en_course' ? 'En course' : 'Hors-ligne') }}
+                    <span class="status-pill" [ngClass]="'status-' + l.statut.toLowerCase()">
+                      {{ l.statut === 'DISPONIBLE' ? 'Disponible' : (l.statut === 'EN_COURS' ? 'En course' : 'Hors-ligne') }}
                     </span>
                   </td>
                   <td>

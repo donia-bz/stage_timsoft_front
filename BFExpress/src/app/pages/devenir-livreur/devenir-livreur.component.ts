@@ -37,7 +37,7 @@ export class DevenirLivreurComponent {
       motDePasse: this.motDePasse,
       telephone: this.telephone,
       role: 'LIVREUR',
-      statut: 'disponible',
+      statut: 'DISPONIBLE',
       latitudeActuelle: 0.0,
       longitudeActuelle: 0.0,
       noteMoyenne: 5.0

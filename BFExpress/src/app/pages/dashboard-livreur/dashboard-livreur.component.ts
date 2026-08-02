@@ -12,7 +12,7 @@ export class DashboardLivreurComponent implements OnInit {
   driverId = '';
   driverInfo: Livreur | null = null;
   livraisons: Livraison[] = [];
-  commandesMap: { [commandeId: string]: Commande } = {};
+  commandesMap: { [colisId: string]: Commande } = {};
 
   stats = [
     { title: 'Courses du jour', value: 16, color: 'status-blue' },
@@ -20,6 +20,20 @@ export class DashboardLivreurComponent implements OnInit {
     { title: 'Livrés', value: 34, color: 'status-teal' },
     { title: 'Retours', value: 3, color: 'status-red' }
   ];
+
+  currentDelivery?: Livraison;
+
+  get currentDeliveryCommande(): Commande | undefined {
+    return this.currentDelivery ? this.commandesMap[this.currentDelivery.colisId] : undefined;
+  }
+
+  get isDeliveryInProgress(): boolean {
+    return this.livraisons.some(item => item.statut === 'en_cours');
+  }
+
+  get waitingLivraisons(): Livraison[] {
+    return this.livraisons.filter(item => item.statut === 'affectee');
+  }
 
   quickActions = [
     { label: 'Nouvelle collecte', route: '/ajout-colis' },
@@ -67,11 +81,12 @@ export class DashboardLivreurComponent implements OnInit {
     this.apiService.getLivraisonsByLivreur(this.driverId).subscribe({
       next: (res) => {
         this.livraisons = res;
+        this.currentDelivery = this.livraisons.find(l => l.statut === 'en_cours');
         // Fetch command details for each delivery
         this.livraisons.forEach(l => {
-          if (l.commandeId && !this.commandesMap[l.commandeId]) {
-            this.apiService.getCommandeById(l.commandeId).subscribe({
-              next: (cmd) => this.commandesMap[l.commandeId] = cmd,
+          if (l.colisId && !this.commandesMap[l.colisId]) {
+            this.apiService.getCommandeById(l.colisId).subscribe({
+              next: (cmd) => this.commandesMap[l.colisId] = cmd,
               error: (e) => console.error(e)
             });
           }
@@ -107,7 +122,7 @@ export class DashboardLivreurComponent implements OnInit {
       next: (updatedLiv) => {
         livraison.statut = 'en_cours';
         // Also update order status
-        this.apiService.updateCommandeStatut(livraison.commandeId, 'EN_LIVRAISON').subscribe({
+        this.apiService.updateCommandeStatut(livraison.colisId, 'EN_LIVRAISON').subscribe({
           next: () => {
             alert('Course démarrée ! La commande est maintenant en cours de livraison.');
             this.loadDriverData();
@@ -123,10 +138,10 @@ export class DashboardLivreurComponent implements OnInit {
       next: (updatedLiv) => {
         livraison.statut = 'livree';
         // Update order status to LIVREE
-        this.apiService.updateCommandeStatut(livraison.commandeId, 'LIVREE').subscribe({
+        this.apiService.updateCommandeStatut(livraison.colisId, 'LIVREE').subscribe({
           next: () => {
             // Reset driver status to disponible
-            this.apiService.updateLivreurStatut(this.driverId, 'disponible').subscribe({
+            this.apiService.updateLivreurStatut(this.driverId, 'DISPONIBLE').subscribe({
               next: () => {
                 alert('Livraison terminée avec succès ! Félicitations.');
                 this.loadDriverData();
