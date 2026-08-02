@@ -1,53 +1,45 @@
 <section class="login-page">
-  <div class="container login-card">
-    <div class="login-panel">
-      <div class="login-left">
-        <h1>Bienvenue sur BFExpress</h1>
-        <p>Connectez-vous pour accéder à votre espace et suivre vos commandes.</p>
-      </div>
-      <div class="login-right">
-        <div class="login-box">
-            <div class="location-card">
-              <div class="loc-icon">📍</div>
-              <h3>Bonjour, ravi de vous rencontrer !</h3>
-              <p>Définissez votre localisation pour faciliter la collecte et la livraison de vos colis.</p>
-              <button class="btn-location" (click)="useCurrentLocation()" [disabled]="loadingLocation">
-                {{ loadingLocation ? 'Localisation...' : 'Utiliser ma position actuelle' }}
-              </button>
-              <small class="muted">Nous accédons à votre position uniquement lorsque vous utilisez l'application.</small>
-              <button type="button" class="manual-link" (click)="toggleManual()">ou définir votre position manuellement</button>
-              <div class="loc-message" *ngIf="locationMessage">{{ locationMessage }}</div>
-
-              <div class="manual-form" *ngIf="showManual">
-                <label>Latitude</label>
-                <input type="number" [(ngModel)]="manualLat" step="any" />
-
-                <label>Longitude</label>
-                <input type="number" [(ngModel)]="manualLon" step="any" />
-
-                <div class="manual-actions">
-                  <button class="btn-location" (click)="saveManualLocation()">Enregistrer la position</button>
-                  <button type="button" class="btn-secondary" (click)="autoFillLocation()">Me localiser</button>
-                </div>
-              </div>
-            </div>
-          <h2>Connexion</h2>
-          <form (ngSubmit)="onSubmit()">
-            <label>Adresse Email</label>
-            <input type="email" name="email" [(ngModel)]="email" placeholder="Entrez votre email" required />
-            
-            <label>Mot de passe</label>
-            <input type="password" name="motDePasse" [(ngModel)]="motDePasse" placeholder="Entrez votre mot de passe" required />
-            
-            <div class="error-banner" *ngIf="errorMessage">
-              ⚠️ {{ errorMessage }}
-            </div>
-            
-            <button type="submit" class="btn-primary" [disabled]="loading">
-              {{ loading ? 'Connexion en cours...' : 'Connexion' }}
-            </button>
-          </form>
+  <div class="login-shell">
+    <div class="hero-panel">
+      <div class="hero-card">
+        <div class="hero-copy">
+          <span class="hero-badge">Bienvenue chez BFExpress</span>
+          <h1>Livraison rapide et fiable, en un seul clic</h1>
+          <p>Suivez vos colis en temps réel et accédez à toutes vos commandes depuis un espace moderne et intuitif.</p>
         </div>
+        <div class="hero-visual">
+          <img src="assets/client-illustration.svg" alt="Illustration livraison BFExpress" />
+        </div>
+      </div>
+    </div>
+
+    <div class="form-panel">
+      <div class="form-inner">
+        <div class="login-header">
+          <div>
+            <p class="eyebrow">Bienvenue chez BFExpress</p>
+            <h2>Connectez-vous à votre espace</h2>
+          </div>
+          <p>Accédez à votre tableau de bord client, livreur ou admin en quelques secondes.</p>
+        </div>
+
+        <form (ngSubmit)="onSubmit()">
+          <label>Nom d'utilisateur ou email</label>
+          <input type="email" name="email" [(ngModel)]="email" placeholder="john.doe@mail.com" required />
+
+          <label>Mot de passe</label>
+          <input type="password" name="motDePasse" [(ngModel)]="motDePasse" placeholder="••••••••" required />
+
+          <div class="error-banner" *ngIf="errorMessage">
+            ⚠️ {{ errorMessage }}
+          </div>
+
+          <button type="submit" class="btn-primary" [disabled]="loading">
+            {{ loading ? 'Connexion en cours...' : 'Connexion' }}
+          </button>
+        </form>
+
+        <p class="signup-text">Pas encore de compte ? <a routerLink="/register">Créer un compte</a></p>
       </div>
     </div>
   </div>

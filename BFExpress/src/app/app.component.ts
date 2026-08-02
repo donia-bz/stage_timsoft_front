@@ -16,7 +16,7 @@ export class AppComponent {
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe((event) => {
         const url = event.urlAfterRedirects.split('?')[0];
-        this.isClientSpace = url === '/dashboard';
+        this.isClientSpace = url === '/dashboard' || url === '/suivi';
       });
   }
 }

@@ -16,7 +16,7 @@
       <a routerLink="/contact">Contact</a>
 
       <!-- Login / Logout controls -->
-      <a *ngIf="!authService.isLoggedIn()" routerLink="/login" class="nav-button login-button">Se connecter</a>
+      <a *ngIf="!authService.isLoggedIn()" routerLink="/login" class="nav-button nav-icon" title="Se connecter">⏻</a>
       <button *ngIf="authService.isLoggedIn()" (click)="logout()" class="nav-button" style="background:#e2e8f0;color:#334155;border:none;cursor:pointer;">Déconnexion</button>
       <div *ngIf="authService.isLoggedIn()" class="user-panel">
         <div *ngIf="authService.getRole() === 'CLIENT'" class="id-label">ID Expediteur : {{ authService.getCurrentUser()?.id }}</div>

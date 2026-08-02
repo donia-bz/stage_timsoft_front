@@ -7,7 +7,7 @@
     </div>
 
     <div class="sidebar-scroll-area">
-      <!-- Main Nav Items -->
+      <div class="category-header">MES PICKUPS</div>
       <nav class="nav-group">
         <a class="nav-item" [class.active]="activeTab === 'dashboard'" (click)="setTab('dashboard')">
           <span class="icon">🎛️</span>
@@ -43,7 +43,7 @@
       <!-- Category: PICKUP -->
       <div class="category-header">PICKUP</div>
       <nav class="nav-group">
-        <a class="nav-item" routerLink="/ajout-colis">
+        <a class="nav-item" [class.active]="activeTab === 'ajouter-colis'" (click)="setTab('ajouter-colis')">
           <span class="icon">📄</span>
           <span>Ajouter Colis</span>
         </a>
@@ -72,7 +72,7 @@
       <!-- Category: FINANCE -->
       <div class="category-header">FINANCE</div>
       <nav class="nav-group">
-        <a class="nav-item" routerLink="/paiements">
+        <a class="nav-item" [class.active]="activeTab === 'paiements'" (click)="setTab('paiements')">
           <span class="icon">💵</span>
           <span>Mes paiements</span>
         </a>
@@ -95,132 +95,242 @@
     
     <!-- TAB 1: TABLEAU DE BORD (CLIENT) -->
     <div *ngIf="activeTab === 'dashboard'">
-      <div class="dashboard-header">
+      <div class="dashboard-header simple-header">
         <div>
-          <h1>Bonjour, {{ clientName }}</h1>
-          <p class="dashboard-sub">Voici l'état de vos livraisons aujourd'hui</p>
-        </div>
-        <div class="header-right">
-          <button class="connection-chip" [class.online]="isConnected" [class.offline]="!isConnected" (click)="toggleConnection()">
-            <span class="connection-indicator"></span>
-            {{ isConnected ? 'Connexion active' : 'Déconnecté' }}
-          </button>
-          <button class="btn-primary" routerLink="/ajout-colis">+ Nouvelle commande</button>
+          <h1>Tableau de bord</h1>
         </div>
       </div>
 
-      <div class="grid" style="grid-template-columns:1.4fr 1fr; gap:1.5rem;">
-        <div class="page-card">
-          <h3>Vue d'ensemble de mes commandes</h3>
-          <div class="tile-grid">
-            <div class="tile c1">
-              <div class="top"><span class="label">Non sérieux</span></div>
-              <div class="count">{{ nonSerieuxCount }}</div>
-            </div>
-            <div class="tile c2">
-              <div class="top"><span class="label">En attente</span></div>
-              <div class="count">{{ enAttenteCount }}</div>
-            </div>
-            <div class="tile c3">
-              <div class="top"><span class="label">À enlever</span></div>
-              <div class="count">{{ aEnleverCount }}</div>
-            </div>
-            <div class="tile c4">
-              <div class="top"><span class="label">En cours</span></div>
-              <div class="count">{{ enCoursCount }}</div>
-            </div>
-            <div class="tile c5">
-              <div class="top"><span class="label">Livrés</span></div>
-              <div class="count">{{ livreeCount }}</div>
-            </div>
-            <div class="tile c6">
-              <div class="top"><span class="label">Livrés payés</span></div>
-              <div class="count">{{ livresPayesTotal }} DT</div>
-            </div>
-            <div class="tile c7">
-              <div class="top"><span class="label">Retours</span></div>
-              <div class="count">{{ retourDepotCount + retourDefinitifCount + retourInterAgenceCount + retourExpediteursCount + retourRecuCount }}</div>
-            </div>
-            <div class="tile c8">
-              <div class="top"><span class="label">Réclamations</span></div>
-              <div class="count">{{ reclamationsList.length }}</div>
-            </div>
+      <div class="dashboard-tile-panel">
+        <div class="tile-grid">
+          <div class="tile c1">
+            <div class="top"><span class="label">Non sérieux</span></div>
+            <div class="count">{{ nonSerieuxCount }}</div>
           </div>
-        </div>
-
-        <div class="page-card">
-          <h3>Livraison en cours</h3>
-          <div class="waybill">
-            <div class="top-row">
-              <div class="order-id">{{ ongoingOrder?.id ? ongoingOrder.id.substring(ongoingOrder.id.length - 6) : 'Aucune' }} <span>· Express</span></div>
-              <div class="eta"><div class="num">{{ ongoingOrder ? '18 min' : '—' }}</div><div class="lbl">arrivée estimée</div></div>
-            </div>
-            <div class="steps">
-              <div class="step done"><div class="line"></div><div class="node"></div><div class="lbl">En attente</div></div>
-              <div class="step" [class.done]="ongoingOrder"><div class="line"></div><div class="node"></div><div class="lbl">Confirmée</div></div>
-              <div class="step" [class.now]="ongoingOrder"><div class="line"></div><div class="node"></div><div class="lbl">En livraison</div></div>
-              <div class="step"><div class="line"></div><div class="node"></div><div class="lbl">Livrée</div></div>
-            </div>
+          <div class="tile c2">
+            <div class="top"><span class="label">En attente</span></div>
+            <div class="count">{{ enAttenteCount }}</div>
           </div>
-
-          <div class="map-placeholder">
-            <div class="route"></div>
-            <div class="pin start"></div>
-            <div class="pin end"></div>
-            <div class="tag">MAJ il y a 12s</div>
+          <div class="tile c3">
+            <div class="top"><span class="label">À enlever</span></div>
+            <div class="count">{{ aEnleverCount }}</div>
           </div>
-        </div>
-      </div>
-
-      <div class="grid" style="grid-template-columns:1.4fr 1fr; gap:1.5rem; margin-top:1.5rem;">
-        <div class="page-card">
-          <h3>Historique des commandes</h3>
-          <div class="table-container">
-            <table class="premium-table">
-              <thead>
-                <tr><th>Commande</th><th>Statut</th><th>Montant</th><th>Date</th></tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let order of commandes.slice(0, 5)">
-                  <td class="mono">#{{ order.id ? order.id.substring(order.id.length - 6) : 'N/A' }}</td>
-                  <td><span class="badge" [ngClass]="{
-                    'cours': order.statut === 'EN_LIVRAISON',
-                    'livree': order.statut === 'LIVREE',
-                    'att': order.statut === 'EN_ATTENTE',
-                    'echec': order.statut === 'ANNULEE'
-                  }">{{ order.statut }}</span></td>
-                  <td>{{ order.montantTotal }} DT</td>
-                  <td class="mono">{{ order.dateCreation ? (order.dateCreation | date:'dd/MM') : '—' }}</td>
-                </tr>
-                <tr *ngIf="commandes.length === 0"><td colspan="4" class="text-center">Aucune commande à afficher.</td></tr>
-              </tbody>
-            </table>
+          <div class="tile c4">
+            <div class="top"><span class="label">Enlevés</span></div>
+            <div class="count">{{ enlevesCount }}</div>
           </div>
-        </div>
-
-        <div class="page-card">
-          <h3>Notifications & adresses</h3>
-          <div class="list-row">
-            <div class="ic">🔔</div>
-            <div class="info"><div class="t1">Votre colis #{{ commandes[0]?.id?.substring(commandes[0].id.length - 6) || '000' }} est en route</div><div class="t2">il y a 4 min · SMS</div></div>
+          <div class="tile c5">
+            <div class="top"><span class="label">Au dépôt</span></div>
+            <div class="count">{{ auDepotCount }}</div>
           </div>
-          <div class="list-row">
-            <div class="ic">📍</div>
-            <div class="info"><div class="t1">Livreur affecté : Karim T.</div><div class="t2">il y a 22 min · Email</div></div>
+          <div class="tile c6">
+            <div class="top"><span class="label">Retour dépôt</span></div>
+            <div class="count">{{ retourDepotCount }}</div>
           </div>
-          <div class="list-row">
-            <div class="ic">✅</div>
-            <div class="info"><div class="t1">Réclamation traitée</div><div class="t2">il y a 1h · Email</div></div>
+          <div class="tile c7">
+            <div class="top"><span class="label">En cours</span></div>
+            <div class="count">{{ enCoursCount }}</div>
           </div>
-
-          <div style="margin-top:1.5rem;">
-            <h4>Adresses rapides</h4>
-            <div class="list-row"><div class="ic">🏠</div><div class="info"><div class="t1">Domicile</div><div class="t2">12 rue Ibn Khaldoun, La Marsa</div></div></div>
-            <div class="list-row"><div class="ic">🏢</div><div class="info"><div class="t1">Bureau</div><div class="t2">Lac 1, Tunis</div></div></div>
-            <div class="list-row"><div class="ic">🏡</div><div class="info"><div class="t1">Chez mes parents</div><div class="t2">Sokra, Ariana</div></div></div>
+          <div class="tile c8">
+            <div class="top"><span class="label">À vérifier</span></div>
+            <div class="count">{{ aVerifierCount }}</div>
+          </div>
+          <div class="tile c9">
+            <div class="top"><span class="label">Livrés</span></div>
+            <div class="count">{{ livreeCount }}</div>
+          </div>
+          <div class="tile c10">
+            <div class="top"><span class="label">Livrés payés</span></div>
+            <div class="count">{{ livresPayesTotal }} DT</div>
+          </div>
+          <div class="tile c11">
+            <div class="top"><span class="label">Échanges</span></div>
+            <div class="count">{{ echangesCount }}</div>
+          </div>
+          <div class="tile c12">
+            <div class="top"><span class="label">Remboursés</span></div>
+            <div class="count">{{ remboursesCount }}</div>
+          </div>
+          <div class="tile c13">
+            <div class="top"><span class="label">Retour définitif</span></div>
+            <div class="count">{{ retourDefinitifCount }}</div>
+          </div>
+          <div class="tile c14">
+            <div class="top"><span class="label">Retour Inter-agence</span></div>
+            <div class="count">{{ retourInterAgenceCount }}</div>
+          </div>
+          <div class="tile c15">
+            <div class="top"><span class="label">Retour Expéditeurs</span></div>
+            <div class="count">{{ retourExpediteursCount }}</div>
+          </div>
+          <div class="tile c16">
+            <div class="top"><span class="label">Retour reçu</span></div>
+            <div class="count">{{ retourRecuCount }}</div>
           </div>
         </div>
       </div>
+
+      <div class="page-card retour-summary-card">
+        <div class="retour-header">
+          <div>
+            <h3>Taux de retour</h3>
+            <p>Section en bas, en cours de travail</p>
+          </div>
+          <div class="retour-value">{{ calculateRetourRate() }}%</div>
+        </div>
+        <div class="retour-progress">
+          <div class="retour-bar" [style.width.%]="calculateRetourRate()"></div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="activeTab === 'rechercher'">
+      <div class="search-dashboard-card">
+        <div class="search-dashboard-header">
+          <h2>Recherche Colis</h2>
+        </div>
+        <div class="search-dashboard-body">
+          <label>Code à barre / Téléphone</label>
+          <div class="search-dashboard-row">
+            <input type="text" [(ngModel)]="searchTerm" placeholder="Entrez le code ou le numéro" />
+            <button class="btn-search" (click)="onDashboardSearch()">🔍 Rechercher</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="activeTab === 'ajouter-colis'">
+      <section class="pickup-page">
+        <div class="pickup-card">
+          <div class="pickup-header">
+            <h2>Nouveau Pickup</h2>
+          </div>
+
+          <div class="pickup-form-grid">
+            <div class="field-group">
+              <label>Nom complet</label>
+              <input type="text" [(ngModel)]="pickupName" placeholder="Nom complet" />
+            </div>
+            <div class="field-group">
+              <label>Gouvernorat</label>
+              <select [(ngModel)]="governorate">
+                <option value="">Sélectionner</option>
+                <option value="Tunis">Tunis</option>
+                <option value="Ariana">Ariana</option>
+                <option value="Sousse">Sousse</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>Ville</label>
+              <select [(ngModel)]="city">
+                <option value="">Sélectionner</option>
+                <option value="Tunis">Tunis</option>
+                <option value="Ariana">Ariana</option>
+                <option value="Sousse">Sousse</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>Localité</label>
+              <select [(ngModel)]="locality">
+                <option value="">Sélectionner</option>
+                <option value="Centre">Centre</option>
+                <option value="El Menzah">El Menzah</option>
+                <option value="La Marsa">La Marsa</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field-full">
+            <label>Adresse complète</label>
+            <input type="text" [(ngModel)]="address" placeholder="Adresse complète" />
+          </div>
+
+          <div class="pickup-form-grid">
+            <div class="field-group">
+              <label>Téléphone</label>
+              <input type="text" [(ngModel)]="phone1" placeholder="Téléphone" />
+            </div>
+            <div class="field-group">
+              <label>Téléphone 2</label>
+              <input type="text" [(ngModel)]="phone2" placeholder="Téléphone 2" />
+            </div>
+            <div class="field-group field-button-group">
+              <button class="secondary" type="button" (click)="verifyClient()">Vérifier Client</button>
+            </div>
+          </div>
+
+          <div class="field-full">
+            <label>Désignation</label>
+            <input type="text" [(ngModel)]="designation" placeholder="Désignation" />
+          </div>
+
+          <div class="pickup-form-grid">
+            <div class="field-group">
+              <label>Prix en DT</label>
+              <input type="text" [(ngModel)]="price" placeholder="Prix en DT" />
+            </div>
+            <div class="field-group">
+              <label>Nombre d'article</label>
+              <input type="number" [(ngModel)]="itemCount" min="1" />
+            </div>
+            <div class="field-group">
+              <label>Nombre de colis</label>
+              <input type="number" [(ngModel)]="packageCount" min="1" />
+            </div>
+          </div>
+
+          <div class="pickup-form-grid">
+            <div class="field-group">
+              <label>Mode de paiement</label>
+              <select [(ngModel)]="paymentMode">
+                <option>Espèce seulement</option>
+                <option>Carte</option>
+                <option>Virement</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>Type de Service</label>
+              <select [(ngModel)]="typeService">
+                <option value="STANDARD">Standard</option>
+                <option value="EXPRESS">Express (+30% plus rapide)</option>
+              </select>
+            </div>
+            <div class="field-group field-radio">
+              <label>Ouvrir le colis avant le paiement ?</label>
+              <div class="radio-row">
+                <label><input type="radio" name="openBeforePayment" value="Non" [(ngModel)]="openBeforePayment" /> Non</label>
+                <label><input type="radio" name="openBeforePayment" value="Oui" [(ngModel)]="openBeforePayment" /> Oui</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="pickup-form-grid">
+            <div class="field-group field-radio">
+              <label>Échange</label>
+              <div class="radio-row">
+                <label><input type="radio" name="exchange" value="Non" [(ngModel)]="exchange" /> Non</label>
+                <label><input type="radio" name="exchange" value="Oui" [(ngModel)]="exchange" /> Oui</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-full">
+            <label>Remarques</label>
+            <textarea [(ngModel)]="remarks" placeholder="Remarques"></textarea>
+          </div>
+
+          <div class="error-banner" *ngIf="errorMessage">
+            ⚠️ {{ errorMessage }}
+          </div>
+
+          <div class="actions-row">
+            <button class="btn-add" type="button" (click)="submitPickup()" [disabled]="loading">
+              <span class="btn-icon">+</span>
+              {{ loading ? 'Enregistrement...' : 'Ajouter' }}
+            </button>
+          </div>
+        </div>
+      </section>
     </div>
 
 
@@ -232,14 +342,23 @@
       </div>
 
       <div class="page-card mt-2">
-        <h3 class="box-title">Liste des colis en attente</h3>
+        <div class="manifest-header-row">
+          <h3 class="box-title">Liste des colis en attente</h3>
+          <div class="manifest-summary">Ajouter votre manifeste et valider les colis sélectionnés.</div>
+        </div>
 
         <div class="table-toolbar">
-          <div>
-            Show <select><option>10</option><option>25</option></select> entries
+          <div class="toolbar-left">
+            <span>Show</span>
+            <select>
+              <option>10</option>
+              <option>25</option>
+            </select>
+            <span>entries</span>
           </div>
-          <div>
-            Search: <input type="text" [(ngModel)]="searchTerm" placeholder="Rechercher..." class="search-input" />
+          <div class="toolbar-right">
+            <label>Search:</label>
+            <input type="text" [(ngModel)]="searchTerm" placeholder="Rechercher..." class="search-input" />
           </div>
         </div>
 
@@ -265,7 +384,7 @@
                 <td>{{ p.montantTotal }} DT</td>
               </tr>
               <tr *ngIf="filteredPendingCommandes.length === 0">
-                <td colspan="6" class="text-center" style="padding:2.5rem;color:#64748b;">
+                <td colspan="6" class="empty-table-state">
                   No data available in table
                 </td>
               </tr>
@@ -273,7 +392,15 @@
           </table>
         </div>
 
-        <div class="actions-row mt-4">
+        <div class="table-footer">
+          <div class="footer-summary">Showing 0 to 0 of 0 entries</div>
+          <div class="footer-pagination">
+            <button class="pagination-btn" disabled>Previous</button>
+            <button class="pagination-btn" disabled>Next</button>
+          </div>
+        </div>
+
+        <div class="actions-row mt-4" style="justify-content:flex-start;">
           <button class="btn-valider-manifeste" (click)="validerManifeste()">
             Valider Manifeste
           </button>
@@ -395,6 +522,44 @@
     </div>
 
     <!-- TAB: FRAIS & RETOURS -->
+    <div *ngIf="activeTab === 'paiements'">
+      <div class="dashboard-header">
+        <h1>Mes paiements</h1>
+      </div>
+
+      <div class="page-card paiements-card">
+        <div class="paiements-panel">
+          <div class="paiements-header">
+            <h2>Mes paiements</h2>
+          </div>
+
+          <div class="paiements-content">
+            <div class="paiement-row">
+              <div class="field-group">
+                <label>Mois</label>
+                <select [(ngModel)]="month">
+                  <option *ngFor="let monthOption of months" [value]="monthOption">{{ monthOption }}</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label>Année</label>
+                <select [(ngModel)]="year">
+                  <option *ngFor="let yearOption of years" [value]="yearOption">{{ yearOption }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="paiements-actions">
+              <button class="btn-valider-paiement" (click)="validatePayments()">
+                <span class="check-icon">✔</span>
+                Valider
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div *ngIf="activeTab === 'frais' || activeTab === 'retours'">
       <div class="dashboard-header">
         <h1>{{ activeTab === 'frais' ? 'Frais de recouvrement' : 'Mes Retours' }}</h1>

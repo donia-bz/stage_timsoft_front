@@ -1,13 +1,65 @@
 <section class="claims-page">
   <div class="claims-card">
-    <h2>Réclamation</h2>
-    <p>Décrivez votre problème et notre équipe vous contactera rapidement.</p>
-    <div class="claims-form">
-      <label>Nom / Société</label>
-      <input type="text" [(ngModel)]="customerName" placeholder="Votre nom" />
-      <label>Description du problème</label>
-      <textarea [(ngModel)]="issueDescription" placeholder="Expliquez votre réclamation"></textarea>
-      <button class="primary" (click)="submitClaim()">Envoyer la réclamation</button>
+    <div class="claims-header">
+      <h2>Nouvelle réclamation</h2>
+    </div>
+
+    <form class="claims-form" (ngSubmit)="addClaim()">
+      <div class="claims-grid">
+        <div class="form-group">
+          <label for="objet">Objet</label>
+          <select id="objet" [(ngModel)]="selectedObjet" name="objet">
+            <option value="" disabled selected>Choisir un objet</option>
+            <option *ngFor="let objet of objetOptions" [value]="objet">{{ objet }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="codeBarre">Code à barre</label>
+          <input id="codeBarre" type="text" [(ngModel)]="barcode" name="barcode" placeholder="Entrez le code à barre" />
+        </div>
+      </div>
+
+      <div class="form-group full-width">
+        <label for="description">Description</label>
+        <textarea id="description" [(ngModel)]="description" name="description" placeholder="Décrivez votre réclamation"></textarea>
+      </div>
+
+      <div class="form-footer">
+        <div class="form-error" *ngIf="formError">{{ formError }}</div>
+        <button type="submit" class="btn-add">
+          <span>+</span>
+          Ajouter
+        </button>
+      </div>
+    </form>
+
+    <div class="claims-table-wrapper">
+      <table class="claims-table">
+        <thead>
+          <tr>
+            <th>Bordereaux</th>
+            <th>Problème</th>
+            <th>Statut</th>
+            <th>Date</th>
+            <th>Observations</th>
+            <th>Traité le</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let claim of claims">
+            <td>{{ claim.bordereau }}</td>
+            <td>{{ claim.probleme }}</td>
+            <td>{{ claim.statut }}</td>
+            <td>{{ claim.date }}</td>
+            <td>{{ claim.observations }}</td>
+            <td>{{ claim.traiteLe || '-' }}</td>
+          </tr>
+          <tr *ngIf="claims.length === 0">
+            <td colspan="6" class="empty-state">Aucune réclamation enregistrée.</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </section>

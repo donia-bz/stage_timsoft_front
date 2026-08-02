@@ -46,6 +46,32 @@ export class DashboardComponent implements OnInit {
   // Search filter inside table
   searchTerm = '';
 
+  // Add parcel form fields
+  pickupName = '';
+  governorate = '';
+  city = '';
+  locality = '';
+  address = '';
+  phone1 = '';
+  phone2 = '';
+  designation = '';
+  price = '25.0';
+  itemCount = 1;
+  packageCount = 1;
+  paymentMode = 'Espèce seulement';
+  openBeforePayment = 'Non';
+  exchange = 'Non';
+  typeService = 'STANDARD';
+  remarks = '';
+  loading = false;
+  errorMessage = '';
+
+  // Paiements tab fields
+  month = 'Juillet';
+  year = '2026';
+  months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+  years = ['2024', '2025', '2026', '2027', '2028'];
+
   // New Reclamation form fields
   reclamationObjet = '';
   reclamationCodeBarre = '';
@@ -55,10 +81,9 @@ export class DashboardComponent implements OnInit {
 
   // Team list for Service Client
   teamMembers = [
-    { initials: 'WA', nom: 'Wajdi Dridi', poste: 'Responsable Service Client', tel: '+216 20 233 750' },
-    { initials: 'EY', nom: 'Eya Labreg', poste: 'Chargée Clientèle', tel: '+216 31 262 626' },
-    { initials: 'NO', nom: 'Nourchen Slaimi', poste: 'Assistance Livraison', tel: '+216 27 327 754' },
-    { initials: 'AM', nom: 'Amine Agrebi', poste: 'Support Technique', tel: '+216 57 037 637' }
+    { initials: 'FB', nom: 'Farid Bouzouita', poste: 'Service Client', tel: '+216 98 218 003' },
+    { initials: 'DB', nom: 'Donia Bouzouita', poste: 'Service Client', tel: '+216 57 178 469' },
+    { initials: 'CB', nom: 'Chirine Bouzouita', poste: 'Service Client', tel: '+216 57 178 491' }
   ];
 
   // Options for Object drop-down matching screenshot 2
@@ -94,8 +119,52 @@ export class DashboardComponent implements OnInit {
     this.activeTab = tab;
   }
 
+  verifyClient(): void {
+    this.errorMessage = '';
+    alert('Vérification client non implémentée pour l’instant.');
+  }
+
+  submitPickup(): void {
+    if (!this.city || !this.address || !this.phone1 || !this.designation) {
+      this.errorMessage = 'Veuillez remplir tous les champs obligatoires (Ville, Adresse, Téléphone, Désignation).';
+      return;
+    }
+
+    this.loading = true;
+    this.errorMessage = '';
+
+    const user = this.authService.getCurrentUser();
+    const clientId = user ? user.id : 'client-default-id';
+
+    const commande: Commande = {
+      clientId,
+      adresseDepartId: 'adresse-depart-default-id',
+      adresseArriveeId: 'adresse-arrivee-default-id',
+      statut: 'EN_ATTENTE',
+      typeService: this.typeService,
+      montantTotal: parseFloat(this.price) || 25.0
+    };
+
+    this.apiService.creerCommande(commande).subscribe({
+      next: () => {
+        this.loading = false;
+        alert('Colis ajouté avec succès !');
+        this.loadClientCommandes();
+        this.setTab('dashboard');
+      },
+      error: (err) => {
+        this.loading = false;
+        this.errorMessage = err.error?.message || err.message || 'Erreur lors de l’ajout du colis.';
+      }
+    });
+  }
+
   toggleConnection(): void {
     this.isConnected = !this.isConnected;
+  }
+
+  validatePayments(): void {
+    alert(`Paiements filtrés pour ${this.month} ${this.year}`);
   }
 
   loadClientCommandes(): void {
@@ -122,6 +191,24 @@ export class DashboardComponent implements OnInit {
     this.livresPayesTotal = this.commandes
       .filter(c => c.statut === 'LIVREE')
       .reduce((sum, c) => sum + (c.montantTotal || 0), 0);
+  }
+
+  calculateRetourRate(): number {
+    const total = this.commandes.length;
+    if (total === 0) {
+      return 0;
+    }
+
+    const retourStatuses = [
+      'RETOUR_DEPOT',
+      'RETOUR_DEFINITIF',
+      'RETOUR_INTER_AGENCE',
+      'RETOUR_EXPEDITEURS',
+      'RETOUR_RECU'
+    ];
+
+    const totalRetours = this.commandes.filter(c => retourStatuses.includes(c.statut)).length;
+    return Math.round((totalRetours / total) * 100);
   }
 
   ajouterReclamation(): void {
@@ -182,5 +269,10 @@ export class DashboardComponent implements OnInit {
       (c.id && c.id.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
       (c.adresseArriveeId && c.adresseArriveeId.toLowerCase().includes(this.searchTerm.toLowerCase()))
     );
+  }
+
+  onDashboardSearch(): void {
+    // placeholder function for dashboard search logic
+    alert(`Recherche du colis : ${this.searchTerm}`);
   }
 }

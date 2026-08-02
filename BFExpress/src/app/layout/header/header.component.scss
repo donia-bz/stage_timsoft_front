@@ -90,6 +90,22 @@
   color: white;
 }
 
+.main-nav a.nav-icon {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 1.4rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent), var(--brand));
+  color: white;
+}
+
+.main-nav a.nav-icon:hover {
+  background: linear-gradient(135deg, #0f766e, #0c4a6e);
+}
+
 @media (max-width: 760px) {
   .main-nav { justify-content: flex-end; width: 100%; }
 }

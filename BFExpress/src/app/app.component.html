@@ -1,4 +1,4 @@
-<app-header *ngIf="!isClientSpace"></app-header>
+<app-header></app-header>
 <main [class.container]="!isClientSpace" [class.client-space-main]="isClientSpace">
   <router-outlet></router-outlet>
 </main>
