@@ -10,7 +10,7 @@
     "sourceMap": true,
     "declaration": false,
     "experimentalDecorators": true,
-    "moduleResolution": "node16",
+    "moduleResolution": "node",
     "importHelpers": true,
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,

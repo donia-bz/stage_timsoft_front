@@ -179,7 +179,7 @@ export class DashboardEnhancedComponent implements OnInit {
         this.loadClientCommandes();
         this.setTab('dashboard');
       },
-      error: (err) => {
+      error: (err: { error?: { message?: string }; message?: string }) => {
         this.loading = false;
         this.errorMessage = err.error?.message || err.message || 'Erreur lors de l\'ajout du colis.';
       }
@@ -208,13 +208,13 @@ export class DashboardEnhancedComponent implements OnInit {
     if (!this.clientId) return;
 
     this.apiService.getCommandesByClient(this.clientId).subscribe({
-      next: (res) => {
+      next: (res: Commande[]) => {
         this.commandes = res;
-        this.pendingCommandes = res.filter(c => c.statut === 'EN_ATTENTE' || c.statut === 'VALIDEE');
-        this.ongoingOrder = res.find(c => c.statut === 'EN_LIVRAISON');
+        this.pendingCommandes = res.filter((c: Commande) => c.statut === 'EN_ATTENTE' || c.statut === 'VALIDEE');
+        this.ongoingOrder = res.find((c: Commande) => c.statut === 'EN_LIVRAISON');
         this.calculateStats();
       },
-      error: (err) => console.error('Error loading client orders:', err)
+      error: (err: Error) => console.error('Error loading client orders:', err)
     });
   }
 
@@ -319,7 +319,8 @@ export class DashboardEnhancedComponent implements OnInit {
   }
 
   getCurrentTime(): string {
-    return new Date().toLocaleTimeString('fr-FR');
+    const now = new Date();
+    return now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   }
 
   // Form getters for validation
