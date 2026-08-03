@@ -18,7 +18,12 @@
       <div class="dashboard-header">
         <div>
           <h1>Bonjour {{ driverName }}</h1>
-          <p class="dashboard-sub">3 livraisons vous attendent aujourd'hui</p>
+          <p class="dashboard-sub">{{ stats[0]?.value || 0 }} livraisons vous attendent aujourd'hui</p>
+          <div class="driver-meta">
+            <div>Dépot: {{ depotInfo?.nom || 'Non rattaché' }}</div>
+            <div>Véhicule: {{ assignedVehicle?.immatriculation || 'Aucun' }}</div>
+            <div>Note moyenne: {{ driverInfo?.noteMoyenne || '—' }}</div>
+          </div>
         </div>
         <div class="toggle-status" style="width:100%;max-width:380px;">
           <button class="status-btn" [ngClass]="{ on: driverInfo?.statut === 'DISPONIBLE' }" (click)="toggleStatut('DISPONIBLE')">Disponible</button>
@@ -59,6 +64,25 @@
             <div class="pin end"></div>
             <div class="tag">GPS actif</div>
           </div>
+        </div>
+      </div>
+
+      <div class="card page-card">
+        <h3>Nouvelles affectations</h3>
+        <div *ngIf="newAssignments.length === 0" class="text-center text-muted">Aucune nouvelle affectation.</div>
+        <div *ngFor="let a of newAssignments" class="list-row">
+          <div class="ic">🔔</div>
+          <div class="info"><div class="t1">#{{ a.id?.substring(a.id.length - 6) }} — Colis {{ a.colisId }}</div><div class="t2">Statut: {{ a.statut }}</div></div>
+          <button class="cta" (click)="acceptAssignment(a)">Accepter</button>
+        </div>
+      </div>
+
+      <div class="card page-card">
+        <h3>Historique Véhicules</h3>
+        <div *ngIf="vehicleHistory.length === 0" class="text-center text-muted">Historique vide.</div>
+        <div *ngFor="let vh of vehicleHistory" class="list-row">
+          <div class="ic">🚗</div>
+          <div class="info"><div class="t1">{{ vh.immatriculation }} — {{ vh.modele }}</div><div class="t2">Utilisé depuis: {{ vh.date || '—' }}</div></div>
         </div>
       </div>
 

@@ -19,6 +19,18 @@
           <a class="sidebar-link" [class.active]="activeTab === 'livreurs'" (click)="activeTab = 'livreurs'">
             <span class="icon">🚚</span> Liv Livreurs Actifs
           </a>
+          <a class="sidebar-link" [class.active]="activeTab === 'depots'" (click)="activeTab = 'depots'">
+            <span class="icon">🏬</span> Dépôts
+          </a>
+          <a class="sidebar-link" [class.active]="activeTab === 'vehicules'" (click)="activeTab = 'vehicules'">
+            <span class="icon">🚗</span> Véhicules
+          </a>
+          <a class="sidebar-link" [class.active]="activeTab === 'carte'" (click)="activeTab = 'carte'">
+            <span class="icon">🗺️</span> Carte Globale
+          </a>
+          <a class="sidebar-link" [class.active]="activeTab === 'stats'" (click)="activeTab = 'stats'">
+            <span class="icon">📊</span> Statistiques
+          </a>
         </nav>
       </div>
       <div class="sidebar-section">
@@ -37,6 +49,146 @@
         <div>
           <h1>Espace Administration</h1>
           <div class="dashboard-greeting">Pilotez l'activité globale de BFExpress</div>
+        </div>
+
+        <!-- Tab 4: Dépôts -->
+        <div *ngIf="activeTab === 'depots'">
+          <div class="tab-header">
+            <h2>Gestion des Dépôts</h2>
+            <p>Ajoutez, éditez et supprimez des dépôts (stockage physique).</p>
+          </div>
+
+          <div class="sub-section">
+            <div class="row-form">
+              <input #depotNom placeholder="Nom dépôt" />
+              <input #depotVille placeholder="Ville" />
+              <input #depotCap type="number" placeholder="Capacité" />
+              <button class="btn-primary" (click)="addDepot(depotNom.value, depotVille.value, +depotCap.value); depotNom.value=''; depotVille.value=''; depotCap.value='';">Ajouter</button>
+            </div>
+
+            <div class="table-container mt-3">
+              <table class="premium-table">
+                <thead>
+                  <tr><th>Nom</th><th>Ville</th><th>Capacité</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let d of depots">
+                    <td>{{ d.nom }}</td>
+                    <td>{{ d.ville }}</td>
+                    <td>{{ d.capacite }}</td>
+                    <td><button class="btn-ghost" (click)="removeDepot(d.id)">Supprimer</button></td>
+                  </tr>
+                  <tr *ngIf="depots.length === 0"><td colspan="4" class="text-center text-muted">Aucun dépôt configuré.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 5: Véhicules -->
+        <div *ngIf="activeTab === 'vehicules'">
+          <div class="tab-header">
+            <h2>Flotte de Véhicules</h2>
+            <p>Gérez les véhicules disponibles et leur capacité.</p>
+          </div>
+          <div class="sub-section">
+            <div class="row-form">
+              <input #vehImma placeholder="Immatriculation" />
+              <input #vehModele placeholder="Modèle" />
+              <input #vehCap type="number" placeholder="Capacité" />
+              <button class="btn-primary" (click)="addVehicule(vehImma.value, vehModele.value, +vehCap.value); vehImma.value=''; vehModele.value=''; vehCap.value='';">Ajouter</button>
+            </div>
+
+            <div class="table-container mt-3">
+              <table class="premium-table">
+                <thead>
+                  <tr><th>Immat.</th><th>Modèle</th><th>Capacité</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let v of vehicules">
+                    <td>{{ v.immatriculation }}</td>
+                    <td>{{ v.modele }}</td>
+                    <td>{{ v.capacite }}</td>
+                    <td><button class="btn-ghost" (click)="removeVehicule(v.id)">Supprimer</button></td>
+                  </tr>
+                  <tr *ngIf="vehicules.length === 0"><td colspan="4" class="text-center text-muted">Aucun véhicule enregistré.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 6: Carte -->
+        <div *ngIf="activeTab === 'carte'">
+          <div class="tab-header">
+            <h2>Carte Globale</h2>
+            <p>Visualisez la position des livreurs et commandes en temps réel.</p>
+          </div>
+          <div class="map-placeholder">
+            <div class="map-inner">Carte interactive - Intégration Leaflet/Mapbox à prévoir</div>
+          </div>
+        </div>
+
+        <!-- Tab 7: Statistiques -->
+        <div *ngIf="activeTab === 'stats'">
+          <div class="tab-header">
+            <h2>Statistiques & IA</h2>
+            <p>Indicateurs clés : nombre de commandes, délais moyens, performance livreurs, revenus et scores IA.</p>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-title">Commandes</div>
+              <div class="stat-value">{{ stats.commandesCount }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Délai moyen (min)</div>
+              <div class="stat-value">{{ stats.avgDeliveryMin | number:'1.0-1' }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Chiffre d'affaires</div>
+              <div class="stat-value">{{ stats.revenus | number:'1.2-2' }} DT</div>
+            </div>
+          </div>
+
+          <div class="sub-section mt-4">
+            <h3>Performance par livreur</h3>
+            <div class="table-container">
+              <table class="premium-table">
+                <thead><tr><th>Livreur</th><th>Livraisons</th><th>Temps moyen (min)</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let k of (Object.keys(stats.driverPerformance || {}))">
+                    <td>{{ k }}</td>
+                    <td>{{ stats.driverPerformance[k].count }}</td>
+                    <td>{{ stats.driverPerformance[k].avgMin | number:'1.0-1' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- History panel (overlay) -->
+        <div class="history-panel" *ngIf="showHistoryPanel">
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3>Historique livraisons - {{ historyForOrderId }}</h3>
+              <button class="btn-ghost" (click)="closeHistory()">Fermer</button>
+            </div>
+            <div class="panel-body">
+              <div *ngIf="deliveriesHistory.length === 0" class="text-center text-muted">Aucune livraison trouvée pour cette commande.</div>
+              <div *ngFor="let h of deliveriesHistory" class="history-item">
+                <div class="history-main">
+                  <div>Livraison: {{ h.livraison.id }}</div>
+                  <div>Statut: {{ h.livraison.statut }}</div>
+                  <div>Affectée: {{ h.livraison.dateAffectation }}</div>
+                </div>
+                <div class="history-positions" *ngIf="h.positions && h.positions.length">
+                  <strong>Positions:</strong>
+                  <div *ngFor="let p of h.positions">{{ p.horodatage }} — {{ p.latitude }}, {{ p.longitude }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <button class="btn-primary" (click)="refreshData()">Actualiser les données</button>
       </div>
@@ -138,6 +290,9 @@
                     
                     <div *ngIf="order.statut !== 'EN_ATTENTE'" class="assigned-text">
                       <span class="icon">✅</span> Commande traitée
+                    </div>
+                    <div class="mt-2">
+                      <button class="btn-ghost" (click)="openHistory(order)">Voir historique</button>
                     </div>
                   </td>
                 </tr>

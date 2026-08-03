@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface Adresse {
   id?: string;
@@ -118,11 +119,11 @@ export interface AffectationIA {
   providedIn: 'root'
 })
 export class ApiService {
-  private commandesUrl = 'http://localhost:8081/api';
-  private livreursUrl = 'http://localhost:8084/api';
-  private trackingUrl = 'http://localhost:8083/api';
-  private iaUrl = 'http://localhost:8086/api/ia';
-  private adressesUrl = 'http://localhost:8082/api/adresses';
+  private commandesUrl = environment.apiUrl;
+  private livreursUrl = environment.livreursUrl;
+  private trackingUrl = environment.trackingUrl;
+  private iaUrl = environment.iaUrl;
+  private adressesUrl = environment.adressesUrl;
 
   constructor(private http: HttpClient) {}
 

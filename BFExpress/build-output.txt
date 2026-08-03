@@ -1,0 +1,245 @@
+﻿
+> bfexpress@0.0.1 build
+> ng build
+
+npm : Workspace extension with invalid name (defaultProject) found.
+Au caractère Ligne:1 : 1
++ npm run build 2>&1 | Out-File -FilePath "build-output.txt" -Encoding  ...
++ ~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Workspace exten...Project) found.:String 
+   ) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+- Generating browser application bundles (phase: setup)...
+Ô£ö Browser application bundle generation complete.
+Ô£ö Browser application bundle generation complete.
+
+./src/app/pages/dashboard/dashboard-enhanced.component.scss?ngResource - Error: 
+Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
+expected "}".
+     ÔòÀ
+1506 Ôöé }
+     Ôöé  ^
+     ÔòÁ
+  src\app\pages\dashboard\dashboard-enhanced.component.scss 1506:2  root stylesheet
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:116:37 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:123:37 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:135:50 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:137:42 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:138:63 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:138:95 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:143:46 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:147:46 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:151:46 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:164:64 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:166:39 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:171:62 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:173:39 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:178:63 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:180:39 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:185:61 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:187:39 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:195:10 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:211:34 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:212:36 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:213:39 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:214:37 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:215:39 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:216:66 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:216:126 
+- error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:216:182 
+- error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:217:15 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:220:57 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:221:58 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:221:105 
+- error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:228:12 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:230:15 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:231:46 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:234:37 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:236:46 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:238:23 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:239:23 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:243:43 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:251:10 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:258:34 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:260:40 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:262:40 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:263:61 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:263:107 
+- error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:263:155 
+- error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:264:17 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:271:42 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:275:42 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:279:42 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:283:54 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:292:10 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:307:34 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:308:36 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:309:37 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:310:36 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:311:37 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:321:10 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:328:33 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:331:37 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:336:42 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:340:42 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:344:56 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:358:10 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:365:35 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:368:40 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:373:42 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:377:42 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:381:56 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:395:10 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:407:37 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:407:85 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:407:118 
+- error NG5002: Parser Error: Bindings cannot contain assignments
+
+Error: src/app/pages/dashboard-admin/dashboard-admin-enhanced.component.html:409:44 - 
+error NG5002: Parser Error: Bindings cannot contain assignments
+
+

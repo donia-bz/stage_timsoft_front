@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { RouterModule, Routes } from '@angular/router';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AppComponent } from './app.component';
 import { HeaderComponent } from './layout/header/header.component';
 import { FooterComponent } from './layout/footer/footer.component';
@@ -13,14 +13,12 @@ import { DevenirClientComponent } from './pages/devenir-client/devenir-client.co
 import { DevenirLivreurComponent } from './pages/devenir-livreur/devenir-livreur.component';
 import { SuiviComponent } from './pages/suivi/suivi.component';
 import { LoginComponent } from './pages/login/login.component';
-import { DashboardComponent } from './pages/dashboard/dashboard.component';
-import { DashboardLivreurComponent } from './pages/dashboard-livreur/dashboard-livreur.component';
-import { DashboardAdminComponent } from './pages/dashboard-admin/dashboard-admin.component';
 import { RechercheColisComponent } from './pages/recherche-colis/recherche-colis.component';
 import { ReclamationsComponent } from './pages/reclamations/reclamations.component';
 import { AjoutColisComponent } from './pages/ajout-colis/ajout-colis.component';
 import { PaiementsComponent } from './pages/paiements/paiements.component';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { AuthInterceptor } from './interceptors/auth.interceptor';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -32,10 +30,19 @@ const routes: Routes = [
   { path: 'reclamations', component: ReclamationsComponent },
   { path: 'ajout-colis', component: AjoutColisComponent },
   { path: 'paiements', component: PaiementsComponent },
-  { path: 'dashboard-livreur', component: DashboardLivreurComponent },
-  { path: 'dashboard-admin', component: DashboardAdminComponent },
+  { 
+    path: 'dashboard-livreur', 
+    loadComponent: () => import('./pages/dashboard-livreur/dashboard-livreur.component').then(m => m.DashboardLivreurComponent)
+  },
+  { 
+    path: 'dashboard-admin', 
+    loadComponent: () => import('./pages/dashboard-admin/dashboard-admin.component').then(m => m.DashboardAdminComponent)
+  },
   { path: 'login', component: LoginComponent },
-  { path: 'dashboard', component: DashboardComponent },
+  { 
+    path: 'dashboard', 
+    loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent)
+  },
   { path: 'devenir-client', component: DevenirClientComponent },
   { path: 'devenir-livreur', component: DevenirLivreurComponent },
   { path: '**', redirectTo: '' }
@@ -52,9 +59,6 @@ const routes: Routes = [
     ContactComponent,
     SuiviComponent,
     LoginComponent,
-    DashboardComponent,
-    DashboardLivreurComponent,
-    DashboardAdminComponent,
     DevenirClientComponent,
     DevenirLivreurComponent,
     RechercheColisComponent,
@@ -62,8 +66,10 @@ const routes: Routes = [
     AjoutColisComponent,
     PaiementsComponent
   ],
-  imports: [BrowserModule, FormsModule, HttpClientModule, RouterModule.forRoot(routes)],
-  providers: [],
+  imports: [BrowserModule, FormsModule, ReactiveFormsModule, HttpClientModule, RouterModule.forRoot(routes)],
+  providers: [
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule {}

@@ -1,13 +1,28 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { ApiService, Livraison, Livreur, Commande } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard-livreur',
-  templateUrl: './dashboard-livreur.component.html',
-  styleUrls: ['./dashboard-livreur.component.scss']
+  standalone: true,
+  imports: [CommonModule, RouterModule, FormsModule],
+  templateUrl: './dashboard-livreur-enhanced.component.html',
+  styleUrls: ['./dashboard-livreur-enhanced.component.scss']
 })
 export class DashboardLivreurComponent implements OnInit {
+  // driver extras
+  depotInfo: any = null;
+  vehicleHistory: any[] = [];
+  assignedVehicle: any = null;
+  // new assignments notified by IA
+  newAssignments: Livraison[] = [];
+  // intervals
+  private gpsInterval: any = null;
+  private pollInterval: any = null;
   driverName = 'Livreur';
   driverId = '';
   driverInfo: Livreur | null = null;
@@ -20,6 +35,8 @@ export class DashboardLivreurComponent implements OnInit {
     { title: 'Livrés', value: 34, color: 'status-teal' },
     { title: 'Retours', value: 3, color: 'status-red' }
   ];
+
+  successRate = 95;
 
   currentDelivery?: Livraison;
 
@@ -52,7 +69,8 @@ export class DashboardLivreurComponent implements OnInit {
 
   constructor(
     private apiService: ApiService,
-    private authService: AuthService
+    private authService: AuthService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -61,7 +79,14 @@ export class DashboardLivreurComponent implements OnInit {
       this.driverName = `${user.prenom} ${user.nom}`;
       this.driverId = user.id;
       this.loadDriverData();
+      // poll for new assignments every 12s
+      this.pollInterval = setInterval(() => this.checkForNewAssignments(), 12000);
     }
+  }
+
+  ngOnDestroy(): void {
+    if (this.gpsInterval) clearInterval(this.gpsInterval);
+    if (this.pollInterval) clearInterval(this.pollInterval);
   }
 
   loadDriverData(): void {
@@ -82,6 +107,12 @@ export class DashboardLivreurComponent implements OnInit {
       next: (res) => {
         this.livraisons = res;
         this.currentDelivery = this.livraisons.find(l => l.statut === 'en_cours');
+        // detect assignments awaiting acceptance
+        this.newAssignments = this.livraisons.filter(l => l.statut === 'affectee');
+        // compute driver stats
+        this.computeDriverStats();
+        // start GPS streaming if a delivery is in progress
+        if (this.currentDelivery) this.startGPSStream();
         // Fetch command details for each delivery
         this.livraisons.forEach(l => {
           if (l.colisId && !this.commandesMap[l.colisId]) {
@@ -111,9 +142,41 @@ export class DashboardLivreurComponent implements OnInit {
     if (!this.driverId) return;
     this.apiService.updateLivreurPosition(this.driverId, this.latitude, this.longitude).subscribe({
       next: (res) => {
-        alert(`Position GPS mise à jour : (${this.latitude}, ${this.longitude})`);
+        // silent success in streaming mode
+        console.debug(`GPS updated: (${this.latitude}, ${this.longitude})`);
       },
       error: (err) => alert('Erreur lors de la mise à jour GPS')
+    });
+  }
+
+  startGPSStream() {
+    if (this.gpsInterval) return;
+    // send GPS every 10 seconds while in delivery
+    this.gpsInterval = setInterval(() => {
+      if (this.currentDelivery && this.currentDelivery.statut === 'en_cours') {
+        this.updateGPS();
+      } else {
+        clearInterval(this.gpsInterval);
+        this.gpsInterval = null;
+      }
+    }, 10000);
+  }
+
+  checkForNewAssignments() {
+    if (!this.driverId) return;
+    this.apiService.getLivraisonsByLivreur(this.driverId).subscribe({
+      next: (res) => {
+        const awaiting = res.filter(l => l.statut === 'affectee');
+        // new items not present in previous list
+        const idsNow = awaiting.map(a => a.id);
+        const idsOld = this.newAssignments.map(a => a.id);
+        const newly = awaiting.filter(a => !idsOld.includes(a.id));
+        if (newly.length) {
+          this.newAssignments = awaiting;
+          // simple browser notification (in-app)
+          newly.forEach(n => alert(`Nouvelle affectation: livraison ${n.id}. Ouvrez la file d'attente pour accepter.`));
+        }
+      }
     });
   }
 
@@ -126,10 +189,39 @@ export class DashboardLivreurComponent implements OnInit {
           next: () => {
             alert('Course démarrée ! La commande est maintenant en cours de livraison.');
             this.loadDriverData();
+            this.startGPSStream();
           }
         });
       },
       error: (err) => alert('Erreur au démarrage : ' + err.message)
+    });
+  }
+
+  // Accept an assignment (starts the course immediately)
+  acceptAssignment(livraison: Livraison) {
+    if (!confirm('Accepter cette course ?')) return;
+    this.demarrer(livraison);
+  }
+
+  // Compute per-driver statistics
+  computeDriverStats() {
+    if (!this.driverId) return;
+    this.apiService.getLivraisonsByLivreur(this.driverId).subscribe({
+      next: (livs) => {
+        const total = livs.length;
+        const done = livs.filter(l => l.statut === 'livree').length;
+        const failed = livs.filter(l => l.statut === 'echoue' || l.statut === 'ECHOUEE').length;
+        const successRate = total ? Math.round((done / total) * 100) : 100;
+        // average rating comes from driver profile
+        const avgNote = this.driverInfo?.noteMoyenne || 5.0;
+        // update KPIs
+        this.stats[0].value = total;
+        this.stats[1].value = avgNote;
+        // extend stats display
+        this.stats[2].value = Math.round((done || 0) * 1); // placeholder distance
+        // optional expose successRate
+        (this as any).successRate = successRate;
+      }
     });
   }
 
@@ -151,6 +243,18 @@ export class DashboardLivreurComponent implements OnInit {
         });
       },
       error: (err) => alert('Erreur lors de la clôture de la livraison : ' + err.message)
+    });
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
+
+  reportIssue(livraison: Livraison): void {
+    // Navigate to claims page with pre-filled data
+    this.router.navigate(['/reclamations'], {
+      queryParams: { livraisonId: livraison.id }
     });
   }
 }

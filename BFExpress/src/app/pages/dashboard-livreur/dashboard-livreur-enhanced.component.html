@@ -1,0 +1,307 @@
+<div class="livreur-dashboard">
+  
+  <!-- Livreur Sidebar -->
+  <aside class="livreur-sidebar">
+    <div class="sidebar-header">
+      <div class="brand-logo">
+        <div class="logo-icon">🚚</div>
+        <span class="brand-text">BFExpress</span>
+      </div>
+      <div class="driver-info">
+        <div class="driver-avatar">{{ driverName.charAt(0) }}</div>
+        <div class="driver-details">
+          <span class="driver-name">{{ driverName }}</span>
+          <span class="driver-role">Livreur</span>
+          <span class="driver-status" [class.available]="driverInfo?.statut === 'DISPONIBLE'" [class.busy]="driverInfo?.statut === 'EN_COURSE'" [class.offline]="driverInfo?.statut === 'HORS_LIGNE'">
+            {{ driverInfo?.statut || 'HORS_LIGNE' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-title">Principal</div>
+        <a class="nav-link active" href="#">
+          <span class="nav-icon">📊</span>
+          <span>Tableau de bord</span>
+        </a>
+        <a class="nav-link" routerLink="/recherche-colis">
+          <span class="nav-icon">🔍</span>
+          <span>Rechercher colis</span>
+        </a>
+        <a class="nav-link" routerLink="/reclamations">
+          <span class="nav-icon">📝</span>
+          <span>Réclamations</span>
+        </a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Actions rapides</div>
+        <a class="nav-link" *ngFor="let action of quickActions" [routerLink]="action.route">
+          <span class="nav-icon">⚡</span>
+          <span>{{ action.label }}</span>
+        </a>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="status-toggle">
+        <span>Statut:</span>
+        <div class="status-buttons">
+          <button class="status-btn available" [class.active]="driverInfo?.statut === 'DISPONIBLE'" (click)="toggleStatut('DISPONIBLE')">
+            Disponible
+          </button>
+          <button class="status-btn busy" [class.active]="driverInfo?.statut === 'EN_COURSE'" (click)="toggleStatut('EN_COURSE')">
+            En course
+          </button>
+          <button class="status-btn offline" [class.active]="driverInfo?.statut === 'HORS_LIGNE'" (click)="toggleStatut('HORS_LIGNE')">
+            Hors ligne
+          </button>
+        </div>
+      </div>
+      <button class="logout-btn" (click)="logout()">
+        <span>🚪</span>
+        <span>Déconnexion</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    
+    <!-- Header -->
+    <div class="dashboard-header">
+      <div>
+        <h1>Espace Livreur</h1>
+        <p>Bienvenue {{ driverName }}, voici vos tournées du jour</p>
+      </div>
+      <div class="header-actions">
+        <div class="gps-indicator">
+          <span class="gps-icon">📍</span>
+          <span class="gps-text">GPS actif</span>
+        </div>
+        <div class="notification-bell">
+          <span class="bell-icon">🔔</span>
+          <span class="notification-count" *ngIf="newAssignments.length > 0">{{ newAssignments.length }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card primary">
+        <div class="stat-icon">📦</div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats[0].value }}</div>
+          <div class="stat-label">Courses du jour</div>
+          <div class="stat-trend positive">En progression</div>
+        </div>
+      </div>
+
+      <div class="stat-card warning">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-content">
+          <div class="stat-value">{{ waitingLivraisons.length }}</div>
+          <div class="stat-label">À récupérer</div>
+          <div class="stat-trend">File d'attente</div>
+        </div>
+      </div>
+
+      <div class="stat-card success">
+        <div class="stat-icon">✅</div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats[2].value }}</div>
+          <div class="stat-label">Livrés</div>
+          <div class="stat-trend positive">↑ Excellent</div>
+        </div>
+      </div>
+
+      <div class="stat-card info">
+        <div class="stat-icon">⭐</div>
+        <div class="stat-content">
+          <div class="stat-value">{{ driverInfo?.noteMoyenne || 5.0 }}/5</div>
+          <div class="stat-label">Note moyenne</div>
+          <div class="stat-trend positive">↑ Top livreur</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- New Assignments Alert -->
+    <div *ngIf="newAssignments.length > 0" class="new-assignments-alert">
+      <div class="alert-header">
+        <span class="alert-icon">🔔</span>
+        <span class="alert-title">Nouvelles affectations ({{ newAssignments.length }})</span>
+      </div>
+      <div class="assignments-list">
+        <div class="assignment-item" *ngFor="let assignment of newAssignments">
+          <div class="assignment-info">
+            <div class="assignment-id">Livraison #{{ assignment.id }}</div>
+            <div class="assignment-colis">Colis: {{ assignment.colisId }}</div>
+          </div>
+          <button class="accept-btn" (click)="acceptAssignment(assignment)">
+            Accepter
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Current Delivery Card -->
+    <div *ngIf="currentDelivery" class="current-delivery-card">
+      <div class="delivery-header">
+        <div>
+          <h3>🚚 Livraison en cours</h3>
+          <p>Livraison #{{ currentDelivery?.id }}</p>
+        </div>
+        <div class="delivery-status">
+          <span class="status-badge in-progress">En cours</span>
+        </div>
+      </div>
+
+      <div class="delivery-details">
+        <div class="delivery-map">
+          <div class="map-placeholder">
+            <div class="map-icon">🗺️</div>
+            <div class="map-text">Carte interactive</div>
+            <div class="map-coords">
+              <div>Lat: {{ latitude.toFixed(4) }}</div>
+              <div>Lon: {{ longitude.toFixed(4) }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="delivery-info">
+          <div class="info-section">
+            <h4>Informations de livraison</h4>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Destinataire:</span>
+                <span class="info-value">{{ currentDeliveryCommande?.adresseArriveeId || 'Non disponible' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Montant:</span>
+                <span class="info-value">{{ currentDeliveryCommande?.montantTotal || 0 }} DT</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Distance:</span>
+                <span class="info-value">{{ currentDelivery?.distanceKm || 0 }} km</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Durée estimée:</span>
+                <span class="info-value">~15 min</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="delivery-actions">
+            <button class="action-btn success" (click)="terminer(currentDelivery!)" *ngIf="currentDelivery">
+              <span>✅</span>
+              <span>Terminer la livraison</span>
+            </button>
+            <button class="action-btn warning" (click)="reportIssue(currentDelivery!)" *ngIf="currentDelivery">
+              <span>⚠️</span>
+              <span>Signaler un problème</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Waiting Deliveries -->
+    <div *ngIf="waitingLivraisons.length > 0" class="waiting-deliveries-section">
+      <div class="section-header">
+        <h3>📋 File d'attente ({{ waitingLivraisons.length }})</h3>
+        <button class="refresh-btn" (click)="loadDriverData()">
+          <span>🔄</span>
+          <span>Actualiser</span>
+        </button>
+      </div>
+
+      <div class="deliveries-list">
+        <div class="delivery-item" *ngFor="let livraison of waitingLivraisons">
+          <div class="delivery-item-header">
+            <div class="delivery-id">#{{ livraison.id }}</div>
+            <div class="delivery-status-badge">
+              <span class="status-badge waiting">En attente</span>
+            </div>
+          </div>
+          <div class="delivery-item-body">
+            <div class="delivery-item-info">
+              <div class="info-row">
+                <span class="label">Colis:</span>
+                <span class="value">{{ livraison.colisId }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Distance:</span>
+                <span class="value">{{ livraison.distanceKm || 0 }} km</span>
+              </div>
+            </div>
+            <button class="start-btn" (click)="demarrer(livraison)">
+              <span>🚀</span>
+              <span>Démarrer</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Schedule Section -->
+    <div class="schedule-section">
+      <div class="section-header">
+        <h3>📅 Planning de la journée</h3>
+      </div>
+
+      <div class="schedule-timeline">
+        <div class="timeline-item" *ngFor="let item of schedule" [class.completed]="item.status === 'Terminé'" [class.in-progress]="item.status === 'En cours'" [class.pending]="item.status === 'Prévu'">
+          <div class="timeline-time">{{ item.time }}</div>
+          <div class="timeline-content">
+            <div class="timeline-task">{{ item.task }}</div>
+            <div class="timeline-status">{{ item.status }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance Stats -->
+    <div class="performance-section">
+      <div class="section-header">
+        <h3>📈 Vos performances</h3>
+      </div>
+
+      <div class="performance-grid">
+        <div class="performance-card">
+          <div class="performance-icon">🎯</div>
+          <div class="performance-content">
+            <div class="performance-value">{{ successRate || 95 }}%</div>
+            <div class="performance-label">Taux de réussite</div>
+          </div>
+        </div>
+
+        <div class="performance-card">
+          <div class="performance-icon">⏱️</div>
+          <div class="performance-content">
+            <div class="performance-value">12min</div>
+            <div class="performance-label">Temps moyen</div>
+          </div>
+        </div>
+
+        <div class="performance-card">
+          <div class="performance-icon">🚀</div>
+          <div class="performance-content">
+            <div class="performance-value">45km</div>
+            <div class="performance-label">Distance parcourue</div>
+          </div>
+        </div>
+
+        <div class="performance-card">
+          <div class="performance-icon">💰</div>
+          <div class="performance-content">
+            <div class="performance-value">120 DT</div>
+            <div class="performance-label">Gains du jour</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>

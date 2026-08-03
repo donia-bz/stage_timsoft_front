@@ -23,7 +23,7 @@ export interface Reclamation {
   templateUrl: './dashboard-enhanced.component.html',
   styleUrls: ['./dashboard-enhanced.component.scss']
 })
-export class DashboardComponent implements OnInit {
+export class DashboardEnhancedComponent implements OnInit {
   clientName = 'Client';
   clientId = '';
   commandes: Commande[] = [];
@@ -313,16 +313,16 @@ export class DashboardComponent implements OnInit {
     console.log('Searching for:', this.searchTerm);
   }
 
+  formatDate(date: Date | string): string {
+    if (!date) return '';
+    return new Date(date).toLocaleDateString('fr-FR');
+  }
+
+  getCurrentTime(): string {
+    return new Date().toLocaleTimeString('fr-FR');
+  }
+
   // Form getters for validation
   get f() { return this.packageForm.controls; }
   get r() { return this.reclamationForm.controls; }
-
-  // Helper methods for template
-  getCurrentTime(): string {
-    return new Date().toLocaleString('fr-FR');
-  }
-
-  formatDate(date: Date): string {
-    return new Date(date).toLocaleString('fr-FR');
-  }
 }
