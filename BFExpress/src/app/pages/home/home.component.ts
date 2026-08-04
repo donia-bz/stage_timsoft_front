@@ -6,15 +6,5 @@ import { Component } from '@angular/core';
   styleUrls: ['./home.component.scss']
 })
 export class HomeComponent {
-  selectedMode: 'client' | 'livreur' = 'client';
-
-  get activeImage(): string {
-    return this.selectedMode === 'client'
-      ? 'assets/client-illustration.svg'
-      : 'assets/livreur-illustration.svg';
-  }
-
-  setMode(mode: 'client' | 'livreur'): void {
-    this.selectedMode = mode;
-  }
+  // Component ready for future enhancements
 }

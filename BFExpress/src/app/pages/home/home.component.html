@@ -1,139 +1,194 @@
 <!-- Hero Section -->
-<section class="hero-section animate-slide-down">
+<section class="hero-section">
+  <div class="hero-background">
+    <div class="gradient-blob blob-1"></div>
+    <div class="gradient-blob blob-2"></div>
+    <div class="gradient-blob blob-3"></div>
+  </div>
+  
   <div class="container hero-container">
-    
-    <div class="hero-text-content">
+    <div class="hero-content">
       <div class="hero-badge">
         <span class="pulse-dot"></span>
-        Plateforme N°1 de Livraison en Tunisie
+        <span class="badge-text">Plateforme N°1 de Livraison en Tunisie</span>
       </div>
       
       <h1 class="hero-title">
-        Livraison Rapide, <br/>
-        <span class="gradient-text">Sécurisée & Intelligente</span>
+        <span class="title-line">Livraison Rapide,</span>
+        <span class="title-line gradient-text">Sécurisée & Intelligente</span>
       </h1>
       
       <p class="hero-description">
-        Expédiez vos colis en toute sérénité. Grâce à nos microservices connectés et l'intelligence artificielle, vos livraisons sont acheminées avec une précision chirurgicale.
+        Expédiez vos colis en toute sérénité grâce à nos microservices connectés et l'intelligence artificielle pour une précision chirurgicale.
       </p>
 
-      <!-- Quick Parcel Search -->
-      <div class="quick-track-card">
-        <div class="track-input-group">
-          <span class="search-icon">🔍</span>
-          <input type="text" placeholder="Entrez votre numéro de suivi (ex: #CMD-1029)..." routerLink="/suivi" />
-          <button class="btn-track" routerLink="/suivi">Suivre Colis</button>
+      <!-- Stats Counter -->
+      <div class="stats-counter">
+        <div class="stat-item">
+          <div class="stat-number">24h</div>
+          <div class="stat-label">Livraison</div>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <div class="stat-number">100%</div>
+          <div class="stat-label">Sécurisé</div>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <div class="stat-number">IA</div>
+          <div class="stat-label">Optimisé</div>
         </div>
       </div>
 
-      <!-- Action Cards (Client / Livreur) -->
-      <div class="hero-mode-cards">
-        <a class="mode-card client-mode" routerLink="/devenir-client">
-          <div class="mode-icon">📦</div>
-          <div class="mode-info">
-            <h3>Espace Client / Expéditeur</h3>
-            <p>Créez vos colis et suivez l'acheminement en temps réel.</p>
-          </div>
-          <span class="arrow">→</span>
+      <!-- CTA Buttons -->
+      <div class="hero-cta">
+        <a class="btn-primary" routerLink="/devenir-client">
+          <span class="btn-icon">📦</span>
+          <span>Espace Client</span>
         </a>
+        <a class="btn-secondary" routerLink="/devenir-livreur">
+          <span class="btn-icon">🚚</span>
+          <span>Devenir Livreur</span>
+        </a>
+      </div>
 
-        <a class="mode-card livreur-mode" routerLink="/devenir-livreur">
-          <div class="mode-icon">🚚</div>
-          <div class="mode-info">
-            <h3>Rejoindre comme Livreur</h3>
-            <p>Devenez partenaire et commencez vos missions validées.</p>
-          </div>
-          <span class="arrow">→</span>
-        </a>
+      <!-- Quick Track -->
+      <div class="quick-track">
+        <input type="text" placeholder="Numéro de suivi..." class="track-input" />
+        <button class="track-btn" routerLink="/suivi">Suivre</button>
       </div>
     </div>
 
-    <!-- Hero Visual / Floating Stats -->
+    <!-- Hero Visual -->
     <div class="hero-visual">
-      <div class="floating-glass-card glass-top">
-        <span class="icon">⚡</span>
-        <div>
-          <strong>Délai Estimé IA</strong>
-          <small>Moins de 45 minutes</small>
+      <div class="hero-card floating-card-1">
+        <div class="card-icon">⚡</div>
+        <div class="card-content">
+          <div class="card-title">Livraison Express</div>
+          <div class="card-subtitle">Moins de 45 min</div>
         </div>
       </div>
 
-      <div class="main-hero-graphic">
-        <div class="circle-glow"></div>
-        <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80" alt="BFExpress Delivery" class="hero-img-main" />
+      <div class="hero-main-image">
+        <div class="image-glow"></div>
+        <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80" alt="BFExpress Delivery" />
       </div>
 
-      <div class="floating-glass-card glass-bottom">
-        <span class="icon">🛡️</span>
-        <div>
-          <strong>Compte Sécurisé</strong>
-          <small>Validation par Administrateur</small>
+      <div class="hero-card floating-card-2">
+        <div class="card-icon">🛡️</div>
+        <div class="card-content">
+          <div class="card-title">100% Sécurisé</div>
+          <div class="card-subtitle">Validation Admin</div>
         </div>
       </div>
     </div>
-
   </div>
 </section>
 
-<!-- Workflow Section (Comment ça marche) -->
+<!-- Workflow Section -->
 <section class="workflow-section">
   <div class="container">
-    <div class="section-header text-center">
-      <span class="section-tag">Processus Clé</span>
+    <div class="section-header">
+      <span class="section-badge">Processus Simple</span>
       <h2>Comment ça fonctionne ?</h2>
-      <p class="section-subtitle">Un parcours fluide en 3 étapes simples et sécurisées pour garantir la confidentialité et la fiabilité des opérations.</p>
+      <p class="section-subtitle">Un parcours fluide en 3 étapes sécurisées</p>
     </div>
 
-    <div class="grid grid-3 workflow-grid">
-      <div class="step-card">
-        <div class="step-number">01</div>
-        <div class="step-icon">📝</div>
+    <div class="workflow-steps">
+      <div class="workflow-step">
+        <div class="step-icon-wrapper">
+          <span class="step-icon">📝</span>
+          <div class="step-number">01</div>
+        </div>
         <h3>Demande d'Inscription</h3>
-        <p>Inscrivez-vous en tant que client ou livreur. Vos informations sont soumises à la direction pour validation.</p>
+        <p>Inscrivez-vous en tant que client ou livreur. Vos informations sont soumises pour validation.</p>
       </div>
 
-      <div class="step-card highlight">
-        <div class="step-number">02</div>
-        <div class="step-icon">🔐</div>
+      <div class="workflow-connector">
+        <div class="connector-line"></div>
+      </div>
+
+      <div class="workflow-step featured">
+        <div class="step-icon-wrapper featured">
+          <span class="step-icon">🔐</span>
+          <div class="step-number">02</div>
+        </div>
         <h3>Approbation Admin</h3>
-        <p>Un administrateur valide votre dossier et vous délivre vos identifiants d'accès par SMS et Email.</p>
+        <p>Un administrateur valide votre dossier et vous délivre vos identifiants par SMS et Email.</p>
       </div>
 
-      <div class="step-card">
-        <div class="step-number">03</div>
-        <div class="step-icon">🎯</div>
+      <div class="workflow-connector">
+        <div class="connector-line"></div>
+      </div>
+
+      <div class="workflow-step">
+        <div class="step-icon-wrapper">
+          <span class="step-icon">🎯</span>
+          <div class="step-number">03</div>
+        </div>
         <h3>Suivi en temps réel</h3>
-        <p>Suivez vos colis en temps réel : affectation optimale du livreur et visualisation du trajet jusqu'à la livraison.</p>
+        <p>Suivez vos colis en temps réel avec affectation optimale du livreur et visualisation du trajet.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Features Grid -->
+<!-- Features Section -->
 <section class="features-section">
   <div class="container">
-    <div class="section-header text-center">
-      <span class="section-tag">Avantages</span>
+    <div class="section-header">
+      <span class="section-badge">Nos Avantages</span>
       <h2>Pourquoi choisir BFExpress ?</h2>
+      <p class="section-subtitle">Une solution complète pour vos besoins de livraison</p>
     </div>
 
-    <div class="grid grid-3 features-grid">
-      <div class="feature-card green-box">
-        <div class="feature-number">01</div>
-        <h3>Une tarification transparente</h3>
-        <p>Une tarification unique, claire et transparente pour toutes les livraisons.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="icon-emoji">💰</span>
+        </div>
+        <h3>Tarification Transparente</h3>
+        <p>Une tarification unique, claire et transparente pour toutes vos livraisons en Tunisie.</p>
       </div>
 
-      <div class="feature-card green-box">
-        <div class="feature-number">02</div>
-        <h3>Sécurisation des colis</h3>
-        <p>Votre produit est en sécurité avec nous et arrive à son destinataire juste à temps.</p>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="icon-emoji">🔒</span>
+        </div>
+        <h3>Sécurisation Totale</h3>
+        <p>Vos colis sont en sécurité avec nous et arrivent à destination juste à temps.</p>
       </div>
 
-      <div class="feature-card green-box">
-        <div class="feature-number">03</div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="icon-emoji">⏰</span>
+        </div>
         <h3>Disponibilité 24/7</h3>
-        <p>Nos livreurs assurent vos livraisons sur tout le territoire et à toute heure.</p>
+        <p>Nos livreurs assurent vos livraisons sur tout le territoire tunisien à toute heure.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="icon-emoji">📍</span>
+        </div>
+        <h3>Suivi en Temps Réel</h3>
+        <p>Localisez vos colis à tout moment grâce à notre système de suivi GPS avancé.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="icon-emoji">🤖</span>
+        </div>
+        <h3>Intelligence Artificielle</h3>
+        <p>Optimisation automatique des routes et affectation intelligente des livreurs.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="icon-emoji">📱</span>
+        </div>
+        <h3>Interface Moderne</h3>
+        <p>Plateforme intuitive et facile à utiliser pour une expérience utilisateur optimale.</p>
       </div>
     </div>
   </div>
@@ -142,30 +197,49 @@
 <!-- FAQ Section -->
 <section class="faq-section">
   <div class="container">
-    <div class="section-header text-center">
-      <span class="section-tag">Questions Fréquentes</span>
-      <h2>Besoin d'aide ?</h2>
+    <div class="section-header">
+      <span class="section-badge">FAQ</span>
+      <h2>Questions Fréquentes</h2>
+      <p class="section-subtitle">Tout ce que vous devez savoir sur BFExpress</p>
     </div>
 
-    <div class="faq-accordion">
-      <div class="faq-item">
-        <h3>Quels types de livraisons propose BFExpress ?</h3>
-        <p>BFExpress propose plusieurs services de livraison adaptés à vos besoins : livraison express, standard et planifiée. Nous assurons la collecte et la livraison de vos colis partout en Tunisie, avec un suivi en temps réel.</p>
+    <div class="faq-grid">
+      <div class="faq-card">
+        <div class="faq-icon">📦</div>
+        <h3>Types de livraisons</h3>
+        <p>BFExpress propose plusieurs services : livraison express, standard et planifiée pour la Tunisie entière.</p>
       </div>
 
-      <div class="faq-item">
-        <h3>En combien de temps mon colis sera-t-il livré ?</h3>
-        <p>Nous assurons une livraison sur toute la <strong>Tunisie en 24h</strong> pour les services compatibles. Les délais exacts peuvent varier selon l'origine et le service choisi.</p>
+      <div class="faq-card">
+        <div class="faq-icon">⏱️</div>
+        <h3>Délais de livraison</h3>
+        <p>Livraison sur toute la <strong>Tunisie en 24h</strong> pour les services compatibles.</p>
       </div>
 
-      <div class="faq-item">
-        <h3>Comment puis-je suivre mon colis ?</h3>
-        <p>Vous pouvez suivre votre colis via notre <strong>plateforme de suivi en ligne</strong> en entrant votre <strong>numéro de suivi</strong>. Vous serez également notifié par SMS ou e-mail à chaque étape.</p>
+      <div class="faq-card">
+        <div class="faq-icon">📍</div>
+        <h3>Suivi de colis</h3>
+        <p>Suivez votre colis via notre plateforme en ligne avec notifications SMS/email.</p>
       </div>
 
-      <div class="faq-item">
-        <h3>Que faire si mon colis est endommagé ou perdu ?</h3>
-        <p>En cas de problème, contactez immédiatement notre service client. Nous ouvrirons une enquête et proposerons la meilleure solution : remplacement, remboursement ou compensation selon le cas.</p>
+      <div class="faq-card">
+        <div class="faq-icon">🛡️</div>
+        <h3>Colis endommagé</h3>
+        <p>Contactez notre service client pour enquête et solution adaptée.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+  <div class="container">
+    <div class="cta-content">
+      <h2>Prêt à expédier votre premier colis ?</h2>
+      <p>Rejoignez BFExpress dès maintenant et découvrez une nouvelle expérience de livraison.</p>
+      <div class="cta-buttons">
+        <a class="btn-cta-primary" routerLink="/devenir-client">Commencer maintenant</a>
+        <a class="btn-cta-secondary" routerLink="/contact">Nous contacter</a>
       </div>
     </div>
   </div>
