@@ -204,131 +204,187 @@
         <div class="pickup-card">
           <div class="pickup-header">
             <h2>Nouveau Pickup</h2>
+            <p>Expéditeur : {{ clientName }}</p>
           </div>
 
-          <div class="pickup-form-grid">
-            <div class="field-group">
-              <label>Nom complet</label>
-              <input type="text" [(ngModel)]="pickupName" placeholder="Nom complet" />
-            </div>
-            <div class="field-group">
-              <label>Gouvernorat</label>
-              <select [(ngModel)]="governorate">
-                <option value="">Sélectionner</option>
-                <option value="Tunis">Tunis</option>
-                <option value="Ariana">Ariana</option>
-                <option value="Sousse">Sousse</option>
-              </select>
-            </div>
-            <div class="field-group">
-              <label>Ville</label>
-              <select [(ngModel)]="city">
-                <option value="">Sélectionner</option>
-                <option value="Tunis">Tunis</option>
-                <option value="Ariana">Ariana</option>
-                <option value="Sousse">Sousse</option>
-              </select>
-            </div>
-            <div class="field-group">
-              <label>Localité</label>
-              <select [(ngModel)]="locality">
-                <option value="">Sélectionner</option>
-                <option value="Centre">Centre</option>
-                <option value="El Menzah">El Menzah</option>
-                <option value="La Marsa">La Marsa</option>
-              </select>
-            </div>
+          <div class="section-divider">
+            <h3>Informations du destinataire</h3>
           </div>
 
-          <div class="field-full">
-            <label>Adresse complète</label>
-            <input type="text" [(ngModel)]="address" placeholder="Adresse complète" />
-          </div>
-
-          <div class="pickup-form-grid">
-            <div class="field-group">
-              <label>Téléphone</label>
-              <input type="text" [(ngModel)]="phone1" placeholder="Téléphone" />
-            </div>
-            <div class="field-group">
-              <label>Téléphone 2</label>
-              <input type="text" [(ngModel)]="phone2" placeholder="Téléphone 2" />
-            </div>
-            <div class="field-group field-button-group">
-              <button class="secondary" type="button" (click)="verifyClient()">Vérifier Client</button>
-            </div>
-          </div>
-
-          <div class="field-full">
-            <label>Désignation</label>
-            <input type="text" [(ngModel)]="designation" placeholder="Désignation" />
-          </div>
-
-          <div class="pickup-form-grid">
-            <div class="field-group">
-              <label>Prix en DT</label>
-              <input type="text" [(ngModel)]="price" placeholder="Prix en DT" />
-            </div>
-            <div class="field-group">
-              <label>Nombre d'article</label>
-              <input type="number" [(ngModel)]="itemCount" min="1" />
-            </div>
-            <div class="field-group">
-              <label>Nombre de colis</label>
-              <input type="number" [(ngModel)]="packageCount" min="1" />
-            </div>
-          </div>
-
-          <div class="pickup-form-grid">
-            <div class="field-group">
-              <label>Mode de paiement</label>
-              <select [(ngModel)]="paymentMode">
-                <option>Espèce seulement</option>
-                <option>Carte</option>
-                <option>Virement</option>
-              </select>
-            </div>
-            <div class="field-group">
-              <label>Type de Service</label>
-              <select [(ngModel)]="typeService">
-                <option value="STANDARD">Standard</option>
-                <option value="EXPRESS">Express (+30% plus rapide)</option>
-              </select>
-            </div>
-            <div class="field-group field-radio">
-              <label>Ouvrir le colis avant le paiement ?</label>
-              <div class="radio-row">
-                <label><input type="radio" name="openBeforePayment" value="Non" [(ngModel)]="openBeforePayment" /> Non</label>
-                <label><input type="radio" name="openBeforePayment" value="Oui" [(ngModel)]="openBeforePayment" /> Oui</label>
+          <form [formGroup]="packageForm">
+            <div class="pickup-form-grid">
+              <div class="field-group">
+                <label>Nom du destinataire</label>
+                <input type="text" formControlName="pickupName" placeholder="Nom complet du destinataire" />
+                <div class="error-message" *ngIf="f['pickupName'].touched && f['pickupName'].invalid">
+                  <span *ngIf="f['pickupName'].errors?.['required']">Ce champ est requis</span>
+                  <span *ngIf="f['pickupName'].errors?.['minlength']">Minimum 3 caractères</span>
+                </div>
+              </div>
+              <div class="field-group">
+                <label>Gouvernorat</label>
+                <select formControlName="governorate">
+                  <option value="">Sélectionner</option>
+                  <option value="Tunis">Tunis</option>
+                  <option value="Ariana">Ariana</option>
+                  <option value="Sousse">Sousse</option>
+                </select>
+                <div class="error-message" *ngIf="f['governorate'].touched && f['governorate'].invalid">
+                  <span>Ce champ est requis</span>
+                </div>
+              </div>
+              <div class="field-group">
+                <label>Ville</label>
+                <select formControlName="city">
+                  <option value="">Sélectionner</option>
+                  <option value="Tunis">Tunis</option>
+                  <option value="Ariana">Ariana</option>
+                  <option value="Sousse">Sousse</option>
+                </select>
+                <div class="error-message" *ngIf="f['city'].touched && f['city'].invalid">
+                  <span *ngIf="f['city'].errors?.['required']">Ce champ est requis</span>
+                  <span *ngIf="f['city'].errors?.['minlength']">Minimum 2 caractères</span>
+                </div>
+              </div>
+              <div class="field-group">
+                <label>Localité</label>
+                <select formControlName="locality">
+                  <option value="">Sélectionner</option>
+                  <option value="Centre">Centre</option>
+                  <option value="El Menzah">El Menzah</option>
+                  <option value="La Marsa">La Marsa</option>
+                </select>
+                <div class="error-message" *ngIf="f['locality'].touched && f['locality'].invalid">
+                  <span>Ce champ est requis</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="pickup-form-grid">
-            <div class="field-group field-radio">
-              <label>Échange</label>
-              <div class="radio-row">
-                <label><input type="radio" name="exchange" value="Non" [(ngModel)]="exchange" /> Non</label>
-                <label><input type="radio" name="exchange" value="Oui" [(ngModel)]="exchange" /> Oui</label>
+            <div class="field-full">
+              <label>Adresse du destinataire</label>
+              <input type="text" formControlName="address" placeholder="Adresse complète du destinataire" />
+              <div class="error-message" *ngIf="f['address'].touched && f['address'].invalid">
+                <span *ngIf="f['address'].errors?.['required']">Ce champ est requis</span>
+                <span *ngIf="f['address'].errors?.['minlength']">Minimum 10 caractères</span>
               </div>
             </div>
-          </div>
 
-          <div class="field-full">
-            <label>Remarques</label>
-            <textarea [(ngModel)]="remarks" placeholder="Remarques"></textarea>
-          </div>
+            <div class="pickup-form-grid">
+              <div class="field-group">
+                <label>Téléphone du destinataire</label>
+                <input type="text" formControlName="phone1" placeholder="Téléphone principal" />
+                <div class="error-message" *ngIf="f['phone1'].touched && f['phone1'].invalid">
+                  <span *ngIf="f['phone1'].errors?.['required']">Ce champ est requis</span>
+                  <span *ngIf="f['phone1'].errors?.['pattern']">Format invalide (8-15 chiffres)</span>
+                </div>
+              </div>
+              <div class="field-group">
+                <label>Téléphone secondaire</label>
+                <input type="text" formControlName="phone2" placeholder="Téléphone secondaire" />
+                <div class="error-message" *ngIf="f['phone2'].touched && f['phone2'].invalid">
+                  <span *ngIf="f['phone2'].errors?.['pattern']">Format invalide (8-15 chiffres)</span>
+                </div>
+              </div>
+              <div class="field-group field-button-group">
+                <button class="secondary" type="button" (click)="verifyClient()">Vérifier Client</button>
+              </div>
+            </div>
 
-          <div class="error-banner" *ngIf="errorMessage">
-            ⚠️ {{ errorMessage }}
-          </div>
+            <div class="section-divider">
+              <h3>Informations du colis</h3>
+            </div>
 
-          <div class="actions-row">
-            <button class="btn-add" type="button" (click)="submitPickup()" [disabled]="loading">
-              <span class="btn-icon">+</span>
-              {{ loading ? 'Enregistrement...' : 'Ajouter' }}
-            </button>
-          </div>
+            <div class="field-full">
+              <label>Désignation du colis</label>
+              <input type="text" formControlName="designation" placeholder="Description du contenu" />
+              <div class="error-message" *ngIf="f['designation'].touched && f['designation'].invalid">
+                <span *ngIf="f['designation'].errors?.['required']">Ce champ est requis</span>
+                <span *ngIf="f['designation'].errors?.['minlength']">Minimum 5 caractères</span>
+              </div>
+            </div>
+
+            <div class="pickup-form-grid">
+              <div class="field-group">
+                <label>Prix en DT</label>
+                <input type="text" formControlName="price" placeholder="Montant à collecter" />
+                <div class="error-message" *ngIf="f['price'].touched && f['price'].invalid">
+                  <span *ngIf="f['price'].errors?.['required']">Ce champ est requis</span>
+                  <span *ngIf="f['price'].errors?.['min']">Valeur positive requise</span>
+                </div>
+              </div>
+              <div class="field-group">
+                <label>Nombre d'articles</label>
+                <input type="number" formControlName="itemCount" min="1" />
+                <div class="error-message" *ngIf="f['itemCount'].touched && f['itemCount'].invalid">
+                  <span *ngIf="f['itemCount'].errors?.['required']">Ce champ est requis</span>
+                  <span *ngIf="f['itemCount'].errors?.['min']">Minimum 1 article</span>
+                </div>
+              </div>
+              <div class="field-group">
+                <label>Nombre de colis</label>
+                <input type="number" formControlName="packageCount" min="1" />
+                <div class="error-message" *ngIf="f['packageCount'].touched && f['packageCount'].invalid">
+                  <span *ngIf="f['packageCount'].errors?.['required']">Ce champ est requis</span>
+                  <span *ngIf="f['packageCount'].errors?.['min']">Minimum 1 colis</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-divider">
+              <h3>Options de livraison</h3>
+            </div>
+
+            <div class="pickup-form-grid">
+              <div class="field-group">
+                <label>Mode de paiement</label>
+                <select formControlName="paymentMode">
+                  <option>Espèce seulement</option>
+                  <option>Carte</option>
+                  <option>Virement</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label>Type de Service</label>
+                <select formControlName="typeService">
+                  <option value="STANDARD">Standard</option>
+                  <option value="EXPRESS">Express (+30% plus rapide)</option>
+                </select>
+              </div>
+              <div class="field-group field-radio">
+                <label>Ouvrir le colis avant le paiement ?</label>
+                <div class="radio-row">
+                  <label><input type="radio" name="openBeforePayment" value="Non" formControlName="openBeforePayment" /> Non</label>
+                  <label><input type="radio" name="openBeforePayment" value="Oui" formControlName="openBeforePayment" /> Oui</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="pickup-form-grid">
+              <div class="field-group field-radio">
+                <label>Échange autorisé ?</label>
+                <div class="radio-row">
+                  <label><input type="radio" name="exchange" value="Non" formControlName="exchange" /> Non</label>
+                  <label><input type="radio" name="exchange" value="Oui" formControlName="exchange" /> Oui</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="field-full">
+              <label>Remarques</label>
+              <textarea formControlName="remarks" placeholder="Instructions supplémentaires pour le livreur"></textarea>
+            </div>
+
+            <div class="error-banner" *ngIf="errorMessage">
+              ⚠️ {{ errorMessage }}
+            </div>
+
+            <div class="actions-row">
+              <button class="btn-add" type="button" (click)="submitPickup()" [disabled]="loading">
+                <span class="btn-icon">+</span>
+                {{ loading ? 'Enregistrement...' : 'Ajouter' }}
+              </button>
+            </div>
+          </form>
         </div>
       </section>
     </div>

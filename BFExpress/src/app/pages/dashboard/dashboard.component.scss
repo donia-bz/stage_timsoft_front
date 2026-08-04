@@ -944,3 +944,29 @@ textarea {
     .full-content-area { width: 100%; padding: 1.5rem 1rem; }
     .tile-grid { grid-template-columns: repeat(1,1fr); }
   }
+
+/* Form validation styles */
+.error-message {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.section-divider {
+  margin: 2rem 0 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.section-divider h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.pickup-header p {
+  margin: 0 0 1.5rem;
+  color: #64748b;
+  font-size: 0.95rem;
+}

@@ -1,8 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ApiService, Commande } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
@@ -18,10 +15,8 @@ export interface Reclamation {
 
 @Component({
   selector: 'app-dashboard',
-  standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule],
-  templateUrl: './dashboard-enhanced.component.html',
-  styleUrls: ['./dashboard-enhanced.component.scss']
+  templateUrl: './dashboard.component.html',
+  styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent implements OnInit {
   clientName = 'Client';
@@ -162,6 +157,24 @@ export class DashboardComponent implements OnInit {
     const clientId = user ? user.id : 'client-default-id';
 
     const formValue = this.packageForm.value;
+    
+    // Créer le destinataire d'abord
+    const destinataire = {
+      nom: formValue.pickupName,
+      telephone: formValue.phone1,
+      adresseId: 'adresse-temp-id' // Serait créé avec l'adresse
+    };
+
+    // Créer l'adresse du destinataire
+    const adresse = {
+      rue: formValue.address,
+      ville: formValue.city,
+      codePostal: formValue.locality,
+      latitude: 36.8065,
+      longitude: 10.1815,
+      adressePrincipale: true
+    };
+
     const commande: Commande = {
       clientId,
       adresseDepartId: 'adresse-depart-default-id',
