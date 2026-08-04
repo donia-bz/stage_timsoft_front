@@ -1,106 +1,197 @@
 <section class="dashboard-page">
   <div class="dashboard-shell">
+    
+    <!-- Livreur Mobile/Desktop Sidebar -->
     <aside class="dashboard-sidebar">
       <div class="dashboard-brand">
+        <div class="brand-ic">🚚</div>
         <span>BFExpress Driver</span>
       </div>
+
+      <div class="driver-profile-card">
+        <div class="driver-avatar">{{ driverName.charAt(0) }}</div>
+        <div class="driver-meta">
+          <div class="d-name">{{ driverName }}</div>
+          <div class="d-sub">⭐ {{ driverInfo?.noteMoyenne || '4.9' }} / 5.0</div>
+        </div>
+      </div>
+
       <div class="sidebar-section">
-        <h3>Menu</h3>
+        <h3>Commandes & Actions</h3>
         <nav>
-          <a class="sidebar-link active">Tableau de bord</a>
-          <a class="sidebar-link" routerLink="/">Page d'accueil</a>
-          <a class="sidebar-link" routerLink="/recherche-colis">Suivi colis</a>
+          <a class="sidebar-link active"><span class="icon">📱</span> Mon Espace Driver</a>
+          <a class="sidebar-link" routerLink="/recherche-colis"><span class="icon">🔍</span> Recherche Colis</a>
+          <a class="sidebar-link" routerLink="/reclamations"><span class="icon">⚠️</span> Signaler un Incident</a>
+        </nav>
+      </div>
+
+      <div class="sidebar-section mt-auto">
+        <nav>
+          <a class="sidebar-link logout" (click)="logout()"><span class="icon">🚪</span> Déconnexion</a>
         </nav>
       </div>
     </aside>
 
+    <!-- Main Content Livreur -->
     <main class="dashboard-content">
+      
+      <!-- Top Driver Header & Quick Status Switcher -->
       <div class="dashboard-header">
         <div>
-          <h1>Bonjour {{ driverName }}</h1>
-          <p class="dashboard-sub">{{ stats[0]?.value || 0 }} livraisons vous attendent aujourd'hui</p>
-          <div class="driver-meta">
-            <div>Dépot: {{ depotInfo?.nom || 'Non rattaché' }}</div>
-            <div>Véhicule: {{ assignedVehicle?.immatriculation || 'Aucun' }}</div>
-            <div>Note moyenne: {{ driverInfo?.noteMoyenne || '—' }}</div>
-          </div>
+          <h1>Bonjour, {{ driverName }} 👋</h1>
+          <p class="dashboard-greeting">Consultez votre tournée du jour et mettez à jour votre statut en direct</p>
         </div>
-        <div class="toggle-status" style="width:100%;max-width:380px;">
-          <button class="status-btn" [ngClass]="{ on: driverInfo?.statut === 'DISPONIBLE' }" (click)="toggleStatut('DISPONIBLE')">Disponible</button>
-          <button class="status-btn busy" [ngClass]="{ on: driverInfo?.statut === 'EN_COURS' }" (click)="toggleStatut('EN_COURS')">En course</button>
-          <button class="status-btn" [ngClass]="{ on: driverInfo?.statut === 'HORS_LIGNE' }" (click)="toggleStatut('HORS_LIGNE')">Hors ligne</button>
+
+        <!-- Big Toggle Status Buttons -->
+        <div class="toggle-status-box">
+          <button class="status-btn btn-available" [class.on]="driverInfo?.statut === 'DISPONIBLE'" (click)="toggleStatut('DISPONIBLE')">
+            🟢 Disponible
+          </button>
+          <button class="status-btn btn-busy" [class.on]="driverInfo?.statut === 'EN_COURSE'" (click)="toggleStatut('EN_COURSE')">
+            🟡 En Course
+          </button>
+          <button class="status-btn btn-offline" [class.on]="driverInfo?.statut === 'HORS_LIGNE'" (click)="toggleStatut('HORS_LIGNE')">
+            🔴 Hors Ligne
+          </button>
         </div>
       </div>
 
-      <div class="grid grid-2" style="margin-bottom:1.5rem;">
-        <div class="card page-card">
-          <h3>Livraison actuelle</h3>
-          <div class="waybill">
-            <div class="top-row">
-              <div class="order-id">{{ currentDelivery?.id ? currentDelivery.id.substring(currentDelivery.id.length - 6) : 'Aucune' }} <span>· 2 colis</span></div>
-              <div class="eta"><div class="num">{{ currentDelivery ? '8 min' : '—' }}</div><div class="lbl">jusqu'à l'arrivée</div></div>
+      <!-- Alert Section for New Assignments -->
+      <div class="new-assignment-alert" *ngIf="newAssignments.length > 0">
+        <div class="alert-content">
+          <div class="alert-icon">🔔</div>
+          <div>
+            <strong>{{ newAssignments.length }} Nouvelle(s) course(s) vous a/ont été affectée(s) !</strong>
+            <p>Cliquez sur démarrer ci-dessous pour lancer votre navigation GPS.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Course Grid (Current Delivery & Map) -->
+      <div class="grid-2-col mb-4">
+        
+        <!-- Active Course Card -->
+        <div class="page-card highlight-card">
+          <div class="card-header-flex">
+            <h3>⚡ Delivery en cours</h3>
+            <span class="badge-live" *ngIf="currentDelivery">EN COURS</span>
+          </div>
+
+          <div *ngIf="!currentDelivery" class="empty-delivery-box">
+            <div class="ic">🛵</div>
+            <p>Aucune livraison actuellement en cours.</p>
+            <span class="subtext">Sélectionnez une livraison dans la file d'attente pour démarrer.</span>
+          </div>
+
+          <div *ngIf="currentDelivery" class="active-delivery-body">
+            <div class="delivery-ref-row">
+              <span class="ref">Réf: #{{ currentDelivery.id ? currentDelivery.id.substring(currentDelivery.id.length - 6) : 'N/A' }}</span>
+              <span class="colis-tag">📦 Colis ID: {{ currentDelivery.colisId }}</span>
             </div>
-            <div class="steps">
-              <div class="step done"><div class="line"></div><div class="node"></div><div class="lbl">Affectée</div></div>
-              <div class="step" [class.now]="isDeliveryInProgress"><div class="line"></div><div class="node"></div><div class="lbl">En cours</div></div>
-              <div class="step"><div class="line"></div><div class="node"></div><div class="lbl">Livrée</div></div>
+
+            <!-- Steps timeline -->
+            <div class="delivery-timeline">
+              <div class="t-step done">
+                <div class="t-node">✓</div>
+                <div class="t-label">Prise en charge</div>
+              </div>
+              <div class="t-step active">
+                <div class="t-node">🚚</div>
+                <div class="t-label">En Transit</div>
+              </div>
+              <div class="t-step">
+                <div class="t-node">📍</div>
+                <div class="t-label">Livraison</div>
+              </div>
+            </div>
+
+            <!-- Destination Info -->
+            <div class="destination-box">
+              <div class="dest-icon">📍</div>
+              <div class="dest-details">
+                <div class="dest-title">Destination : {{ currentDeliveryCommande?.adresseArrivee?.ville || 'Adresse Destinataire' }}</div>
+                <div class="dest-sub">Client : {{ currentDeliveryCommande?.clientNom || 'Client BFExpress' }}</div>
+              </div>
+              <a class="btn-call" href="tel:21650000000">📞 Appeler</a>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="action-buttons-group mt-4">
+              <button class="btn-complete-delivery" (click)="terminer(currentDelivery)">
+                ✅ Marquer comme Livré & Clôturer
+              </button>
+              <button class="btn-report-issue" (click)="reportIssue(currentDelivery)">
+                ⚠️ Incident
+              </button>
             </div>
           </div>
-          <div style="margin-top:14px;">
-            <div class="list-row">
-              <div class="ic">📍</div>
-              <div class="info"><div class="t1">Destination ID: {{ currentDeliveryCommande?.adresseArriveeId || 'Inconnue' }}</div><div class="t2">Commande ID: {{ currentDeliveryCommande?.id || '—' }}</div></div>
-              <div class="stars">⭐ {{ driverInfo?.noteMoyenne || '4.8' }}</div>
-            </div>
-          </div>
-          <button class="cta" style="width:100%;justify-content:center;margin-top:12px;" *ngIf="currentDelivery" (click)="terminer(currentDelivery)">Marquer comme livré</button>
         </div>
 
-        <div class="card page-card">
-          <h3>Position & trajet</h3>
-          <div class="map-placeholder">
-            <div class="route"></div>
-            <div class="pin start"></div>
-            <div class="pin end"></div>
-            <div class="tag">GPS actif</div>
+        <!-- GPS Navigation Map -->
+        <div class="page-card">
+          <div class="card-header-flex">
+            <h3>🗺️ Itinéraire GPS Live</h3>
+            <span class="gps-status-badge">🟢 GPS 10s Active</span>
+          </div>
+
+          <div class="map-wrapper">
+            <div id="driver-map" class="real-leaflet-map"></div>
           </div>
         </div>
+
       </div>
 
-      <div class="card page-card">
-        <h3>Nouvelles affectations</h3>
-        <div *ngIf="newAssignments.length === 0" class="text-center text-muted">Aucune nouvelle affectation.</div>
-        <div *ngFor="let a of newAssignments" class="list-row">
-          <div class="ic">🔔</div>
-          <div class="info"><div class="t1">#{{ a.id?.substring(a.id.length - 6) }} — Colis {{ a.colisId }}</div><div class="t2">Statut: {{ a.statut }}</div></div>
-          <button class="cta" (click)="acceptAssignment(a)">Accepter</button>
+      <!-- Drivers Metrics KPI -->
+      <div class="grid-3-kpi mb-4">
+        <div class="kpi-card">
+          <div class="kpi-title">Livraisons Effectuées</div>
+          <div class="kpi-value">{{ stats[0]?.value || 0 }}</div>
+          <div class="kpi-sub">Aujourd'hui</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Note Satisfaction</div>
+          <div class="kpi-value text-gold">⭐ {{ driverInfo?.noteMoyenne || '4.9' }}</div>
+          <div class="kpi-sub">Client Feedback</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Distance Parcourue</div>
+          <div class="kpi-value">34 Km</div>
+          <div class="kpi-sub">GPS Trajet</div>
         </div>
       </div>
 
-      <div class="card page-card">
-        <h3>Historique Véhicules</h3>
-        <div *ngIf="vehicleHistory.length === 0" class="text-center text-muted">Historique vide.</div>
-        <div *ngFor="let vh of vehicleHistory" class="list-row">
-          <div class="ic">🚗</div>
-          <div class="info"><div class="t1">{{ vh.immatriculation }} — {{ vh.modele }}</div><div class="t2">Utilisé depuis: {{ vh.date || '—' }}</div></div>
+      <!-- File d'attente (Waiting Queue) -->
+      <div class="page-card">
+        <h3>📋 File d'attente des livraisons assignées</h3>
+        <div class="table-container mt-3">
+          <table class="premium-table">
+            <thead>
+              <tr>
+                <th>Réf Course</th>
+                <th>Colis ID</th>
+                <th>Statut</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let l of waitingLivraisons">
+                <td><strong>#{{ l.id ? l.id.substring(l.id.length - 6) : 'N/A' }}</strong></td>
+                <td>{{ l.colisId }}</td>
+                <td><span class="status-pill status-validee">{{ l.statut }}</span></td>
+                <td>
+                  <button class="btn-start-course" (click)="demarrer(l)">
+                    🚀 Démarrer la Course
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="waitingLivraisons.length === 0">
+                <td colspan="4" class="text-center text-muted">Aucune autre course en attente pour le moment.</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <div class="grid grid-3" style="margin-bottom:1.5rem;">
-        <div class="card kpi"><div class="label">Livraisons du jour</div><div class="value">{{ stats[0]?.value }}</div><div class="delta up">▲ +2 vs hier</div></div>
-        <div class="card kpi"><div class="label">Note moyenne</div><div class="value">4.8</div><div class="delta up">▲ +0.1 ce mois</div></div>
-        <div class="card kpi"><div class="label">Distance parcourue</div><div class="value">42 km</div><div class="delta up">▲ aujourd'hui</div></div>
-      </div>
-
-      <div class="card page-card">
-        <h3>File d'attente <span class="link">Voir tout</span></h3>
-        <div class="list-row" *ngFor="let l of waitingLivraisons">
-          <div class="ic">🗂️</div>
-          <div class="info"><div class="t1">#{{ l.id?.substring(l.id.length - 6) }} — Colis ID: {{ l.colisId || 'Inconnu' }}</div><div class="t2">affectation estimée dans ~25 min</div></div>
-          <span class="badge att">EN_ATTENTE</span>
-        </div>
-        <div *ngIf="waitingLivraisons.length === 0" class="text-center">Aucune course en attente.</div>
-      </div>
     </main>
   </div>
 </section>

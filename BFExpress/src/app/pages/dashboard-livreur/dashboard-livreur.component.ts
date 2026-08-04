@@ -10,8 +10,8 @@ import { Router } from '@angular/router';
   selector: 'app-dashboard-livreur',
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
-  templateUrl: './dashboard-livreur-enhanced.component.html',
-  styleUrls: ['./dashboard-livreur-enhanced.component.scss']
+  templateUrl: './dashboard-livreur.component.html',
+  styleUrls: ['./dashboard-livreur.component.scss']
 })
 export class DashboardLivreurComponent implements OnInit {
   // driver extras
@@ -66,6 +66,7 @@ export class DashboardLivreurComponent implements OnInit {
 
   latitude = 36.8065;
   longitude = 10.1815;
+  private driverMap: any = null;
 
   constructor(
     private apiService: ApiService,
@@ -81,7 +82,29 @@ export class DashboardLivreurComponent implements OnInit {
       this.loadDriverData();
       // poll for new assignments every 12s
       this.pollInterval = setInterval(() => this.checkForNewAssignments(), 12000);
+      this.initMapDriver();
     }
+  }
+
+  initMapDriver(): void {
+    setTimeout(() => {
+      const container = document.getElementById('driver-map');
+      if (!container || (window as any).L === undefined) return;
+      if (this.driverMap) {
+        this.driverMap.remove();
+        this.driverMap = null;
+      }
+      const L = (window as any).L;
+      this.driverMap = L.map('driver-map').setView([this.latitude, this.longitude], 13);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(this.driverMap);
+
+      L.marker([this.latitude, this.longitude]).addTo(this.driverMap)
+        .bindPopup(`<b>Position GPS Actuelle</b><br>${this.driverName}`)
+        .openPopup();
+    }, 300);
   }
 
   ngOnDestroy(): void {

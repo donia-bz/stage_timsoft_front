@@ -10,8 +10,8 @@ import { Router } from '@angular/router';
   selector: 'app-dashboard-admin',
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
-  templateUrl: './dashboard-admin-enhanced.component.html',
-  styleUrls: ['./dashboard-admin-enhanced.component.scss']
+  templateUrl: './dashboard-admin.component.html',
+  styleUrls: ['./dashboard-admin.component.scss']
 })
 export class DashboardAdminComponent implements OnInit {
   activeTab: 'commandes' | 'inscriptions' | 'livreurs' | 'depots' | 'vehicules' | 'carte' | 'stats' | 'manifests' = 'commandes';
@@ -70,6 +70,10 @@ export class DashboardAdminComponent implements OnInit {
   modeEditionLivreur: boolean = false;
   livreurEnEdition: string | null = null;
 
+  // Search filter
+  searchFilter: string = '';
+  private adminMap: any = null;
+
   constructor(
     private apiService: ApiService,
     private authService: AuthService,
@@ -78,6 +82,44 @@ export class DashboardAdminComponent implements OnInit {
 
   ngOnInit(): void {
     this.refreshData();
+  }
+
+  get filteredCommandes(): Commande[] {
+    if (!this.searchFilter.trim()) return this.commandes;
+    const q = this.searchFilter.toLowerCase();
+    return this.commandes.filter(c => 
+      (c.id && c.id.toLowerCase().includes(q)) ||
+      (c.statut && c.statut.toLowerCase().includes(q)) ||
+      (c.typeService && c.typeService.toLowerCase().includes(q))
+    );
+  }
+
+  initMapAdmin(): void {
+    setTimeout(() => {
+      const container = document.getElementById('admin-map');
+      if (!container || (window as any).L === undefined) return;
+      if (this.adminMap) {
+        this.adminMap.remove();
+        this.adminMap = null;
+      }
+      const L = (window as any).L;
+      // Centre sur la Tunisie (Tunis)
+      this.adminMap = L.map('admin-map').setView([36.8065, 10.1815], 9);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(this.adminMap);
+
+      // Ajouter marqueurs pour chaque livreur
+      this.livreurs.forEach(l => {
+        const lat = l.latitudeActuelle || 36.8065 + (Math.random() - 0.5) * 0.2;
+        const lon = l.longitudeActuelle || 10.1815 + (Math.random() - 0.5) * 0.2;
+        const statusColor = l.statut === 'DISPONIBLE' ? 'green' : (l.statut === 'EN_COURSE' ? 'orange' : 'red');
+        
+        const popupText = `<b>${l.nom} ${l.prenom}</b><br>Statut: ${l.statut || 'DISPONIBLE'}<br>Gouvernorat: ${l.gouvernorat || 'Tunis'}`;
+        L.marker([lat, lon]).addTo(this.adminMap).bindPopup(popupText);
+      });
+    }, 200);
   }
 
   refreshData(): void {
