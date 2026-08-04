@@ -236,7 +236,7 @@
               </div>
               <div class="form-group">
                 <label>Gouvernorat *</label>
-                <select formControlName="governorate">
+                <select formControlName="governorate" (change)="updateAIEstimation()">
                   <option value="">Sélectionner</option>
                   <option value="Tunis">Tunis</option>
                   <option value="Ariana">Ariana</option>
@@ -245,21 +245,9 @@
                   <option value="Nabeul">Nabeul</option>
                   <option value="Zaghouan">Zaghouan</option>
                   <option value="Bizerte">Bizerte</option>
-                  <option value="Béja">Béja</option>
-                  <option value="Jendouba">Jendouba</option>
-                  <option value="Kef">Kef</option>
-                  <option value="Siliana">Siliana</option>
                   <option value="Sousse">Sousse</option>
                   <option value="Monastir">Monastir</option>
-                  <option value="Mahdia">Mahdia</option>
                   <option value="Sfax">Sfax</option>
-                  <option value="Kairouan">Kairouan</option>
-                  <option value="Kasserine">Kasserine</option>
-                  <option value="Gafsa">Gafsa</option>
-                  <option value="Tozeur">Tozeur</option>
-                  <option value="Gabès">Gabès</option>
-                  <option value="Médenine">Médenine</option>
-                  <option value="Tataouine">Tataouine</option>
                 </select>
               </div>
               <div class="form-group">
@@ -273,6 +261,19 @@
               <div class="form-group full-width">
                 <label>Adresse complète *</label>
                 <textarea formControlName="address" rows="3" placeholder="Rue, numéro, appartement..."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- IA Shipping Estimator Widget -->
+          <div class="ai-estimator-box mb-4">
+            <div class="ai-ic">🤖</div>
+            <div class="ai-details">
+              <h4>Estimation Intelligente par l'IA</h4>
+              <div class="ai-grid">
+                <div><span>Frais d'envoi estimés:</span> <strong>{{ estimatedPrice | number:'1.2-2' }} DT</strong></div>
+                <div><span>Délai estimé de livraison:</span> <strong>{{ estimatedTime }}</strong></div>
+                <div><span>Confiance IA:</span> <span class="badge-confidence">🟢 {{ aiConfidence }}%</span></div>
               </div>
             </div>
           </div>
@@ -306,7 +307,7 @@
               </div>
               <div class="form-group">
                 <label>Type de service</label>
-                <select formControlName="typeService">
+                <select formControlName="typeService" (change)="updateAIEstimation()">
                   <option value="STANDARD">Standard</option>
                   <option value="EXPRESS">Express</option>
                   <option value="PLANIFIE">Planifié</option>
@@ -358,7 +359,7 @@
           <button class="btn-secondary" (click)="clearManifest()">Vider</button>
           <button class="btn-primary" (click)="validerEtImprimerManifest()" [disabled]="pendingCommandes.length === 0">
             <span>✅</span>
-            <span>Valider et Imprimer</span>
+            <span>Valider et Imprimer Manifest</span>
           </button>
         </div>
       </div>
@@ -393,6 +394,7 @@
               <span class="status-badge" [class]="'status-' + cmd.statut.toLowerCase()">{{ cmd.statut }}</span>
             </div>
             <div class="order-actions">
+              <button class="btn-icon" (click)="imprimerEtiquette(cmd)" title="Imprimer Étiquette QR Code">🏷️</button>
               <button class="btn-icon" (click)="removeFromManifest(cmd)">🗑️</button>
             </div>
           </div>
@@ -434,11 +436,51 @@
             <div class="order-date">{{ cmd.dateCreation | date:'short' }}</div>
             <div class="order-amount">{{ cmd.montantTotal || 0 }} DT</div>
             <div class="order-actions">
-              <button class="btn-icon" (click)="viewOrderDetails(cmd)">👁️</button>
+              <button class="btn-icon" (click)="imprimerEtiquette(cmd)" title="Imprimer Bordereau / Étiquette">🏷️ Imprimer Étiquette</button>
             </div>
           </div>
           <div class="empty-state" *ngIf="filteredCommandes.length === 0">
             <p>Aucune commande trouvée</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Tracking GPS Tab -->
+    <div *ngIf="activeTab === 'suivi'" class="dashboard-content">
+      <div class="dashboard-header">
+        <h1>Suivi GPS en Temps Réel</h1>
+        <p class="header-subtitle">Visualisez votre livreur sur la carte en direct</p>
+      </div>
+
+      <div class="page-card mb-4">
+        <div class="tracking-top-bar mb-3">
+          <div class="status-indicator">
+            <span class="pulse-dot-green"></span>
+            <strong>Livraison en cours — Livreur : {{ driverPosition.name }}</strong>
+          </div>
+          <div class="eta-tag">⏰ ETA Arrivée: ~18 Minutes</div>
+        </div>
+
+        <div class="map-wrapper">
+          <div id="client-map" class="real-leaflet-map"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications Tab -->
+    <div *ngIf="activeTab === 'notifications'" class="dashboard-content">
+      <div class="dashboard-header">
+        <h1>Notifications en Direct</h1>
+      </div>
+      <div class="page-card">
+        <div class="notifications-list">
+          <div class="notification-item" *ngFor="let n of notificationsList" [class.unread]="!n.read">
+            <div class="notif-ic">🔔</div>
+            <div class="notif-body">
+              <p class="notif-text">{{ n.text }}</p>
+              <span class="notif-date">{{ n.date }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -645,19 +687,6 @@
             <p>Aucun retour enregistré</p>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Placeholder tabs for other sections -->
-    <div *ngIf="activeTab === 'suivi' || activeTab === 'evaluations' || activeTab === 'notifications'" class="dashboard-content">
-      <div class="dashboard-header">
-        <h1>{{ activeTab | titlecase }}</h1>
-      </div>
-      <div class="placeholder-content">
-        <span>🚧</span>
-        <h2>Section en cours de développement</h2>
-        <p>Cette fonctionnalité sera bientôt disponible.</p>
-        <button class="btn-primary" (click)="setTab('dashboard')">Retour au tableau de bord</button>
       </div>
     </div>
 

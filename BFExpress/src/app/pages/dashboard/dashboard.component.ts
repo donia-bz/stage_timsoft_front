@@ -41,6 +41,23 @@ export class DashboardComponent implements OnInit {
   isConnected = true;
   showAddAddress = false;
 
+  // Live Map GPS Client
+  private clientMap: any = null;
+  selectedTrackingCmd: Commande | null = null;
+  driverPosition = { lat: 36.8065, lon: 10.1815, name: 'Livreur BFExpress' };
+
+  // IA Estimation
+  estimatedPrice: number = 7.0;
+  estimatedTime: string = '24h - 48h';
+  aiConfidence: number = 95;
+
+  // Real-time notifications
+  notificationsList = [
+    { id: 1, text: 'Votre commande #CMD-84920 a été validée par l\'admin', date: 'Il y a 10 min', read: false },
+    { id: 2, text: 'Le livreur Ahmed est en route vers l\'adresse de livraison', date: 'Il y a 30 min', read: false },
+    { id: 3, text: 'Remboursement de 150 DT traité pour la livraison #CMD-7712', date: 'Hier', read: true }
+  ];
+
   // Stats Grid matching exact screenshot requirements
   nonSerieuxCount = 0;
   enAttenteCount = 0;
@@ -318,6 +335,102 @@ export class DashboardComponent implements OnInit {
 
   setTab(tab: string): void {
     this.activeTab = tab;
+    if (tab === 'suivi') {
+      this.initMapClient();
+    }
+  }
+
+  updateAIEstimation(): void {
+    const gov = this.packageForm.get('governorate')?.value;
+    const typeService = this.packageForm.get('typeService')?.value;
+
+    if (typeService === 'EXPRESS') {
+      this.estimatedPrice = 12.0;
+      this.estimatedTime = ' Moins de 24h Express';
+      this.aiConfidence = 98;
+    } else if (gov === 'Tunis' || gov === 'Ariana' || gov === 'Ben Arous' || gov === 'Manouba') {
+      this.estimatedPrice = 7.0;
+      this.estimatedTime = '24h (Grand Tunis)';
+      this.aiConfidence = 96;
+    } else {
+      this.estimatedPrice = 8.5;
+      this.estimatedTime = '24h - 48h (Régional)';
+      this.aiConfidence = 92;
+    }
+  }
+
+  initMapClient(): void {
+    setTimeout(() => {
+      const container = document.getElementById('client-map');
+      if (!container || (window as any).L === undefined) return;
+      if (this.clientMap) {
+        this.clientMap.remove();
+        this.clientMap = null;
+      }
+      const L = (window as any).L;
+      this.clientMap = L.map('client-map').setView([this.driverPosition.lat, this.driverPosition.lon], 12);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(this.clientMap);
+
+      // Marqueur Livreur
+      const driverIcon = L.divIcon({
+        className: 'custom-driver-icon',
+        html: '<div style="background:#0ea5e9;color:white;padding:6px;border-radius:50%;font-size:1.2rem;box-shadow:0 0 10px rgba(14,165,233,0.5);">🚚</div>'
+      });
+
+      L.marker([this.driverPosition.lat, this.driverPosition.lon], { icon: driverIcon })
+        .addTo(this.clientMap)
+        .bindPopup(`<b>${this.driverPosition.name}</b><br>En route pour livraison`)
+        .openPopup();
+
+      // Destination client
+      L.marker([36.83, 10.22])
+        .addTo(this.clientMap)
+        .bindPopup('<b>Point de livraison Client</b><br>Adresse Destinataire');
+    }, 250);
+  }
+
+  imprimerEtiquette(cmd: Commande): void {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${cmd.id || 'CMD-BFEXPRESS'}`;
+
+    const labelHtml = `
+      <html>
+      <head>
+        <title>Étiquette Colis #${cmd.id}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
+          .label-box { width: 340px; margin: 0 auto; border: 3px dashed #0f172a; padding: 20px; border-radius: 16px; background: #fafafa; }
+          .header { font-size: 1.5rem; font-weight: 900; color: #0ea5e9; margin-bottom: 5px; }
+          .sub { font-size: 0.85rem; color: #64748b; margin-bottom: 15px; }
+          .barcode { margin: 15px 0; }
+          .details { text-align: left; background: white; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; margin-top: 15px; font-size: 0.9rem; }
+          .row { margin-bottom: 6px; }
+        </style>
+      </head>
+      <body>
+        <div class="label-box">
+          <div class="header">⚡ BFExpress</div>
+          <div class="sub">Bordereau officiel d'expédition</div>
+          <img class="barcode" src="${qrUrl}" alt="QR Code Colis" />
+          <div style="font-weight: 800; font-size: 1.1rem;">#${cmd.id || 'CMD-0000'}</div>
+          <div class="details">
+            <div class="row"><strong>Destinataire:</strong> ${cmd.adresseArriveeId || 'Client BFExpress'}</div>
+            <div class="row"><strong>Service:</strong> ${cmd.typeService || 'STANDARD'}</div>
+            <div class="row"><strong>Montant COD:</strong> ${cmd.montantTotal || 0} DT</div>
+            <div class="row"><strong>Date:</strong> ${new Date().toLocaleDateString('fr-FR')}</div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(labelHtml);
+    printWindow.document.close();
+    setTimeout(() => printWindow.print(), 500);
   }
 
   logout(): void {
