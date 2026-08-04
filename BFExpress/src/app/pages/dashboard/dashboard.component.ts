@@ -9,7 +9,7 @@ export interface Reclamation {
   objet: string;
   codeBarre: string;
   description: string;
-  dateCreation: Date;
+  dateCreation: string;
   statut: string;
 }
 
@@ -23,9 +23,13 @@ export class DashboardComponent implements OnInit {
   clientId = '';
   commandes: Commande[] = [];
   pendingCommandes: Commande[] = [];
+  addresses: any[] = [];
+  unreadNotifications = 0;
+  currentDate: Date = new Date();
 
   activeTab = 'dashboard';
   isConnected = true;
+  showAddAddress = false;
 
   // Stats Grid matching exact screenshot requirements
   nonSerieuxCount = 0;
@@ -50,6 +54,7 @@ export class DashboardComponent implements OnInit {
 
   // Reactive Form for adding package
   packageForm: FormGroup;
+  profileForm: FormGroup;
 
   // Paiements tab fields
   month = 'Juillet';
@@ -116,6 +121,14 @@ export class DashboardComponent implements OnInit {
       codeBarre: ['', [Validators.required, Validators.minLength(5)]],
       description: ['', [Validators.maxLength(1000)]]
     });
+
+    this.profileForm = this.fb.group({
+      nom: ['', Validators.required],
+      prenom: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      telephone: ['', Validators.required],
+      entreprise: ['']
+    });
   }
 
   ongoingOrder?: Commande;
@@ -126,7 +139,103 @@ export class DashboardComponent implements OnInit {
       this.clientName = `${user.prenom} ${user.nom}`;
       this.clientId = user.id;
       this.loadClientCommandes();
+      this.loadUserProfile();
     }
+  }
+
+  get filteredCommandes(): Commande[] {
+    if (!this.searchTerm) return this.commandes;
+    return this.commandes.filter(cmd => 
+      cmd.id?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+      cmd.adresseArriveeId?.toLowerCase().includes(this.searchTerm.toLowerCase())
+    );
+  }
+
+  loadUserProfile(): void {
+    const user = this.authService.getCurrentUser();
+    if (user) {
+      this.profileForm.patchValue({
+        nom: user.nom,
+        prenom: user.prenom,
+        email: user.email,
+        telephone: '',
+        entreprise: ''
+      });
+    }
+  }
+
+  updateProfile(): void {
+    alert('Mise à jour du profil en cours de développement');
+  }
+
+  addAddress(): void {
+    alert('Ajout d\'adresse en cours de développement');
+  }
+
+  deleteAddress(id: string): void {
+    this.addresses = this.addresses.filter(a => a.id !== id);
+  }
+
+  setDefaultAddress(id: string): void {
+    this.addresses.forEach(a => a.isDefault = a.id === id);
+  }
+
+  addCommandToManifest(): void {
+    if (this.packageForm.invalid) {
+      this.markFormGroupTouched(this.packageForm);
+      this.errorMessage = 'Veuillez corriger les erreurs dans le formulaire.';
+      return;
+    }
+
+    const formValue = this.packageForm.value;
+    const commande: Commande = {
+      clientId: this.clientId,
+      adresseDepartId: 'adresse-depart-default',
+      adresseArriveeId: formValue.address,
+      statut: 'EN_ATTENTE',
+      typeService: formValue.typeService,
+      montantTotal: parseFloat(formValue.price) || 25.0,
+      dateCreation: new Date().toISOString()
+    };
+
+    this.pendingCommandes.push(commande);
+    this.packageForm.reset();
+    alert('Commande ajoutée au manifest !');
+  }
+
+  removeFromManifest(cmd: Commande): void {
+    this.pendingCommandes = this.pendingCommandes.filter(c => c !== cmd);
+  }
+
+  clearManifest(): void {
+    if (confirm('Vider le manifest ?')) {
+      this.pendingCommandes = [];
+    }
+  }
+
+  validateManifest(): void {
+    if (this.pendingCommandes.length === 0) {
+      alert('Aucune commande à valider');
+      return;
+    }
+
+    // Simuler la validation du manifest
+    this.pendingCommandes.forEach(cmd => {
+      cmd.statut = 'A_ENLEVER';
+      this.commandes.push(cmd);
+    });
+
+    this.pendingCommandes = [];
+    this.calculateStats();
+    alert('Manifest validé avec succès ! Les colis sont maintenant en statut "À enlever"');
+  }
+
+  calculateManifestTotal(): number {
+    return this.pendingCommandes.reduce((sum, cmd) => sum + (cmd.montantTotal || 0), 0);
+  }
+
+  viewOrderDetails(cmd: Commande): void {
+    alert(`Détails de la commande ${cmd.id} en cours de développement`);
   }
 
   setTab(tab: string): void {
@@ -177,8 +286,8 @@ export class DashboardComponent implements OnInit {
 
     const commande: Commande = {
       clientId,
-      adresseDepartId: 'adresse-depart-default-id',
-      adresseArriveeId: 'adresse-arrivee-default-id',
+      adresseDepartId: 'adresse-depart-default',
+      adresseArriveeId: formValue.address,
       statut: 'EN_ATTENTE',
       typeService: formValue.typeService,
       montantTotal: parseFloat(formValue.price) || 25.0
@@ -233,7 +342,7 @@ export class DashboardComponent implements OnInit {
 
   calculateStats(): void {
     this.enAttenteCount = this.commandes.filter(c => c.statut === 'EN_ATTENTE').length;
-    this.aEnleverCount = this.commandes.filter(c => c.statut === 'VALIDEE').length;
+    this.aEnleverCount = this.commandes.filter(c => c.statut === 'VALIDEE' || c.statut === 'A_ENLEVER').length;
     this.enCoursCount = this.commandes.filter(c => c.statut === 'EN_LIVRAISON').length;
     this.livreeCount = this.commandes.filter(c => c.statut === 'LIVREE').length;
     
@@ -261,32 +370,6 @@ export class DashboardComponent implements OnInit {
     return Math.round((totalRetours / total) * 100);
   }
 
-  ajouterReclamation(): void {
-    if (this.reclamationForm.invalid) {
-      this.markFormGroupTouched(this.reclamationForm);
-      alert('Veuillez remplir tous les champs obligatoires.');
-      return;
-    }
-
-    const formValue = this.reclamationForm.value;
-    const newRec: Reclamation = {
-      id: 'REC-' + Math.floor(1000 + Math.random() * 9000),
-      objet: formValue.objet,
-      codeBarre: formValue.codeBarre,
-      description: formValue.description,
-      dateCreation: new Date(),
-      statut: 'En cours de traitement'
-    };
-
-    this.reclamationsList.unshift(newRec);
-    this.reclamationSuccessMsg = 'Réclamation ajoutée avec succès ! Notre équipe la traite dans les plus brefs délais.';
-    
-    // Reset form
-    this.reclamationForm.reset();
-
-    setTimeout(() => this.reclamationSuccessMsg = '', 5000);
-  }
-
   validerManifeste(): void {
     if (this.pendingCommandes.length === 0) {
       alert('Aucun colis en attente à valider dans le manifeste.');
@@ -310,7 +393,95 @@ export class DashboardComponent implements OnInit {
   }
 
   imprimerManifeste(): void {
-    window.print();
+    if (this.pendingCommandes.length === 0) {
+      alert('Aucune commande à imprimer');
+      return;
+    }
+    
+    // Créer une fenêtre d'impression
+    const printContent = `
+      <html>
+      <head>
+        <title>Manifest BFExpress</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { color: #0ea5e9; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+          th { background: #f0f9ff; }
+          .summary { margin: 20px 0; padding: 15px; background: #f0f9ff; border-radius: 10px; }
+        </style>
+      </head>
+      <body>
+        <h1>Manifest BFExpress</h1>
+        <div class="summary">
+          <p>Date: ${new Date().toLocaleDateString()}</p>
+          <p>Nombre de colis: ${this.pendingCommandes.length}</p>
+          <p>Total: ${this.calculateManifestTotal()} DT</p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Destinataire</th>
+              <th>Adresse</th>
+              <th>Montant</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${this.pendingCommandes.map(cmd => `
+              <tr>
+                <td>${cmd.adresseArriveeId}</td>
+                <td>${cmd.adresseArriveeId}</td>
+                <td>${cmd.montantTotal} DT</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+  }
+
+  getRetourCommandes(): Commande[] {
+    const retourStatuses = [
+      'RETOUR_DEPOT',
+      'RETOUR_DEFINITIF',
+      'RETOUR_INTER_AGENCE',
+      'RETOUR_EXPEDITEURS',
+      'RETOUR_RECU'
+    ];
+    return this.commandes.filter(c => retourStatuses.includes(c.statut));
+  }
+
+  ajouterReclamation(): void {
+    if (this.reclamationForm.invalid) {
+      this.markFormGroupTouched(this.reclamationForm);
+      alert('Veuillez remplir tous les champs obligatoires.');
+      return;
+    }
+
+    const formValue = this.reclamationForm.value;
+    const newRec: Reclamation = {
+      id: 'REC-' + Math.floor(1000 + Math.random() * 9000),
+      objet: formValue.objet,
+      codeBarre: formValue.codeBarre,
+      description: formValue.description,
+      dateCreation: new Date().toISOString(),
+      statut: 'En cours de traitement'
+    };
+
+    this.reclamationsList.unshift(newRec);
+    this.reclamationSuccessMsg = 'Réclamation ajoutée avec succès ! Notre équipe la traite dans les plus brefs délais.';
+    
+    // Reset form
+    this.reclamationForm.reset();
+
+    setTimeout(() => this.reclamationSuccessMsg = '', 5000);
   }
 
   get filteredPendingCommandes(): Commande[] {
@@ -336,7 +507,7 @@ export class DashboardComponent implements OnInit {
     return now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   }
 
-  formatDate(date: Date): string {
+  formatDate(date: string): string {
     return new Date(date).toLocaleString('fr-FR');
   }
 }

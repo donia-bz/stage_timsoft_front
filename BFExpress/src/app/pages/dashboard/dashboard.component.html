@@ -1,627 +1,689 @@
-<div class="full-viewport-dashboard">
+<div class="modern-dashboard">
   
-  <!-- Full Height Dark Sidebar Menu (Exact Screenshot match) -->
-  <aside class="full-sidebar">
-    <div class="sidebar-brand">
-      <span class="brand-title">BFExpress</span>
+  <!-- Modern Sidebar -->
+  <aside class="dashboard-sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <span class="brand-text">BFExpress</span>
+        <span class="brand-dot">.</span>
+      </div>
+      <div class="user-mini-profile">
+        <div class="user-avatar">{{ clientName.charAt(0) }}</div>
+        <div class="user-info">
+          <span class="user-name">{{ clientName }}</span>
+          <span class="user-role">Client</span>
+        </div>
+      </div>
     </div>
 
-    <div class="sidebar-scroll-area">
-      <div class="category-header">MES PICKUPS</div>
-      <nav class="nav-group">
-        <a class="nav-item" [class.active]="activeTab === 'dashboard'" (click)="setTab('dashboard')">
-          <span class="icon">🎛️</span>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <span class="nav-section-title">Principal</span>
+        <a class="nav-link" [class.active]="activeTab === 'dashboard'" (click)="setTab('dashboard')">
+          <span class="nav-icon">📊</span>
           <span>Tableau de bord</span>
         </a>
-
-        <a class="nav-item" [class.active]="activeTab === 'rechercher'" (click)="setTab('rechercher')">
-          <span class="icon">🔍</span>
-          <span>Rechercher colis</span>
+        <a class="nav-link" [class.active]="activeTab === 'profil'" (click)="setTab('profil')">
+          <span class="nav-icon">👤</span>
+          <span>Mon Profil</span>
         </a>
-
-        <a class="nav-item" routerLink="/suivi">
-          <span class="icon">📍</span>
-          <span>Page de suivi public</span>
+        <a class="nav-link" [class.active]="activeTab === 'adresses'" (click)="setTab('adresses')">
+          <span class="nav-icon">📍</span>
+          <span>Mes Adresses</span>
         </a>
+      </div>
 
-        <a class="nav-item" [class.active]="activeTab === 'reclamations'" (click)="setTab('reclamations')">
-          <span class="icon">❓</span>
-          <span>Mes réclamations</span>
+      <div class="nav-section">
+        <span class="nav-section-title">Commandes</span>
+        <a class="nav-link" [class.active]="activeTab === 'nouvelle-commande'" (click)="setTab('nouvelle-commande')">
+          <span class="nav-icon">📦</span>
+          <span>Nouvelle Commande</span>
         </a>
+        <a class="nav-link" [class.active]="activeTab === 'rechercher'" (click)="setTab('rechercher')">
+          <span class="nav-icon">🔍</span>
+          <span>Rechercher Colis</span>
+        </a>
+        <a class="nav-link" [class.active]="activeTab === 'manifest'" (click)="setTab('manifest')">
+          <span class="nav-icon">📋</span>
+          <span>Manifest</span>
+          <span class="nav-badge" *ngIf="pendingCommandes.length > 0">{{ pendingCommandes.length }}</span>
+        </a>
+        <a class="nav-link" (click)="setTab('imprimer-manifest')">
+          <span class="nav-icon">🖨️</span>
+          <span>Imprimer Manifest</span>
+        </a>
+        <a class="nav-link" [class.active]="activeTab === 'mes-commandes'" (click)="setTab('mes-commandes')">
+          <span class="nav-icon">📑</span>
+          <span>Mes Commandes</span>
+        </a>
+        <a class="nav-link" [class.active]="activeTab === 'suivi'" (click)="setTab('suivi')">
+          <span class="nav-icon">🔍</span>
+          <span>Suivi en direct</span>
+        </a>
+      </div>
 
-        <a class="nav-item" [class.active]="activeTab === 'service-client'" (click)="setTab('service-client')">
-          <span class="icon">🎧</span>
-          <span>Service client</span>
+      <div class="nav-section">
+        <span class="nav-section-title">Finance</span>
+        <a class="nav-link" [class.active]="activeTab === 'paiements'" (click)="setTab('paiements')">
+          <span class="nav-icon">💳</span>
+          <span>Mes Paiements</span>
         </a>
+        <a class="nav-link" [class.active]="activeTab === 'retours'" (click)="setTab('retours')">
+          <span class="nav-icon">⬅️</span>
+          <span>Mes Retours</span>
+        </a>
+        <a class="nav-link" [class.active]="activeTab === 'evaluations'" (click)="setTab('evaluations')">
+          <span class="nav-icon">⭐</span>
+          <span>Évaluations</span>
+        </a>
+      </div>
 
-        <a class="nav-item" routerLink="/faq">
-          <span class="icon">❓</span>
-          <span>FAQ</span>
+      <div class="nav-section">
+        <span class="nav-section-title">Support</span>
+        <a class="nav-link" [class.active]="activeTab === 'reclamations'" (click)="setTab('reclamations')">
+          <span class="nav-icon">❓</span>
+          <span>Réclamations</span>
         </a>
-      </nav>
+        <a class="nav-link" [class.active]="activeTab === 'service-client'" (click)="setTab('service-client')">
+          <span class="nav-icon">🎧</span>
+          <span>Service Client</span>
+        </a>
+        <a class="nav-link" [class.active]="activeTab === 'notifications'" (click)="setTab('notifications')">
+          <span class="nav-icon">🔔</span>
+          <span>Notifications</span>
+          <span class="nav-badge" *ngIf="unreadNotifications > 0">{{ unreadNotifications }}</span>
+        </a>
+        <a class="nav-link" routerLink="/contact">
+          <span class="nav-icon">📞</span>
+          <span>Contact</span>
+        </a>
+      </div>
+    </nav>
 
-      <!-- Category: PICKUP -->
-      <div class="category-header">PICKUP</div>
-      <nav class="nav-group">
-        <a class="nav-item" [class.active]="activeTab === 'ajouter-colis'" (click)="setTab('ajouter-colis')">
-          <span class="icon">📄</span>
-          <span>Ajouter Colis</span>
-        </a>
-
-        <a class="nav-item" [class.active]="activeTab === 'importer'" (click)="setTab('importer')">
-          <span class="icon">📊</span>
-          <span>Importer fichier</span>
-        </a>
-
-        <a class="nav-item" [class.active]="activeTab === 'manifeste'" (click)="setTab('manifeste')">
-          <span class="icon">📑</span>
-          <span>Créer Manifeste</span>
-        </a>
-
-        <a class="nav-item" (click)="imprimerManifeste()">
-          <span class="icon">🖨️</span>
-          <span>Imprimer Manifeste</span>
-        </a>
-
-        <a class="nav-item" [class.active]="activeTab === 'colis-attente'" (click)="setTab('colis-attente')">
-          <span class="icon">🖨️</span>
-          <span>Colis en attente</span>
-        </a>
-      </nav>
-
-      <!-- Category: FINANCE -->
-      <div class="category-header">FINANCE</div>
-      <nav class="nav-group">
-        <a class="nav-item" [class.active]="activeTab === 'paiements'" (click)="setTab('paiements')">
-          <span class="icon">💵</span>
-          <span>Mes paiements</span>
-        </a>
-
-        <a class="nav-item" [class.active]="activeTab === 'frais'" (click)="setTab('frais')">
-          <span class="icon">💵</span>
-          <span>Frais de recouvrement</span>
-        </a>
-
-        <a class="nav-item" [class.active]="activeTab === 'retours'" (click)="setTab('retours')">
-          <span class="icon">⬅️</span>
-          <span>Mes retours</span>
-        </a>
-      </nav>
+    <div class="sidebar-footer">
+      <button class="logout-btn" (click)="logout()">
+        <span>🚪</span>
+        <span>Déconnexion</span>
+      </button>
     </div>
   </aside>
 
-  <!-- Main Content Body -->
-  <main class="full-content-area">
+  <!-- Main Content -->
+  <main class="dashboard-main">
     
-    <!-- TAB 1: TABLEAU DE BORD (CLIENT) -->
-    <div *ngIf="activeTab === 'dashboard'">
-      <div class="dashboard-header simple-header">
+    <!-- Dashboard Tab -->
+    <div *ngIf="activeTab === 'dashboard'" class="dashboard-content">
+      <div class="dashboard-header">
         <div>
-          <h1>Tableau de bord</h1>
+          <h1>Bonjour, {{ clientName }} 👋</h1>
+          <p class="header-subtitle">Bienvenue sur votre espace client</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn-primary" (click)="setTab('nouvelle-commande')">
+            <span>📦</span>
+            <span>Nouvelle Commande</span>
+          </button>
         </div>
       </div>
 
-      <div class="dashboard-tile-panel">
-        <div class="tile-grid">
-          <div class="tile c1">
-            <div class="top"><span class="label">Non sérieux</span></div>
-            <div class="count">{{ nonSerieuxCount }}</div>
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card stat-primary">
+          <div class="stat-icon">📦</div>
+          <div class="stat-info">
+            <div class="stat-value">{{ commandes.length }}</div>
+            <div class="stat-label">Total Commandes</div>
           </div>
-          <div class="tile c2">
-            <div class="top"><span class="label">En attente</span></div>
-            <div class="count">{{ enAttenteCount }}</div>
+        </div>
+        <div class="stat-card stat-warning">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-info">
+            <div class="stat-value">{{ pendingCommandes.length }}</div>
+            <div class="stat-label">En Attente</div>
           </div>
-          <div class="tile c3">
-            <div class="top"><span class="label">À enlever</span></div>
-            <div class="count">{{ aEnleverCount }}</div>
+        </div>
+        <div class="stat-card stat-success">
+          <div class="stat-icon">🚚</div>
+          <div class="stat-info">
+            <div class="stat-value">{{ enCoursCount }}</div>
+            <div class="stat-label">En Cours</div>
           </div>
-          <div class="tile c4">
-            <div class="top"><span class="label">Enlevés</span></div>
-            <div class="count">{{ enlevesCount }}</div>
-          </div>
-          <div class="tile c5">
-            <div class="top"><span class="label">Au dépôt</span></div>
-            <div class="count">{{ auDepotCount }}</div>
-          </div>
-          <div class="tile c6">
-            <div class="top"><span class="label">Retour dépôt</span></div>
-            <div class="count">{{ retourDepotCount }}</div>
-          </div>
-          <div class="tile c7">
-            <div class="top"><span class="label">En cours</span></div>
-            <div class="count">{{ enCoursCount }}</div>
-          </div>
-          <div class="tile c8">
-            <div class="top"><span class="label">À vérifier</span></div>
-            <div class="count">{{ aVerifierCount }}</div>
-          </div>
-          <div class="tile c9">
-            <div class="top"><span class="label">Livrés</span></div>
-            <div class="count">{{ livreeCount }}</div>
-          </div>
-          <div class="tile c10">
-            <div class="top"><span class="label">Livrés payés</span></div>
-            <div class="count">{{ livresPayesTotal }} DT</div>
-          </div>
-          <div class="tile c11">
-            <div class="top"><span class="label">Échanges</span></div>
-            <div class="count">{{ echangesCount }}</div>
-          </div>
-          <div class="tile c12">
-            <div class="top"><span class="label">Remboursés</span></div>
-            <div class="count">{{ remboursesCount }}</div>
-          </div>
-          <div class="tile c13">
-            <div class="top"><span class="label">Retour définitif</span></div>
-            <div class="count">{{ retourDefinitifCount }}</div>
-          </div>
-          <div class="tile c14">
-            <div class="top"><span class="label">Retour Inter-agence</span></div>
-            <div class="count">{{ retourInterAgenceCount }}</div>
-          </div>
-          <div class="tile c15">
-            <div class="top"><span class="label">Retour Expéditeurs</span></div>
-            <div class="count">{{ retourExpediteursCount }}</div>
-          </div>
-          <div class="tile c16">
-            <div class="top"><span class="label">Retour reçu</span></div>
-            <div class="count">{{ retourRecuCount }}</div>
+        </div>
+        <div class="stat-card stat-info">
+          <div class="stat-icon">✅</div>
+          <div class="stat-info">
+            <div class="stat-value">{{ livreeCount }}</div>
+            <div class="stat-label">Livrées</div>
           </div>
         </div>
       </div>
 
-      <div class="page-card retour-summary-card">
-        <div class="retour-header">
-          <div>
-            <h3>Taux de retour</h3>
-            <p>Section en bas, en cours de travail</p>
-          </div>
-          <div class="retour-value">{{ calculateRetourRate() }}%</div>
+      <!-- Recent Orders -->
+      <div class="content-section">
+        <div class="section-header">
+          <h2>Commandes Récentes</h2>
+          <a class="view-all" (click)="setTab('mes-commandes')">Voir tout →</a>
         </div>
-        <div class="retour-progress">
-          <div class="retour-bar" [style.width.%]="calculateRetourRate()"></div>
-        </div>
-      </div>
-    </div>
-
-    <div *ngIf="activeTab === 'rechercher'">
-      <div class="search-dashboard-card">
-        <div class="search-dashboard-header">
-          <h2>Recherche Colis</h2>
-        </div>
-        <div class="search-dashboard-body">
-          <label>Code à barre / Téléphone</label>
-          <div class="search-dashboard-row">
-            <input type="text" [(ngModel)]="searchTerm" placeholder="Entrez le code ou le numéro" />
-            <button class="btn-search" (click)="onDashboardSearch()">🔍 Rechercher</button>
+        <div class="orders-table">
+          <div class="table-header">
+            <div>Référence</div>
+            <div>Destinataire</div>
+            <div>Statut</div>
+            <div>Date</div>
+            <div>Montant</div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <div *ngIf="activeTab === 'ajouter-colis'">
-      <section class="pickup-page">
-        <div class="pickup-card">
-          <div class="pickup-header">
-            <h2>Nouveau Pickup</h2>
-            <p>Expéditeur : {{ clientName }}</p>
-          </div>
-
-          <div class="section-divider">
-            <h3>Informations du destinataire</h3>
-          </div>
-
-          <form [formGroup]="packageForm">
-            <div class="pickup-form-grid">
-              <div class="field-group">
-                <label>Nom du destinataire</label>
-                <input type="text" formControlName="pickupName" placeholder="Nom complet du destinataire" />
-                <div class="error-message" *ngIf="f['pickupName'].touched && f['pickupName'].invalid">
-                  <span *ngIf="f['pickupName'].errors?.['required']">Ce champ est requis</span>
-                  <span *ngIf="f['pickupName'].errors?.['minlength']">Minimum 3 caractères</span>
-                </div>
+          <div class="table-body">
+            <div class="table-row" *ngFor="let cmd of commandes.slice(0, 5)">
+              <div class="order-ref">{{ cmd.id || 'CMD-' + Math.floor(Math.random() * 10000) }}</div>
+              <div class="order-dest">{{ cmd.adresseArriveeId || 'N/A' }}</div>
+              <div class="order-status">
+                <span class="status-badge" [class]="'status-' + (cmd.statut || 'EN_ATTENTE').toLowerCase().replace('_', '-')">
+                  {{ cmd.statut || 'EN_ATTENTE' }}
+                </span>
               </div>
-              <div class="field-group">
-                <label>Gouvernorat</label>
+              <div class="order-date">{{ cmd.dateCreation | date:'short' }}</div>
+              <div class="order-amount">{{ cmd.montantTotal || 0 }} DT</div>
+            </div>
+            <div class="empty-state" *ngIf="commandes.length === 0">
+              <p>Aucune commande récente</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions-grid">
+        <div class="action-card" (click)="setTab('nouvelle-commande')">
+          <div class="action-icon">📦</div>
+          <h3>Créer Commande</h3>
+          <p>Ajouter un nouveau colis</p>
+        </div>
+        <div class="action-card" (click)="setTab('manifest')">
+          <div class="action-icon">📋</div>
+          <h3>Gérer Manifest</h3>
+          <p>Valider les commandes en attente</p>
+        </div>
+        <div class="action-card" (click)="setTab('suivi')">
+          <div class="action-icon">🔍</div>
+          <h3>Suivre Livraison</h3>
+          <p>Tracking en temps réel</p>
+        </div>
+        <div class="action-card" (click)="setTab('profil')">
+          <div class="action-icon">👤</div>
+          <h3>Mon Profil</h3>
+          <p>Gérer mes informations</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nouvelle Commande Tab -->
+    <div *ngIf="activeTab === 'nouvelle-commande'" class="dashboard-content">
+      <div class="dashboard-header">
+        <h1>Nouvelle Commande</h1>
+      </div>
+      <div class="commande-form-card">
+        <form [formGroup]="packageForm">
+          <div class="form-section">
+            <h3>📍 Informations du destinataire</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Nom complet *</label>
+                <input type="text" formControlName="pickupName" placeholder="Nom complet du destinataire" />
+              </div>
+              <div class="form-group">
+                <label>Téléphone *</label>
+                <input type="tel" formControlName="phone1" placeholder="Numéro de téléphone" />
+              </div>
+              <div class="form-group">
+                <label>Téléphone secondaire</label>
+                <input type="tel" formControlName="phone2" placeholder="Numéro optionnel" />
+              </div>
+              <div class="form-group">
+                <label>Gouvernorat *</label>
                 <select formControlName="governorate">
                   <option value="">Sélectionner</option>
                   <option value="Tunis">Tunis</option>
                   <option value="Ariana">Ariana</option>
+                  <option value="Ben Arous">Ben Arous</option>
+                  <option value="Manouba">Manouba</option>
+                  <option value="Nabeul">Nabeul</option>
+                  <option value="Zaghouan">Zaghouan</option>
+                  <option value="Bizerte">Bizerte</option>
+                  <option value="Béja">Béja</option>
+                  <option value="Jendouba">Jendouba</option>
+                  <option value="Kef">Kef</option>
+                  <option value="Siliana">Siliana</option>
                   <option value="Sousse">Sousse</option>
+                  <option value="Monastir">Monastir</option>
+                  <option value="Mahdia">Mahdia</option>
+                  <option value="Sfax">Sfax</option>
+                  <option value="Kairouan">Kairouan</option>
+                  <option value="Kasserine">Kasserine</option>
+                  <option value="Gafsa">Gafsa</option>
+                  <option value="Tozeur">Tozeur</option>
+                  <option value="Gabès">Gabès</option>
+                  <option value="Médenine">Médenine</option>
+                  <option value="Tataouine">Tataouine</option>
                 </select>
-                <div class="error-message" *ngIf="f['governorate'].touched && f['governorate'].invalid">
-                  <span>Ce champ est requis</span>
-                </div>
               </div>
-              <div class="field-group">
-                <label>Ville</label>
-                <select formControlName="city">
-                  <option value="">Sélectionner</option>
-                  <option value="Tunis">Tunis</option>
-                  <option value="Ariana">Ariana</option>
-                  <option value="Sousse">Sousse</option>
-                </select>
-                <div class="error-message" *ngIf="f['city'].touched && f['city'].invalid">
-                  <span *ngIf="f['city'].errors?.['required']">Ce champ est requis</span>
-                  <span *ngIf="f['city'].errors?.['minlength']">Minimum 2 caractères</span>
-                </div>
+              <div class="form-group">
+                <label>Ville *</label>
+                <input type="text" formControlName="city" placeholder="Ville" />
               </div>
-              <div class="field-group">
-                <label>Localité</label>
-                <select formControlName="locality">
-                  <option value="">Sélectionner</option>
-                  <option value="Centre">Centre</option>
-                  <option value="El Menzah">El Menzah</option>
-                  <option value="La Marsa">La Marsa</option>
-                </select>
-                <div class="error-message" *ngIf="f['locality'].touched && f['locality'].invalid">
-                  <span>Ce champ est requis</span>
-                </div>
+              <div class="form-group">
+                <label>Localité *</label>
+                <input type="text" formControlName="locality" placeholder="Localité/Code postal" />
+              </div>
+              <div class="form-group full-width">
+                <label>Adresse complète *</label>
+                <textarea formControlName="address" rows="3" placeholder="Rue, numéro, appartement..."></textarea>
               </div>
             </div>
+          </div>
 
-            <div class="field-full">
-              <label>Adresse du destinataire</label>
-              <input type="text" formControlName="address" placeholder="Adresse complète du destinataire" />
-              <div class="error-message" *ngIf="f['address'].touched && f['address'].invalid">
-                <span *ngIf="f['address'].errors?.['required']">Ce champ est requis</span>
-                <span *ngIf="f['address'].errors?.['minlength']">Minimum 10 caractères</span>
+          <div class="form-section">
+            <h3>📦 Détails du colis</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Désignation *</label>
+                <input type="text" formControlName="designation" placeholder="Description du colis" />
               </div>
-            </div>
-
-            <div class="pickup-form-grid">
-              <div class="field-group">
-                <label>Téléphone du destinataire</label>
-                <input type="text" formControlName="phone1" placeholder="Téléphone principal" />
-                <div class="error-message" *ngIf="f['phone1'].touched && f['phone1'].invalid">
-                  <span *ngIf="f['phone1'].errors?.['required']">Ce champ est requis</span>
-                  <span *ngIf="f['phone1'].errors?.['pattern']">Format invalide (8-15 chiffres)</span>
-                </div>
+              <div class="form-group">
+                <label>Prix (DT) *</label>
+                <input type="number" formControlName="price" placeholder="Montant à payer" />
               </div>
-              <div class="field-group">
-                <label>Téléphone secondaire</label>
-                <input type="text" formControlName="phone2" placeholder="Téléphone secondaire" />
-                <div class="error-message" *ngIf="f['phone2'].touched && f['phone2'].invalid">
-                  <span *ngIf="f['phone2'].errors?.['pattern']">Format invalide (8-15 chiffres)</span>
-                </div>
+              <div class="form-group">
+                <label>Nombre d'articles *</label>
+                <input type="number" formControlName="itemCount" placeholder="Quantité" />
               </div>
-              <div class="field-group field-button-group">
-                <button class="secondary" type="button" (click)="verifyClient()">Vérifier Client</button>
+              <div class="form-group">
+                <label>Nombre de colis *</label>
+                <input type="number" formControlName="packageCount" placeholder="Nombre de colis" />
               </div>
-            </div>
-
-            <div class="section-divider">
-              <h3>Informations du colis</h3>
-            </div>
-
-            <div class="field-full">
-              <label>Désignation du colis</label>
-              <input type="text" formControlName="designation" placeholder="Description du contenu" />
-              <div class="error-message" *ngIf="f['designation'].touched && f['designation'].invalid">
-                <span *ngIf="f['designation'].errors?.['required']">Ce champ est requis</span>
-                <span *ngIf="f['designation'].errors?.['minlength']">Minimum 5 caractères</span>
-              </div>
-            </div>
-
-            <div class="pickup-form-grid">
-              <div class="field-group">
-                <label>Prix en DT</label>
-                <input type="text" formControlName="price" placeholder="Montant à collecter" />
-                <div class="error-message" *ngIf="f['price'].touched && f['price'].invalid">
-                  <span *ngIf="f['price'].errors?.['required']">Ce champ est requis</span>
-                  <span *ngIf="f['price'].errors?.['min']">Valeur positive requise</span>
-                </div>
-              </div>
-              <div class="field-group">
-                <label>Nombre d'articles</label>
-                <input type="number" formControlName="itemCount" min="1" />
-                <div class="error-message" *ngIf="f['itemCount'].touched && f['itemCount'].invalid">
-                  <span *ngIf="f['itemCount'].errors?.['required']">Ce champ est requis</span>
-                  <span *ngIf="f['itemCount'].errors?.['min']">Minimum 1 article</span>
-                </div>
-              </div>
-              <div class="field-group">
-                <label>Nombre de colis</label>
-                <input type="number" formControlName="packageCount" min="1" />
-                <div class="error-message" *ngIf="f['packageCount'].touched && f['packageCount'].invalid">
-                  <span *ngIf="f['packageCount'].errors?.['required']">Ce champ est requis</span>
-                  <span *ngIf="f['packageCount'].errors?.['min']">Minimum 1 colis</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="section-divider">
-              <h3>Options de livraison</h3>
-            </div>
-
-            <div class="pickup-form-grid">
-              <div class="field-group">
+              <div class="form-group">
                 <label>Mode de paiement</label>
                 <select formControlName="paymentMode">
-                  <option>Espèce seulement</option>
-                  <option>Carte</option>
-                  <option>Virement</option>
+                  <option value="Espèce seulement">Espèce seulement</option>
+                  <option value="Carte bancaire">Carte bancaire</option>
+                  <option value="Chèque">Chèque</option>
                 </select>
               </div>
-              <div class="field-group">
-                <label>Type de Service</label>
+              <div class="form-group">
+                <label>Type de service</label>
                 <select formControlName="typeService">
                   <option value="STANDARD">Standard</option>
-                  <option value="EXPRESS">Express (+30% plus rapide)</option>
+                  <option value="EXPRESS">Express</option>
+                  <option value="PLANIFIE">Planifié</option>
                 </select>
               </div>
-              <div class="field-group field-radio">
-                <label>Ouvrir le colis avant le paiement ?</label>
-                <div class="radio-row">
-                  <label><input type="radio" name="openBeforePayment" value="Non" formControlName="openBeforePayment" /> Non</label>
-                  <label><input type="radio" name="openBeforePayment" value="Oui" formControlName="openBeforePayment" /> Oui</label>
-                </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>⚙️ Options supplémentaires</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Ouverture avant paiement</label>
+                <select formControlName="openBeforePayment">
+                  <option value="Non">Non</option>
+                  <option value="Oui">Oui</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Échange possible</label>
+                <select formControlName="exchange">
+                  <option value="Non">Non</option>
+                  <option value="Oui">Oui</option>
+                </select>
+              </div>
+              <div class="form-group full-width">
+                <label>Remarques</label>
+                <textarea formControlName="remarks" rows="2" placeholder="Instructions spéciales..."></textarea>
               </div>
             </div>
+          </div>
 
-            <div class="pickup-form-grid">
-              <div class="field-group field-radio">
-                <label>Échange autorisé ?</label>
-                <div class="radio-row">
-                  <label><input type="radio" name="exchange" value="Non" formControlName="exchange" /> Non</label>
-                  <label><input type="radio" name="exchange" value="Oui" formControlName="exchange" /> Oui</label>
-                </div>
-              </div>
-            </div>
-
-            <div class="field-full">
-              <label>Remarques</label>
-              <textarea formControlName="remarks" placeholder="Instructions supplémentaires pour le livreur"></textarea>
-            </div>
-
-            <div class="error-banner" *ngIf="errorMessage">
-              ⚠️ {{ errorMessage }}
-            </div>
-
-            <div class="actions-row">
-              <button class="btn-add" type="button" (click)="submitPickup()" [disabled]="loading">
-                <span class="btn-icon">+</span>
-                {{ loading ? 'Enregistrement...' : 'Ajouter' }}
-              </button>
-            </div>
-          </form>
-        </div>
-      </section>
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" (click)="packageForm.reset()">Annuler</button>
+            <button type="button" class="btn-secondary" (click)="submitPickup()">
+              <span>📦</span>
+              <span>Créer Commande Directe</span>
+            </button>
+            <button type="button" class="btn-primary" (click)="addCommandToManifest()">
+              <span>📋</span>
+              <span>Ajouter au Manifest</span>
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
 
-
-    <!-- TAB: CRÉER / IMPRIMER MANIFESTE & COLIS EN ATTENTE -->
-    <div *ngIf="activeTab === 'manifeste' || activeTab === 'colis-attente'">
+    <!-- Manifest Tab -->
+    <div *ngIf="activeTab === 'manifest'" class="dashboard-content">
       <div class="dashboard-header">
-        <h1>Créer un manifeste</h1>
-        <div class="dashboard-greeting">Bonjour {{ clientName }}</div>
+        <h1>Manifest</h1>
+        <div class="header-actions">
+          <button class="btn-secondary" (click)="clearManifest()">Vider</button>
+          <button class="btn-primary" (click)="validateManifest()" [disabled]="pendingCommandes.length === 0">
+            <span>✅</span>
+            <span>Valider Manifest</span>
+          </button>
+        </div>
       </div>
 
-      <div class="page-card mt-2">
-        <div class="manifest-header-row">
-          <h3 class="box-title">Liste des colis en attente</h3>
-          <div class="manifest-summary">Ajouter votre manifeste et valider les colis sélectionnés.</div>
+      <div class="manifest-info">
+        <div class="info-item">
+          <span class="info-label">Commandes en attente:</span>
+          <span class="info-value">{{ pendingCommandes.length }}</span>
         </div>
+        <div class="info-item">
+          <span class="info-label">Total estimé:</span>
+          <span class="info-value">{{ calculateManifestTotal() }} DT</span>
+        </div>
+      </div>
 
-        <div class="table-toolbar">
-          <div class="toolbar-left">
-            <span>Show</span>
-            <select>
-              <option>10</option>
-              <option>25</option>
-            </select>
-            <span>entries</span>
+      <div class="orders-table">
+        <div class="table-header">
+          <div>Destinataire</div>
+          <div>Adresse</div>
+          <div>Montant</div>
+          <div>Actions</div>
+        </div>
+        <div class="table-body">
+          <div class="table-row" *ngFor="let cmd of pendingCommandes">
+            <div class="order-dest">{{ cmd.adresseArriveeId }}</div>
+            <div class="order-address">{{ cmd.adresseArriveeId }}</div>
+            <div class="order-amount">{{ cmd.montantTotal }} DT</div>
+            <div class="order-actions">
+              <button class="btn-icon" (click)="removeFromManifest(cmd)">🗑️</button>
+            </div>
           </div>
-          <div class="toolbar-right">
-            <label>Search:</label>
-            <input type="text" [(ngModel)]="searchTerm" placeholder="Rechercher..." class="search-input" />
-          </div>
-        </div>
-
-        <div class="table-container mt-3">
-          <table class="premium-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Code à barre</th>
-                <th>Nom</th>
-                <th>Adresse</th>
-                <th>Téléphone</th>
-                <th>Prix</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let p of filteredPendingCommandes">
-                <td>{{ p.dateCreation ? (p.dateCreation | date:'dd/MM/yyyy') : 'Aujourd\'hui' }}</td>
-                <td><strong>#{{ p.id ? p.id.substring(p.id.length - 6) : 'N/A' }}</strong></td>
-                <td>{{ clientName }}</td>
-                <td>{{ p.adresseArrivee.rue }}, {{ p.adresseArrivee.ville }}</td>
-                <td>+216 22 000 000</td>
-                <td>{{ p.montantTotal }} DT</td>
-              </tr>
-              <tr *ngIf="filteredPendingCommandes.length === 0">
-                <td colspan="6" class="empty-table-state">
-                  No data available in table
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="table-footer">
-          <div class="footer-summary">Showing 0 to 0 of 0 entries</div>
-          <div class="footer-pagination">
-            <button class="pagination-btn" disabled>Previous</button>
-            <button class="pagination-btn" disabled>Next</button>
+          <div class="empty-state" *ngIf="pendingCommandes.length === 0">
+            <p>Aucune commande en attente dans le manifest</p>
+            <button class="btn-primary" (click)="setTab('nouvelle-commande')">Ajouter une commande</button>
           </div>
         </div>
+      </div>
+    </div>
 
-        <div class="actions-row mt-4" style="justify-content:flex-start;">
-          <button class="btn-valider-manifeste" (click)="validerManifeste()">
-            Valider Manifeste
+    <!-- Mes Commandes Tab -->
+    <div *ngIf="activeTab === 'mes-commandes'" class="dashboard-content">
+      <div class="dashboard-header">
+        <h1>Mes Commandes</h1>
+        <div class="search-box">
+          <input type="text" placeholder="Rechercher..." [(ngModel)]="searchTerm" />
+          <span>🔍</span>
+        </div>
+      </div>
+      <div class="orders-table">
+        <div class="table-header">
+          <div>Référence</div>
+          <div>Destinataire</div>
+          <div>Statut</div>
+          <div>Date</div>
+          <div>Montant</div>
+          <div>Actions</div>
+        </div>
+        <div class="table-body">
+          <div class="table-row" *ngFor="let cmd of filteredCommandes">
+            <div class="order-ref">{{ cmd.id || 'CMD-' + Math.floor(Math.random() * 10000) }}</div>
+            <div class="order-dest">{{ cmd.adresseArriveeId || 'N/A' }}</div>
+            <div class="order-status">
+              <span class="status-badge" [class]="'status-' + (cmd.statut || 'EN_ATTENTE').toLowerCase().replace('_', '-')">
+                {{ cmd.statut || 'EN_ATTENTE' }}
+              </span>
+            </div>
+            <div class="order-date">{{ cmd.dateCreation | date:'short' }}</div>
+            <div class="order-amount">{{ cmd.montantTotal || 0 }} DT</div>
+            <div class="order-actions">
+              <button class="btn-icon" (click)="viewOrderDetails(cmd)">👁️</button>
+            </div>
+          </div>
+          <div class="empty-state" *ngIf="filteredCommandes.length === 0">
+            <p>Aucune commande trouvée</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profil Tab -->
+    <div *ngIf="activeTab === 'profil'" class="dashboard-content">
+      <div class="dashboard-header">
+        <h1>Mon Profil</h1>
+      </div>
+      <div class="profile-card">
+        <form [formGroup]="profileForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nom</label>
+              <input type="text" formControlName="nom" />
+            </div>
+            <div class="form-group">
+              <label>Prénom</label>
+              <input type="text" formControlName="prenom" />
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" formControlName="email" />
+            </div>
+            <div class="form-group">
+              <label>Téléphone</label>
+              <input type="tel" formControlName="telephone" />
+            </div>
+            <div class="form-group full-width">
+              <label>Entreprise (optionnel)</label>
+              <input type="text" formControlName="entreprise" />
+            </div>
+          </div>
+          <button type="button" class="btn-primary" (click)="updateProfile()">Mettre à jour</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Adresses Tab -->
+    <div *ngIf="activeTab === 'adresses'" class="dashboard-content">
+      <div class="dashboard-header">
+        <h1>Mes Adresses</h1>
+        <button class="btn-primary" (click)="showAddAddress = true">
+          <span>➕</span>
+          <span>Ajouter Adresse</span>
+        </button>
+      </div>
+      <div class="addresses-grid">
+        <div class="address-card" *ngFor="let addr of addresses">
+          <div class="address-header">
+            <span class="address-type" *ngIf="addr.isDefault">⭐ Par défaut</span>
+            <button class="btn-icon" (click)="deleteAddress(addr.id)">🗑️</button>
+          </div>
+          <div class="address-body">
+            <p class="address-street">{{ addr.rue }}</p>
+            <p class="address-city">{{ addr.ville }}, {{ addr.codePostal }}</p>
+          </div>
+          <button class="btn-secondary" (click)="setDefaultAddress(addr.id)">Définir par défaut</button>
+        </div>
+        <div class="empty-state" *ngIf="addresses.length === 0">
+          <p>Aucune adresse enregistrée</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recherche Colis Tab -->
+    <div *ngIf="activeTab === 'rechercher'" class="dashboard-content">
+      <div class="dashboard-header">
+        <h1>Recherche Colis</h1>
+      </div>
+      <div class="search-card">
+        <div class="search-body">
+          <label>Code à barre / Téléphone</label>
+          <div class="search-row">
+            <input type="text" [(ngModel)]="searchTerm" placeholder="Entrez le code ou le numéro" />
+            <button class="btn-primary" (click)="onDashboardSearch()">🔍 Rechercher</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Réclamations Tab -->
+    <div *ngIf="activeTab === 'reclamations'" class="dashboard-content">
+      <div class="dashboard-header">
+        <h1>Mes Réclamations</h1>
+      </div>
+      <div class="reclamations-card">
+        <form [formGroup]="reclamationForm">
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label>Objet de la réclamation *</label>
+              <select formControlName="objet">
+                <option value="">Sélectionner un objet</option>
+                <option *ngFor="let opt of objetOptions" [value]="opt">{{ opt }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Code barre du colis *</label>
+              <input type="text" formControlName="codeBarre" placeholder="Ex: CMD-1234" />
+            </div>
+            <div class="form-group full-width">
+              <label>Description</label>
+              <textarea formControlName="description" rows="4" placeholder="Décrivez votre problème..."></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-primary" (click)="ajouterReclamation()">Envoyer la réclamation</button>
+          </div>
+        </form>
+
+        <div class="reclamations-list" *ngIf="reclamationsList.length > 0">
+          <h3>Mes réclamations précédentes</h3>
+          <div class="reclamation-item" *ngFor="let rec of reclamationsList">
+            <div class="rec-header">
+              <span class="rec-objet">{{ rec.objet }}</span>
+              <span class="rec-date">{{ rec.dateCreation | date:'short' }}</span>
+            </div>
+            <p class="rec-description">{{ rec.description }}</p>
+            <span class="rec-status" [class]="'status-' + rec.statut.toLowerCase()">{{ rec.statut }}</span>
+          </div>
+        </div>
+        <div class="success-message" *ngIf="reclamationSuccessMsg">
+          {{ reclamationSuccessMsg }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Service Client Tab -->
+    <div *ngIf="activeTab === 'service-client'" class="dashboard-content">
+      <div class="dashboard-header">
+        <h1>Service Client</h1>
+      </div>
+      <div class="service-client-card">
+        <h2>Notre équipe</h2>
+        <div class="team-grid">
+          <div class="team-member" *ngFor="let member of teamMembers">
+            <div class="member-avatar">{{ member.initials }}</div>
+            <div class="member-info">
+              <h3>{{ member.nom }}</h3>
+              <p>{{ member.poste }}</p>
+              <a class="member-contact" href="tel:{{ member.tel }}">{{ member.tel }}</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Imprimer Manifest Tab -->
+    <div *ngIf="activeTab === 'imprimer-manifest'" class="dashboard-content">
+      <div class="dashboard-header">
+        <h1>Imprimer Manifest</h1>
+      </div>
+      <div class="print-card">
+        <div class="print-preview">
+          <h3>Aperçu du manifest</h3>
+          <div class="manifest-summary">
+            <p>Nombre de colis: {{ pendingCommandes.length }}</p>
+            <p>Total: {{ calculateManifestTotal() }} DT</p>
+            <p>Date: {{ currentDate | date:'full' }}</p>
+          </div>
+        </div>
+        <div class="print-actions">
+          <button class="btn-secondary" (click)="setTab('manifest')">Retour</button>
+          <button class="btn-primary" (click)="imprimerManifeste()">
+            <span>🖨️</span>
+            <span>Imprimer</span>
           </button>
         </div>
       </div>
     </div>
 
-
-    <!-- TAB: RÉCLAMATIONS (MATCHING SCREENSHOT 2) -->
-    <div *ngIf="activeTab === 'reclamations'">
+    <!-- Mes Paiements Tab -->
+    <div *ngIf="activeTab === 'paiements'" class="dashboard-content">
       <div class="dashboard-header">
-        <h1>Gestion des Réclamations</h1>
+        <h1>Mes Paiements</h1>
       </div>
-
-      <div class="page-card">
-        <h3 class="box-title" style="border-bottom:1px solid #e2e8f0;padding-bottom:0.75rem;margin-bottom:1.5rem;">
-          Nouvelle réclamation
-        </h3>
-
-        <div class="form-grid-reclamation">
-          <div class="field-group">
-            <label>Objet</label>
-            <select [(ngModel)]="reclamationObjet" class="form-control">
-              <option value="">Sélectionner un objet...</option>
-              <option *ngFor="let obj of objetOptions" [value]="obj">{{ obj }}</option>
+      <div class="paiements-card">
+        <div class="paiements-filter">
+          <div class="form-group">
+            <label>Mois</label>
+            <select [(ngModel)]="month">
+              <option *ngFor="let monthOption of months" [value]="monthOption">{{ monthOption }}</option>
             </select>
           </div>
-
-          <div class="field-group">
-            <label>Code à barre (Réf Colis)</label>
-            <input type="text" [(ngModel)]="reclamationCodeBarre" placeholder="Saisir la référence ou code à barre" class="form-control" />
+          <div class="form-group">
+            <label>Année</label>
+            <select [(ngModel)]="year">
+              <option *ngFor="let yearOption of years" [value]="yearOption">{{ yearOption }}</option>
+            </select>
           </div>
-
-          <div class="field-full">
-            <label>Description détaillée du problème</label>
-            <textarea [(ngModel)]="reclamationDescription" placeholder="Précisez votre demande..." class="form-control"></textarea>
-          </div>
+          <button class="btn-primary" (click)="validatePayments()">Filtrer</button>
         </div>
-
-        <div class="success-banner mt-3" *ngIf="reclamationSuccessMsg" style="background:#d1fae5;color:#047857;padding:12px;border-radius:10px;font-weight:bold;">
-          🎉 {{ reclamationSuccessMsg }}
-        </div>
-
-        <div class="actions-row mt-3" style="justify-content:flex-end;">
-          <button class="btn-ajouter-reclamation" (click)="ajouterReclamation()">
-            ➕ Ajouter
-          </button>
-        </div>
-      </div>
-
-      <div class="page-card mt-4" *ngIf="reclamationsList.length > 0">
-        <h3>Mes réclamations soumises</h3>
-        <div class="table-container mt-2">
-          <table class="premium-table">
-            <thead>
-              <tr>
-                <th>Réf</th>
-                <th>Objet</th>
-                <th>Code à barre</th>
-                <th>Date</th>
-                <th>Statut</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let r of reclamationsList">
-                <td><strong>{{ r.id }}</strong></td>
-                <td>{{ r.objet }}</td>
-                <td>{{ r.codeBarre }}</td>
-                <td>{{ r.dateCreation | date:'dd/MM/yyyy HH:mm' }}</td>
-                <td><span class="status-pill status-en_attente">{{ r.statut }}</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-
-    <!-- TAB: SERVICE CLIENT (MATCHING SCREENSHOT 3) -->
-    <div *ngIf="activeTab === 'service-client'">
-      <div class="service-client-banner">
-        <h2>🎧 Service Client</h2>
-        <p>Nous sommes là pour vous aider. Notre équipe dévouée est à votre disposition.</p>
-      </div>
-
-      <div class="mt-4">
-        <h2 class="team-title">Notre Équipe</h2>
-
-        <div class="grid grid-4 team-grid mt-3">
-          <div class="team-card" *ngFor="let m of teamMembers">
-            <div class="avatar-circle">
-              {{ m.initials }}
-            </div>
-            <h3 class="member-name">{{ m.nom }}</h3>
-            <div class="member-role">{{ m.poste }}</div>
-            
-            <div class="phone-box">
-              <span class="phone-icon">📞</span>
-              <span>{{ m.tel }}</span>
-            </div>
+        <div class="paiements-summary">
+          <div class="summary-item">
+            <span>Total à payer:</span>
+            <span>{{ livresPayesTotal }} DT</span>
           </div>
         </div>
       </div>
     </div>
 
-
-    <!-- TAB: IMPORTER FICHIER -->
-    <div *ngIf="activeTab === 'importer'">
+    <!-- Mes Retours Tab -->
+    <div *ngIf="activeTab === 'retours'" class="dashboard-content">
       <div class="dashboard-header">
-        <h1>Importer un fichier de colis</h1>
+        <h1>Mes Retours</h1>
       </div>
-      <div class="page-card text-center" style="padding:4rem;">
-        <span style="font-size:4rem;">📊</span>
-        <h2>Importation Excel / CSV</h2>
-        <p style="color:#64748b;max-width:500px;margin:1rem auto;">Glissez-déposez votre fichier de commandes au format Excel (.xlsx) ou CSV pour ajouter plusieurs colis simultanément.</p>
-        <input type="file" style="display:none;" #fileInput />
-        <button class="btn-primary" (click)="fileInput.click()">📁 Parcourir un fichier</button>
-      </div>
-    </div>
-
-    <!-- TAB: FRAIS & RETOURS -->
-    <div *ngIf="activeTab === 'paiements'">
-      <div class="dashboard-header">
-        <h1>Mes paiements</h1>
-      </div>
-
-      <div class="page-card paiements-card">
-        <div class="paiements-panel">
-          <div class="paiements-header">
-            <h2>Mes paiements</h2>
+      <div class="retours-card">
+        <div class="retour-stats">
+          <div class="stat-item">
+            <span>Taux de retour:</span>
+            <span class="rate-value">{{ calculateRetourRate() }}%</span>
           </div>
-
-          <div class="paiements-content">
-            <div class="paiement-row">
-              <div class="field-group">
-                <label>Mois</label>
-                <select [(ngModel)]="month">
-                  <option *ngFor="let monthOption of months" [value]="monthOption">{{ monthOption }}</option>
-                </select>
-              </div>
-              <div class="field-group">
-                <label>Année</label>
-                <select [(ngModel)]="year">
-                  <option *ngFor="let yearOption of years" [value]="yearOption">{{ yearOption }}</option>
-                </select>
-              </div>
+        </div>
+        <div class="retour-progress">
+          <div class="retour-bar" [style.width.%]="calculateRetourRate()"></div>
+        </div>
+        <div class="retours-list">
+          <h3>Détail des retours</h3>
+          <div class="retour-item" *ngFor="let cmd of getRetourCommandes()">
+            <div class="retour-info">
+              <span class="retour-ref">{{ cmd.id || 'CMD-' + Math.floor(Math.random() * 10000) }}</span>
+              <span class="retour-status">{{ cmd.statut }}</span>
             </div>
-
-            <div class="paiements-actions">
-              <button class="btn-valider-paiement" (click)="validatePayments()">
-                <span class="check-icon">✔</span>
-                Valider
-              </button>
-            </div>
+            <div class="retour-amount">{{ cmd.montantTotal || 0 }} DT</div>
+          </div>
+          <div class="empty-state" *ngIf="getRetourCommandes().length === 0">
+            <p>Aucun retour enregistré</p>
           </div>
         </div>
       </div>
     </div>
 
-    <div *ngIf="activeTab === 'frais' || activeTab === 'retours'">
+    <!-- Placeholder tabs for other sections -->
+    <div *ngIf="activeTab === 'suivi' || activeTab === 'evaluations' || activeTab === 'notifications'" class="dashboard-content">
       <div class="dashboard-header">
-        <h1>{{ activeTab === 'frais' ? 'Frais de recouvrement' : 'Mes Retours' }}</h1>
+        <h1>{{ activeTab | titlecase }}</h1>
       </div>
-      <div class="page-card">
-        <p>Aucun frais ou retour enregistré pour la période actuelle.</p>
+      <div class="placeholder-content">
+        <span>🚧</span>
+        <h2>Section en cours de développement</h2>
+        <p>Cette fonctionnalité sera bientôt disponible.</p>
+        <button class="btn-primary" (click)="setTab('dashboard')">Retour au tableau de bord</button>
       </div>
     </div>
 
