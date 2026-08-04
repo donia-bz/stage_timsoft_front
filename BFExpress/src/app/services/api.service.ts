@@ -72,11 +72,18 @@ export interface Livreur {
   id: string;
   nom: string;
   prenom: string;
-  statut: string; // DISPONIBLE, EN_COURSE, HORS_LIGNE
-  latitudeActuelle: number;
-  longitudeActuelle: number;
+  email?: string;
+  telephone?: string;
+  gouvernorat?: string;
+  typePermis?: string;
+  statut: string; // DISPONIBLE, EN_COURSE, HORS_LIGNE, INSCRIPTION, SUSPENDU
+  latitudeActuelle?: number;
+  longitudeActuelle?: number;
   depotId?: string;
+  vehiculeId?: string;
   noteMoyenne?: number;
+  nombreLivraisons?: number;
+  dateInscription?: string;
 }
 
 export interface Livraison {
@@ -214,6 +221,10 @@ export class ApiService {
     return this.http.get<Manifeste>(`${this.commandesUrl}/manifestes/${id}`);
   }
 
+  getAllManifestes(): Observable<Manifeste[]> {
+    return this.http.get<Manifeste[]>(`${this.commandesUrl}/manifestes`);
+  }
+
   getManifestesByClient(clientId: string): Observable<Manifeste[]> {
     return this.http.get<Manifeste[]>(`${this.commandesUrl}/manifestes/client/${clientId}`);
   }
@@ -252,6 +263,10 @@ export class ApiService {
   }
 
   // --- Livreurs ---
+  creerLivreur(livreur: Livreur): Observable<Livreur> {
+    return this.http.post<Livreur>(`${this.livreursUrl}/livreurs`, livreur);
+  }
+
   getLivreurById(id: string): Observable<Livreur> {
     return this.http.get<Livreur>(`${this.livreursUrl}/livreurs/${id}`);
   }
@@ -264,10 +279,22 @@ export class ApiService {
     return this.http.get<Livreur[]>(`${this.livreursUrl}/livreurs/statut/DISPONIBLE`);
   }
 
+  getLivreursByGouvernorat(gouvernorat: string): Observable<Livreur[]> {
+    return this.http.get<Livreur[]>(`${this.livreursUrl}/livreurs/gouvernorat/${gouvernorat}`);
+  }
+
   updateLivreurStatut(id: string, statut: string): Observable<Livreur> {
     return this.http.patch<Livreur>(`${this.livreursUrl}/livreurs/${id}/statut`, null, {
       params: new HttpParams().set('statut', statut)
     });
+  }
+
+  updateLivreur(id: string, livreur: Partial<Livreur>): Observable<Livreur> {
+    return this.http.put<Livreur>(`${this.livreursUrl}/livreurs/${id}`, livreur);
+  }
+
+  deleteLivreur(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.livreursUrl}/livreurs/${id}`);
   }
 
   updateLivreurPosition(id: string, lat: number, lon: number): Observable<Livreur> {

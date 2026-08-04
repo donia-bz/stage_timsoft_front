@@ -39,13 +39,21 @@
           <span class="nav-icon">👥</span>
           <span>Utilisateurs</span>
         </a>
-        <a class="nav-link" [class.active]="activeTab === 'depots'" (click)="activeTab = 'depots'">
-          <span class="nav-icon">🏢</span>
-          <span>Dépôts</span>
+        <a class="nav-link" [class.active]="activeTab === 'livreurs'" (click)="activeTab = 'livreurs'">
+          <span class="nav-icon">🚚</span>
+          <span>Livreurs</span>
         </a>
         <a class="nav-link" [class.active]="activeTab === 'vehicules'" (click)="activeTab = 'vehicules'">
           <span class="nav-icon">🚗</span>
           <span>Véhicules</span>
+        </a>
+        <a class="nav-link" [class.active]="activeTab === 'manifests'" (click)="activeTab = 'manifests'">
+          <span class="nav-icon">📋</span>
+          <span>Manifests</span>
+        </a>
+        <a class="nav-link" [class.active]="activeTab === 'depots'" (click)="activeTab = 'depots'">
+          <span class="nav-icon">🏢</span>
+          <span>Dépôts</span>
         </a>
       </div>
 
@@ -161,30 +169,30 @@
             <div class="order-stat-item">
               <div class="stat-label">En attente</div>
               <div class="stat-bar">
-                <div class="stat-fill yellow" [style.width.%]="getOrderPercentage('EN_ATTENTE')"></div>
+                <div class="stat-fill yellow" [style.width.%]="getEnAttentePercentage()"></div>
               </div>
-              <div class="stat-value">{{ getOrderCountByStatus('EN_ATTENTE') }}</div>
+              <div class="stat-value">{{ getEnAttenteCount() }}</div>
             </div>
             <div class="order-stat-item">
               <div class="stat-label">En livraison</div>
               <div class="stat-bar">
-                <div class="stat-fill blue" [style.width.%]="getOrderPercentage('EN_LIVRAISON')"></div>
+                <div class="stat-fill blue" [style.width.%]="getEnLivraisonPercentage()"></div>
               </div>
-              <div class="stat-value">{{ getOrderCountByStatus('EN_LIVRAISON') }}</div>
+              <div class="stat-value">{{ getEnLivraisonCount() }}</div>
             </div>
             <div class="order-stat-item">
               <div class="stat-label">Livrées</div>
               <div class="stat-bar">
-                <div class="stat-fill green" [style.width.%]="getOrderPercentage('LIVREE')"></div>
+                <div class="stat-fill green" [style.width.%]="getLivreePercentage()"></div>
               </div>
-              <div class="stat-value">{{ getOrderCountByStatus('LIVREE') }}</div>
+              <div class="stat-value">{{ getLivreeCount() }}</div>
             </div>
             <div class="order-stat-item">
               <div class="stat-label">Retours</div>
               <div class="stat-bar">
-                <div class="stat-fill red" [style.width.%]="getOrderPercentage('RETOUR_DEPOT')"></div>
+                <div class="stat-fill red" [style.width.%]="getRetourPercentage()"></div>
               </div>
-              <div class="stat-value">{{ getOrderCountByStatus('RETOUR_DEPOT') }}</div>
+              <div class="stat-value">{{ getRetourCount() }}</div>
             </div>
           </div>
         </div>
@@ -249,39 +257,158 @@
     <!-- Livreurs Tab -->
     <div *ngIf="activeTab === 'livreurs'" class="tab-content animate-fade-in">
       <div class="page-header">
-        <h1>Gestion des livreurs</h1>
-        <p>Surveillez et gérez votre équipe de livraison</p>
+        <div>
+          <h1>Gestion des livreurs</h1>
+          <p>Affectation aux gouvernorats et validation des inscriptions</p>
+        </div>
+        <div class="header-actions">
+          <button class="action-btn primary" (click)="refreshData()">
+            <span>🔄</span>
+            <span>Actualiser</span>
+          </button>
+        </div>
       </div>
 
-      <div class="drivers-grid">
-        <div class="driver-card" *ngFor="let driver of livreurs">
-          <div class="driver-header">
-            <div class="driver-avatar">{{ driver.prenom.charAt(0) }}{{ driver.nom.charAt(0) }}</div>
-            <div class="driver-info">
-              <div class="driver-name">{{ driver.prenom }} {{ driver.nom }}</div>
-              <div class="driver-status" [class.available]="driver.statut === 'DISPONIBLE'" [class.busy]="driver.statut === 'EN_COURSE'" [class.offline]="driver.statut === 'HORS_LIGNE'">
-                {{ driver.statut }}
+      <!-- Formulaire nouveau livreur -->
+      <div class="form-card">
+        <h3>Enregistrer un nouveau livreur</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nom *</label>
+            <input type="text" [(ngModel)]="nouveauLivreur.nom" placeholder="Nom du livreur">
+          </div>
+          <div class="form-group">
+            <label>Prénom *</label>
+            <input type="text" [(ngModel)]="nouveauLivreur.prenom" placeholder="Prénom du livreur">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" [(ngModel)]="nouveauLivreur.email" placeholder="email@exemple.com">
+          </div>
+          <div class="form-group">
+            <label>Téléphone</label>
+            <input type="tel" [(ngModel)]="nouveauLivreur.telephone" placeholder="Téléphone">
+          </div>
+          <div class="form-group">
+            <label>Gouvernorat *</label>
+            <select [(ngModel)]="nouveauLivreur.gouvernorat">
+              <option value="">Sélectionner un gouvernorat</option>
+              <option *ngFor="let gov of gouvernorats" [value]="gov">{{ gov }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Type de permis</label>
+            <select [(ngModel)]="nouveauLivreur.typePermis">
+              <option value="B">Permis B (Voiture)</option>
+              <option value="A">Permis A (Moto)</option>
+              <option value="C">Permis C (Camion)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="action-btn primary" (click)="enregistrerLivreur()">
+            <span>➕</span>
+            <span>Enregistrer le livreur</span>
+          </button>
+          <button class="action-btn secondary" (click)="resetLivreurForm()">
+            <span>🔄</span>
+            <span>Réinitialiser</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Liste des livreurs par gouvernorat -->
+      <div class="livreurs-section">
+        <h3>Livreurs par gouvernorat</h3>
+        <div class="gouvernorats-grid">
+          <div class="gouvernorat-card" *ngFor="let gov of getGouvernoratsList().slice(0, 8)">
+            <div class="gouvernorat-header">
+              <div class="gouvernorat-name">{{ gov }}</div>
+              <div class="gouvernorat-count">{{ getLivreursForGouvernorat(gov).length }} livreurs</div>
+            </div>
+            <div class="gouvernorat-drivers">
+              <div class="driver-mini" *ngFor="let driver of getLivreursForGouvernorat(gov).slice(0, 3)">
+                <div class="driver-avatar">{{ getDriverFirstInitial(driver) }}</div>
+                <div class="driver-info-mini">
+                  <div class="driver-name-mini">{{ getDriverFullName(driver) }}</div>
+                  <div class="driver-statut-mini" [class.available]="isDriverAvailable(driver)">{{ getDriverStatus(driver) }}</div>
+                </div>
+              </div>
+              <div class="driver-mini more" *ngIf="getLivreursForGouvernorat(gov).length > 3">
+                <div class="more-count">+{{ getLivreursForGouvernorat(gov).length - 3 }}</div>
               </div>
             </div>
           </div>
-          <div class="driver-details">
-            <div class="detail-row">
-              <span class="detail-label">Position:</span>
-              <span class="detail-value">{{ formatPosition(driver.latitudeActuelle, driver.longitudeActuelle) }}</span>
+        </div>
+      </div>
+
+      <!-- Inscriptions en attente -->
+      <div class="inscriptions-section" *ngIf="getPendingRegistrationLivreurs().length > 0">
+        <h3>Inscriptions en attente de validation</h3>
+        <div class="inscriptions-list">
+          <div class="inscription-card" *ngFor="let driver of getPendingRegistrationLivreurs()">
+            <div class="inscription-info">
+              <div class="inscription-name">{{ getDriverFullName(driver) }}</div>
+              <div class="inscription-details">
+                <span>📍 {{ getDriverGouvernorat(driver) }}</span>
+                <span>📞 {{ driver.telephone }}</span>
+                <span>📧 {{ driver.email }}</span>
+              </div>
             </div>
-            <div class="detail-row">
-              <span class="detail-label">Note moyenne:</span>
-              <span class="detail-value">{{ driver.noteMoyenne || 5.0 }}/5</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Livraisons:</span>
-              <span class="detail-value">{{ getDriverDeliveryCount(driver.id) }}</span>
+            <div class="inscription-actions">
+              <button class="action-btn success" (click)="validerLivreur(driver.id || '')">
+                <span>✅</span>
+                <span>Valider</span>
+              </button>
+              <button class="action-btn danger" (click)="suspendreLivreur(driver.id || '')">
+                <span>❌</span>
+                <span>Refuser</span>
+              </button>
             </div>
           </div>
-          <div class="driver-actions">
-            <button class="action-btn full" (click)="toggleDriverStatus(driver)">
-              Changer statut
-            </button>
+        </div>
+      </div>
+
+      <!-- Liste complète des livreurs -->
+      <div class="livreurs-table-section">
+        <h3>Tous les livreurs</h3>
+        <div class="livreurs-table">
+          <div class="table-header">
+            <div>Nom</div>
+            <div>Gouvernorat</div>
+            <div>Statut</div>
+            <div>Véhicule</div>
+            <div>Performance</div>
+            <div>Actions</div>
+          </div>
+          <div class="table-body">
+            <div class="table-row" *ngFor="let driver of getAllLivreurs()">
+              <div class="driver-name-cell">
+                <div class="driver-avatar-small">{{ getDriverFirstInitial(driver) }}</div>
+                <div>
+                  <div class="driver-full-name">{{ getDriverFullName(driver) }}</div>
+                  <div class="driver-email">{{ driver.email }}</div>
+                </div>
+              </div>
+              <div class="driver-gouv">{{ getDriverGouvernorat(driver) }}</div>
+              <div class="driver-statut" [class.available]="isDriverAvailable(driver)" [class.suspended]="isDriverSuspended(driver)">{{ getDriverStatus(driver) }}</div>
+              <div class="driver-vehicle">{{ getDriverVehicle(driver) }}</div>
+              <div class="driver-perf">
+                <div class="perf-metric">⭐ {{ getDriverNote(driver) }}/5</div>
+                <div class="perf-metric">📦 {{ getDriverDeliveryCountFromDriver(driver) }}</div>
+              </div>
+              <div class="driver-actions">
+                <button class="action-btn info" (click)="modifierLivreur(driver)" title="Modifier">
+                  <span>✏️</span>
+                </button>
+                <button class="action-btn success" (click)="reactiverLivreur(driver.id || '')" *ngIf="isDriverSuspended(driver)" title="Réactiver">
+                  <span>▶️</span>
+                </button>
+                <button class="action-btn warning" (click)="suspendreLivreur(driver.id)" *ngIf="driver.statut !== 'SUSPENDU'" title="Suspendre">
+                  <span>⏸️</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -356,37 +483,206 @@
     <!-- Vehicles Tab -->
     <div *ngIf="activeTab === 'vehicules'" class="tab-content animate-fade-in">
       <div class="page-header">
-        <h1>Gestion des véhicules</h1>
-        <p>Flotte de livraison</p>
+        <div>
+          <h1>Gestion des véhicules</h1>
+          <p>Flotte de livraison et affectation aux livreurs</p>
+        </div>
+        <div class="header-actions">
+          <button class="action-btn primary" (click)="refreshData()">
+            <span>🔄</span>
+            <span>Actualiser</span>
+          </button>
+        </div>
       </div>
 
-      <div class="vehicles-grid">
-        <div class="vehicle-card" *ngFor="let vehicle of vehicules">
-          <div class="vehicle-header">
-            <div class="vehicle-icon">🚗</div>
-            <div class="vehicle-model">{{ vehicle.modele }}</div>
+      <!-- Formulaire nouveau véhicule -->
+      <div class="form-card">
+        <h3>Ajouter un nouveau véhicule</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Immatriculation *</label>
+            <input type="text" [(ngModel)]="nouveauVehicule.immatriculation" placeholder="123 TN 4567">
           </div>
-          <div class="vehicle-details">
-            <div class="detail-row">
-              <span class="detail-label">Immatriculation:</span>
-              <span class="detail-value">{{ vehicle.immatriculation }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Capacité:</span>
-              <span class="detail-value">{{ vehicle.capacite }} colis</span>
-            </div>
+          <div class="form-group">
+            <label>Marque *</label>
+            <input type="text" [(ngModel)]="nouveauVehicule.marque" placeholder="Renault, Peugeot...">
           </div>
-          <div class="vehicle-actions">
-            <button class="action-btn danger" (click)="removeVehicule(vehicle.id)">Supprimer</button>
+          <div class="form-group">
+            <label>Modèle *</label>
+            <input type="text" [(ngModel)]="nouveauVehicule.modele" placeholder="Clio, 208...">
+          </div>
+          <div class="form-group">
+            <label>Type</label>
+            <select [(ngModel)]="nouveauVehicule.type">
+              <option value="Voiture">Voiture</option>
+              <option value="Fourgonnette">Fourgonnette</option>
+              <option value="Camion">Camion</option>
+              <option value="Moto">Moto</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Capacité (colis)</label>
+            <input type="number" [(ngModel)]="nouveauVehicule.capacite" placeholder="10">
           </div>
         </div>
+        <div class="form-actions">
+          <button class="action-btn primary" (click)="enregistrerVehicule()">
+            <span>➕</span>
+            <span>Ajouter le véhicule</span>
+          </button>
+          <button class="action-btn secondary" (click)="resetVehiculeForm()">
+            <span>🔄</span>
+            <span>Réinitialiser</span>
+          </button>
+        </div>
+      </div>
 
-        <div class="vehicle-card add-vehicle">
-          <div class="add-vehicle-content">
-            <div class="add-icon">➕</div>
-            <div class="add-text">Ajouter un véhicule</div>
+      <!-- Liste des véhicules -->
+      <div class="vehicles-section">
+        <h3>Flotte de véhicules</h3>
+        <div class="vehicles-grid">
+          <div class="vehicle-card" *ngFor="let vehicle of getAllVehicles()">
+            <div class="vehicle-header">
+              <div class="vehicle-icon">🚗</div>
+              <div class="vehicle-info">
+                <div class="vehicle-model">{{ vehicle.marque }} {{ getVehicleModel(vehicle) }}</div>
+                <div class="vehicle-immat">{{ getVehicleImmatriculation(vehicle) }}</div>
+              </div>
+              <div class="vehicle-statut" [class.available]="isVehicleAvailable(vehicle)" [class.in-use]="isVehicleInUse(vehicle)">
+                {{ getVehicleStatus(vehicle) }}
+              </div>
+            </div>
+            <div class="vehicle-details">
+              <div class="detail-row">
+                <span class="detail-label">Type:</span>
+                <span class="detail-value">{{ getVehicleType(vehicle) }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Capacité:</span>
+                <span class="detail-value">{{ getVehicleCapacity(vehicle) }} colis</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Assigné à:</span>
+                <span class="detail-value">{{ getDriverForVehicle(vehicle.id || '')?.prenom }} {{ getDriverForVehicle(vehicle.id || '')?.nom || 'Non assigné' }}</span>
+              </div>
+            </div>
+            <div class="vehicle-actions">
+              <button class="action-btn info" (click)="assignVehicleToDriver(vehicle.id || '')" *ngIf="isVehicleAvailable(vehicle)" title="Affecter">
+                <span>👤</span>
+                <span>Affecter</span>
+              </button>
+              <button class="action-btn warning" (click)="libererVehicule(vehicle.id || '')" *ngIf="isVehicleInUse(vehicle)" title="Libérer">
+                <span>🔓</span>
+                <span>Libérer</span>
+              </button>
+              <button class="action-btn danger" (click)="removeVehicule(vehicle.id)" title="Supprimer">
+                <span>🗑️</span>
+              </button>
+            </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Manifests Tab -->
+    <div *ngIf="activeTab === 'manifests'" class="tab-content animate-fade-in">
+      <div class="page-header">
+        <div>
+          <h1>Gestion des manifests</h1>
+          <p>Validation et affectation des manifests aux livreurs</p>
+        </div>
+        <div class="header-actions">
+          <button class="action-btn primary" (click)="refreshData()">
+            <span>🔄</span>
+            <span>Actualiser</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Manifests en attente d'affectation -->
+      <div class="manifests-section" *ngIf="getPendingManifests().length > 0">
+        <h3>Manifests en attente d'affectation</h3>
+        <div class="manifests-list">
+          <div class="manifest-card" *ngFor="let manifest of getPendingManifests()">
+            <div class="manifest-header">
+              <div class="manifest-id">{{ getManifestId(manifest) }}</div>
+              <div class="manifest-statut">{{ getManifestStatus(manifest) }}</div>
+            </div>
+            <div class="manifest-details">
+              <div class="detail-row">
+                <span class="detail-label">Client:</span>
+                <span class="detail-value">{{ getManifestClient(manifest) }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Nombre de colis:</span>
+                <span class="detail-value">{{ getManifestColisCount(manifest) }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Date création:</span>
+                <span class="detail-value">{{ getManifestDate(manifest) }}</span>
+              </div>
+            </div>
+            <div class="manifest-actions">
+              <div class="manifest-assignment">
+                <label>Affecter à:</label>
+                <select [(ngModel)]="selectedDrivers[manifest.id || '']">
+                  <option value="">Sélectionner un livreur</option>
+                  <option *ngFor="let driver of getAvailableDrivers()" [value]="driver.id || ''">
+                    {{ getDriverFullName(driver) }} ({{ getDriverGouvernorat(driver) }})
+                  </option>
+                </select>
+              </div>
+              <button class="action-btn success" (click)="affecterManifest(manifest.id || '', getSelectedDriverForManifest(manifest.id || ''))" [disabled]="!isManifestDriverSelected(manifest.id || '')">
+                <span>✅</span>
+                <span>Affecter</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manifests en cours -->
+      <div class="manifests-section">
+        <h3>Manifests en cours de livraison</h3>
+        <div class="manifests-list">
+          <div class="manifest-card in-progress" *ngFor="let manifest of getInProgressManifests()">
+            <div class="manifest-header">
+              <div class="manifest-id">{{ getManifestId(manifest) }}</div>
+              <div class="manifest-statut in-progress">{{ getManifestStatus(manifest) }}</div>
+            </div>
+            <div class="manifest-details">
+              <div class="detail-row">
+                <span class="detail-label">Livreur:</span>
+                <span class="detail-value">{{ getDriverNameForManifest(manifest.livreurId || '') }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Nombre de colis:</span>
+                <span class="detail-value">{{ getManifestColisCount(manifest) }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Date création:</span>
+                <span class="detail-value">{{ getManifestDate(manifest) }}</span>
+              </div>
+            </div>
+            <div class="manifest-actions">
+              <button class="action-btn success" (click)="validerRetraitManifest(manifest.id || '')" *ngIf="canValidateRetrait(manifest)">
+                <span>📦</span>
+                <span>Valider retrait</span>
+              </button>
+              <button class="action-btn info" (click)="viewManifestDetails(manifest.id || '')">
+                <span>👁️</span>
+                <span>Détails</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aucun manifest -->
+      <div class="empty-state" *ngIf="hasNoManifests()">
+        <div class="empty-icon">📋</div>
+        <div class="empty-text">Aucun manifest en attente</div>
+        <div class="empty-subtext">Les manifests validés par les clients apparaîtront ici</div>
       </div>
     </div>
 
@@ -403,9 +699,9 @@
           <div class="map-text">Carte interactive</div>
           <div class="map-subtext">Intégration Google Maps / Leaflet requise</div>
           <div class="drivers-on-map">
-            <div class="map-driver" *ngFor="let driver of livreurs; let i = index" [style.left.%]="(i * 15) % 90 + 5" [style.top.%]="(i * 20) % 80 + 10">
+            <div class="map-driver" *ngFor="let driver of getAllDriversForMap(); let i = index" [style.left.%]="((i * 15) % 90) + 5" [style.top.%]="((i * 20) % 80) + 10">
               <div class="map-driver-icon">🚚</div>
-              <div class="map-driver-name">{{ driver.prenom.charAt(0) }}</div>
+              <div class="map-driver-name">{{ getDriverFirstInitial(driver) }}</div>
             </div>
           </div>
         </div>
