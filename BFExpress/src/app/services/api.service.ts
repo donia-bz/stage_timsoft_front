@@ -218,6 +218,22 @@ export class ApiService {
     return this.http.get<Manifeste[]>(`${this.commandesUrl}/manifestes/client/${clientId}`);
   }
 
+  getBrouillonManifeste(clientId: string): Observable<Manifeste> {
+    return this.http.get<Manifeste>(`${this.commandesUrl}/manifestes/client/${clientId}/brouillon`);
+  }
+
+  validerManifeste(id: string): Observable<Manifeste> {
+    return this.http.patch<Manifeste>(`${this.commandesUrl}/manifestes/${id}/valider`, null);
+  }
+
+  updateManifeste(id: string, manifeste: Manifeste): Observable<Manifeste> {
+    return this.http.put<Manifeste>(`${this.commandesUrl}/manifestes/${id}`, manifeste);
+  }
+
+  deleteManifeste(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.commandesUrl}/manifestes/${id}`);
+  }
+
   // --- Enlèvements ---
   creerEnlevement(enlevement: Enlevement): Observable<Enlevement> {
     return this.http.post<Enlevement>(`${this.commandesUrl}/enlevements`, enlevement);

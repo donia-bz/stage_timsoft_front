@@ -385,7 +385,7 @@
 
 .table-header {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 1rem;
   padding: 1rem;
   background: #f8fafc;
@@ -405,7 +405,7 @@
 
 .table-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 1rem;
   padding: 1rem;
   background: white;
@@ -896,41 +896,6 @@
   font-size: 0.9rem;
 }
 
-/* Print Card */
-.print-card {
-  background: white;
-  border-radius: 20px;
-  padding: 2rem;
-  border: 2px solid #e2e8f0;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-}
-
-.print-preview {
-  background: #f8fafc;
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  border: 2px dashed #e2e8f0;
-}
-
-.print-preview h3 {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--dark);
-  margin: 0 0 1rem;
-}
-
-.manifest-summary p {
-  color: var(--gray);
-  margin: 0.5rem 0;
-}
-
-.print-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-}
-
 /* Paiements Card */
 .paiements-card {
   background: white;
@@ -1083,13 +1048,13 @@
 
   .table-header,
   .table-row {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 
-  .table-header > div:nth-child(4),
   .table-header > div:nth-child(5),
-  .table-row > div:nth-child(4),
-  .table-row > div:nth-child(5) {
+  .table-header > div:nth-child(6),
+  .table-row > div:nth-child(5),
+  .table-row > div:nth-child(6) {
     display: none;
   }
 
@@ -1150,14 +1115,5 @@
 
   .search-row {
     flex-direction: column;
-  }
-
-  .print-actions {
-    flex-direction: column;
-  }
-
-  .print-actions .btn-primary,
-  .print-actions .btn-secondary {
-    width: 100%;
   }
 }

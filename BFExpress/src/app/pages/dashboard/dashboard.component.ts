@@ -4,6 +4,15 @@ import { ApiService, Commande } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 
+interface Manifeste {
+  id?: string;
+  clientId: string;
+  nombreColis: number;
+  statut: string;
+  colisIds?: string[];
+  dateCreation?: string;
+}
+
 export interface Reclamation {
   id?: string;
   objet: string;
@@ -23,6 +32,7 @@ export class DashboardComponent implements OnInit {
   clientId = '';
   commandes: Commande[] = [];
   pendingCommandes: Commande[] = [];
+  currentManifeste: Manifeste | null = null;
   addresses: any[] = [];
   unreadNotifications = 0;
   currentDate: Date = new Date();
@@ -96,24 +106,24 @@ export class DashboardComponent implements OnInit {
     private authService: AuthService,
     private router: Router
   ) {
-    // Initialize reactive forms
+    // Initialize reactive forms with NO validations for testing
     this.packageForm = this.fb.group({
-      pickupName: ['', [Validators.required, Validators.minLength(3)]],
-      governorate: ['', Validators.required],
-      city: ['', [Validators.required, Validators.minLength(2)]],
-      locality: ['', Validators.required],
-      address: ['', [Validators.required, Validators.minLength(10)]],
-      phone1: ['', [Validators.required, Validators.pattern(/^[0-9+ ]{8,15}$/)]],
-      phone2: ['', [Validators.pattern(/^[0-9+ ]{8,15}$/)]],
-      designation: ['', [Validators.required, Validators.minLength(5)]],
-      price: ['', [Validators.required, Validators.min(0)]],
-      itemCount: ['', [Validators.required, Validators.min(1)]],
-      packageCount: ['', [Validators.required, Validators.min(1)]],
-      paymentMode: ['Espèce seulement', Validators.required],
-      openBeforePayment: ['Non', Validators.required],
-      exchange: ['Non', Validators.required],
-      typeService: ['STANDARD', Validators.required],
-      remarks: ['', Validators.maxLength(500)]
+      pickupName: [''],
+      governorate: [''],
+      city: [''],
+      locality: [''],
+      address: [''],
+      phone1: [''],
+      phone2: [''],
+      designation: [''],
+      price: [''],
+      itemCount: [''],
+      packageCount: [''],
+      paymentMode: ['Espèce seulement'],
+      openBeforePayment: ['Non'],
+      exchange: ['Non'],
+      typeService: ['STANDARD'],
+      remarks: ['']
     });
 
     this.reclamationForm = this.fb.group({
@@ -140,6 +150,7 @@ export class DashboardComponent implements OnInit {
       this.clientId = user.id;
       this.loadClientCommandes();
       this.loadUserProfile();
+      this.loadCurrentManifeste();
     }
   }
 
@@ -180,27 +191,106 @@ export class DashboardComponent implements OnInit {
     this.addresses.forEach(a => a.isDefault = a.id === id);
   }
 
-  addCommandToManifest(): void {
-    if (this.packageForm.invalid) {
-      this.markFormGroupTouched(this.packageForm);
-      this.errorMessage = 'Veuillez corriger les erreurs dans le formulaire.';
-      return;
-    }
+  loadCurrentManifeste(): void {
+    if (!this.clientId) return;
 
+    this.apiService.getBrouillonManifeste(this.clientId).subscribe({
+      next: (manifeste: Manifeste) => {
+        this.currentManifeste = manifeste;
+        // Load the colis from the manifest
+        if (manifeste.colisIds && manifeste.colisIds.length > 0) {
+          this.pendingCommandes = [];
+          manifeste.colisIds.forEach(colisId => {
+            this.apiService.getCommandeById(colisId).subscribe({
+              next: (cmd: Commande) => {
+                this.pendingCommandes.push(cmd);
+              }
+            });
+          });
+        }
+      },
+      error: (err: Error) => console.error('Error loading manifeste:', err)
+    });
+  }
+
+  addCommandToManifest(): void {
+    console.log('Bouton Ajouter cliqué');
+    
     const formValue = this.packageForm.value;
+    console.log('Valeurs formulaire:', formValue);
+    
+    // Générer un ID unique pour la commande
+    const uniqueId = 'CMD-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+    
     const commande: Commande = {
-      clientId: this.clientId,
+      id: uniqueId,
+      clientId: this.clientId || 'test-client-id',
       adresseDepartId: 'adresse-depart-default',
-      adresseArriveeId: formValue.address,
+      adresseArriveeId: formValue.address || 'Adresse test',
       statut: 'EN_ATTENTE',
-      typeService: formValue.typeService,
+      typeService: formValue.typeService || 'STANDARD',
       montantTotal: parseFloat(formValue.price) || 25.0,
       dateCreation: new Date().toISOString()
     };
 
-    this.pendingCommandes.push(commande);
-    this.packageForm.reset();
-    alert('Commande ajoutée au manifest !');
+    console.log('Envoi de la commande au backend MongoDB:', commande);
+    
+    // Créer la commande via le backend MongoDB
+    this.apiService.creerCommande(commande).subscribe({
+      next: (createdCmd: Commande) => {
+        console.log('Commande créée dans MongoDB:', createdCmd);
+        
+        // Ajouter au manifeste brouillon existant ou en créer un nouveau
+        if (this.currentManifeste && this.currentManifeste.id) {
+          console.log('Mise à jour du manifeste existant:', this.currentManifeste.id);
+          this.apiService.updateManifeste(this.currentManifeste.id, {
+            ...this.currentManifeste,
+            colisIds: [...(this.currentManifeste.colisIds || []), createdCmd.id!],
+            nombreColis: (this.currentManifeste.nombreColis || 0) + 1
+          }).subscribe({
+            next: (updatedManifeste: Manifeste) => {
+              console.log('Manifeste mis à jour dans MongoDB:', updatedManifeste);
+              this.currentManifeste = updatedManifeste;
+              this.pendingCommandes.push(createdCmd);
+              this.packageForm.reset();
+              alert(`Commande ajoutée au manifest !\nID: ${createdCmd.id}\nStatut: EN_ATTENTE\n✅ Stockée dans MongoDB`);
+            },
+            error: (err: Error) => {
+              console.error('Erreur mise à jour manifeste:', err);
+              this.errorMessage = 'Erreur lors de l\'ajout au manifest: ' + err.message;
+              alert('Erreur: ' + err.message);
+            }
+          });
+        } else {
+          console.log('Création nouveau manifeste dans MongoDB');
+          const newManifeste: Manifeste = {
+            clientId: this.clientId || 'test-client-id',
+            nombreColis: 1,
+            statut: 'BROUILLON',
+            colisIds: [createdCmd.id!]
+          };
+          this.apiService.creerManifeste(newManifeste).subscribe({
+            next: (createdManifeste: Manifeste) => {
+              console.log('Nouveau manifeste créé dans MongoDB:', createdManifeste);
+              this.currentManifeste = createdManifeste;
+              this.pendingCommandes.push(createdCmd);
+              this.packageForm.reset();
+              alert(`Commande ajoutée au manifest !\nID: ${createdCmd.id}\nStatut: EN_ATTENTE\n✅ Stockée dans MongoDB`);
+            },
+            error: (err: Error) => {
+              console.error('Erreur création manifeste:', err);
+              this.errorMessage = 'Erreur lors de la création du manifest: ' + err.message;
+              alert('Erreur: ' + err.message);
+            }
+          });
+        }
+      },
+      error: (err: Error) => {
+        console.error('Erreur création commande dans MongoDB:', err);
+        this.errorMessage = 'Erreur lors de la création de la commande: ' + err.message;
+        alert('❌ Erreur backend: ' + err.message + '\n\n⚠️ Le backend n\'est probablement pas démarré.\n\nPour utiliser MongoDB, vous devez:\n1. Installer Maven\n2. Démarrer les microservices backend\n\nEn attendant, le mode local est disponible.');
+      }
+    });
   }
 
   removeFromManifest(cmd: Commande): void {
@@ -214,20 +304,8 @@ export class DashboardComponent implements OnInit {
   }
 
   validateManifest(): void {
-    if (this.pendingCommandes.length === 0) {
-      alert('Aucune commande à valider');
-      return;
-    }
-
-    // Simuler la validation du manifest
-    this.pendingCommandes.forEach(cmd => {
-      cmd.statut = 'A_ENLEVER';
-      this.commandes.push(cmd);
-    });
-
-    this.pendingCommandes = [];
-    this.calculateStats();
-    alert('Manifest validé avec succès ! Les colis sont maintenant en statut "À enlever"');
+    // Cette fonction est remplacée par validerEtImprimerManifest()
+    this.validerEtImprimerManifest();
   }
 
   calculateManifestTotal(): number {
@@ -370,24 +448,40 @@ export class DashboardComponent implements OnInit {
     return Math.round((totalRetours / total) * 100);
   }
 
-  validerManifeste(): void {
+  validerEtImprimerManifest(): void {
     if (this.pendingCommandes.length === 0) {
       alert('Aucun colis en attente à valider dans le manifeste.');
       return;
     }
 
-    let completed = 0;
-    this.pendingCommandes.forEach(cmd => {
-      if (cmd.id) {
-        this.apiService.updateCommandeStatut(cmd.id, 'EN_LIVRAISON').subscribe({
-          next: () => {
-            completed++;
-            if (completed === this.pendingCommandes.length) {
-              alert('Manifeste validé avec succès ! Tous vos colis en attente sont maintenant sortis en cours de livraison.');
-              this.loadClientCommandes();
-            }
+    if (!this.currentManifeste || !this.currentManifeste.id) {
+      alert('Aucun manifeste en cours');
+      return;
+    }
+
+    // Valider le manifeste
+    this.apiService.validerManifeste(this.currentManifeste.id).subscribe({
+      next: (validatedManifeste: Manifeste) => {
+        this.currentManifeste = validatedManifeste;
+        
+        // Imprimer le manifeste
+        this.imprimerManifeste();
+        
+        // Mettre à jour les commandes
+        this.pendingCommandes.forEach(cmd => {
+          if (cmd.id) {
+            this.apiService.updateCommandeStatut(cmd.id, 'A_ENLEVER').subscribe();
           }
         });
+        
+        // Vider la liste locale
+        this.pendingCommandes = [];
+        this.loadClientCommandes();
+        
+        alert('Manifeste validé et imprimé avec succès !');
+      },
+      error: (err: Error) => {
+        this.errorMessage = 'Erreur lors de la validation du manifest: ' + err.message;
       }
     });
   }

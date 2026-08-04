@@ -48,10 +48,6 @@
           <span>Manifest</span>
           <span class="nav-badge" *ngIf="pendingCommandes.length > 0">{{ pendingCommandes.length }}</span>
         </a>
-        <a class="nav-link" (click)="setTab('imprimer-manifest')">
-          <span class="nav-icon">🖨️</span>
-          <span>Imprimer Manifest</span>
-        </a>
         <a class="nav-link" [class.active]="activeTab === 'mes-commandes'" (click)="setTab('mes-commandes')">
           <span class="nav-icon">📑</span>
           <span>Mes Commandes</span>
@@ -345,13 +341,9 @@
 
           <div class="form-actions">
             <button type="button" class="btn-secondary" (click)="packageForm.reset()">Annuler</button>
-            <button type="button" class="btn-secondary" (click)="submitPickup()">
-              <span>📦</span>
-              <span>Créer Commande Directe</span>
-            </button>
             <button type="button" class="btn-primary" (click)="addCommandToManifest()">
-              <span>📋</span>
-              <span>Ajouter au Manifest</span>
+              <span>📦</span>
+              <span>Ajouter commande</span>
             </button>
           </div>
         </form>
@@ -364,9 +356,9 @@
         <h1>Manifest</h1>
         <div class="header-actions">
           <button class="btn-secondary" (click)="clearManifest()">Vider</button>
-          <button class="btn-primary" (click)="validateManifest()" [disabled]="pendingCommandes.length === 0">
+          <button class="btn-primary" (click)="validerEtImprimerManifest()" [disabled]="pendingCommandes.length === 0">
             <span>✅</span>
-            <span>Valider Manifest</span>
+            <span>Valider et Imprimer</span>
           </button>
         </div>
       </div>
@@ -384,16 +376,22 @@
 
       <div class="orders-table">
         <div class="table-header">
+          <div>ID Commande</div>
           <div>Destinataire</div>
           <div>Adresse</div>
           <div>Montant</div>
+          <div>Statut</div>
           <div>Actions</div>
         </div>
         <div class="table-body">
           <div class="table-row" *ngFor="let cmd of pendingCommandes">
+            <div class="order-ref">{{ cmd.id }}</div>
             <div class="order-dest">{{ cmd.adresseArriveeId }}</div>
             <div class="order-address">{{ cmd.adresseArriveeId }}</div>
             <div class="order-amount">{{ cmd.montantTotal }} DT</div>
+            <div class="order-status">
+              <span class="status-badge" [class]="'status-' + cmd.statut.toLowerCase()">{{ cmd.statut }}</span>
+            </div>
             <div class="order-actions">
               <button class="btn-icon" (click)="removeFromManifest(cmd)">🗑️</button>
             </div>
@@ -585,30 +583,6 @@
               <a class="member-contact" href="tel:{{ member.tel }}">{{ member.tel }}</a>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Imprimer Manifest Tab -->
-    <div *ngIf="activeTab === 'imprimer-manifest'" class="dashboard-content">
-      <div class="dashboard-header">
-        <h1>Imprimer Manifest</h1>
-      </div>
-      <div class="print-card">
-        <div class="print-preview">
-          <h3>Aperçu du manifest</h3>
-          <div class="manifest-summary">
-            <p>Nombre de colis: {{ pendingCommandes.length }}</p>
-            <p>Total: {{ calculateManifestTotal() }} DT</p>
-            <p>Date: {{ currentDate | date:'full' }}</p>
-          </div>
-        </div>
-        <div class="print-actions">
-          <button class="btn-secondary" (click)="setTab('manifest')">Retour</button>
-          <button class="btn-primary" (click)="imprimerManifeste()">
-            <span>🖨️</span>
-            <span>Imprimer</span>
-          </button>
         </div>
       </div>
     </div>
