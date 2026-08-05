@@ -31,6 +31,13 @@
             <input name="telephone" [(ngModel)]="telephone" placeholder="Téléphone" required />
           </div>
           <div class="field-group">
+            <label>Gouvernorat souhaité</label>
+            <select name="gouvernorat" [(ngModel)]="gouvernorat" required>
+              <option value="" disabled selected>Choisissez un gouvernorat...</option>
+              <option *ngFor="let g of gouvernorats" [value]="g">{{ g }}</option>
+            </select>
+          </div>
+          <div class="field-group">
             <label>Type de Véhicule (Optionnel)</label>
             <input name="vehicule" [(ngModel)]="vehicule" placeholder="Ex: Moto, Voiture..." />
           </div>

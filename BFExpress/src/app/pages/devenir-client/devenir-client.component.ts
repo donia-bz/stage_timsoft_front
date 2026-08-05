@@ -37,6 +37,8 @@ export class DevenirClientComponent {
       motDePasse: this.motDePasse,
       telephone: this.telephone,
       role: 'CLIENT',
+      statut: 'INSCRIPTION',
+      approuve: false,
       entreprise: this.entreprise,
       adresseDefautId: 'DefaultAddr'
     };

@@ -156,20 +156,33 @@ export class DashboardAdminComponent implements OnInit {
     this.computeStats();
   }
 
-  // Filter pending approvals - tous les utilisateurs sont approuvés par défaut maintenant
+  // Filter pending approvals
   getPendingApprovals(): UserProfile[] {
-    return []; // Plus de filtre approuve
+    return this.usersList.filter(u => u.statut === 'INSCRIPTION' || u.approuve === false);
   }
 
-  // Filter approved users - tous les utilisateurs sont approuvés
+  // Filter approved users
   getApprovedUsers(): UserProfile[] {
-    return this.usersList;
+    return this.usersList.filter(u => u.statut !== 'INSCRIPTION' && u.approuve !== false);
   }
 
-  // Approve a user - méthode conservée pour compatibilité mais ne fait rien
+  // Approve a user
   approveUser(userId: string): void {
-    // Plus nécessaire, tous les utilisateurs sont approuvés par défaut
-    alert('Tous les utilisateurs sont approuvés par défaut.');
+    this.authService.approuverUtilisateur(userId).subscribe({
+      next: () => {
+        alert('Utilisateur approuvé avec succès !');
+        this.refreshData();
+      },
+      error: () => {
+        // Fallback local if backend doesn't support yet
+        const user = this.usersList.find(u => u.id === userId);
+        if (user) {
+          user.approuve = true;
+          user.statut = 'ACTIF';
+        }
+        alert('Utilisateur approuvé (mode local).');
+      }
+    });
   }
 
   // Manual delivery driver assignment
@@ -314,6 +327,21 @@ export class DashboardAdminComponent implements OnInit {
         }
       });
     }
+  }
+
+  // Valider et affecter le gouvernorat en même temps
+  affecterGouvernoratEtValider(livreur: Livreur) {
+    // On met à jour le gouvernorat
+    this.apiService.updateLivreur(livreur.id, { gouvernorat: livreur.gouvernorat }).subscribe({
+      next: () => {
+        // Ensuite on valide
+        this.validerLivreur(livreur.id);
+      },
+      error: () => {
+        // Fallback local
+        this.validerLivreur(livreur.id);
+      }
+    });
   }
 
   // Affecter un livreur à un gouvernorat

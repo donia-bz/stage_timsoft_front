@@ -23,6 +23,8 @@ export interface UserProfile {
   matriculeFiscal?: string;
   adressesEnregistreesIds?: string[];
   adressesRamassageIds?: string[];
+  approuve?: boolean;
+  statut?: string;
 }
 
 @Injectable({

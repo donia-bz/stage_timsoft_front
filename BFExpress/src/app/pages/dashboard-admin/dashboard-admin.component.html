@@ -237,7 +237,12 @@
               <tbody>
                 <tr *ngFor="let l of livreurs">
                   <td><strong>{{ l.nom }} {{ l.prenom }}</strong></td>
-                  <td><span class="gouv-tag">{{ l.gouvernorat || 'Tunis' }}</span></td>
+                  <td>
+                    <span *ngIf="l.statut !== 'INSCRIPTION' && l.statut" class="gouv-tag">{{ l.gouvernorat || 'Tunis' }}</span>
+                    <select *ngIf="l.statut === 'INSCRIPTION' || !l.statut" [(ngModel)]="l.gouvernorat" class="small-select">
+                      <option *ngFor="let g of gouvernorats" [value]="g">{{ g }}</option>
+                    </select>
+                  </td>
                   <td>
                     <span class="status-pill" [ngClass]="'status-' + (l.statut || 'DISPONIBLE').toLowerCase()">
                       {{ l.statut || 'DISPONIBLE' }}
@@ -248,7 +253,10 @@
                   </td>
                   <td><span class="star-rating">⭐ {{ l.noteMoyenne || '4.8' }}/5</span></td>
                   <td>
-                    <button class="btn-ghost" (click)="toggleDriverStatus(l)">
+                    <button *ngIf="l.statut === 'INSCRIPTION' || !l.statut" class="btn-primary-sm" (click)="affecterGouvernoratEtValider(l)">
+                      Valider & Affecter
+                    </button>
+                    <button *ngIf="l.statut !== 'INSCRIPTION' && l.statut" class="btn-ghost" (click)="toggleDriverStatus(l)">
                       {{ l.statut === 'DISPONIBLE' ? 'Mettre Hors Ligne' : 'Rendre Disponible' }}
                     </button>
                   </td>
@@ -282,7 +290,10 @@
                   <td>{{ u.email }}</td>
                   <td>{{ u.telephone || 'Non renseigné' }}</td>
                   <td><span class="role-badge" [ngClass]="(u.role || 'client').toLowerCase()">{{ u.role }}</span></td>
-                  <td><span class="badge-active">Actif</span></td>
+                  <td>
+                    <span *ngIf="u.approuve === true || u.statut === 'ACTIF' || u.statut === 'DISPONIBLE'" class="badge-active">Actif</span>
+                    <button *ngIf="u.approuve !== true && u.statut !== 'ACTIF' && u.statut !== 'DISPONIBLE'" class="btn-primary-sm" (click)="approveUser(u.id)">Approuver</button>
+                  </td>
                 </tr>
                 <tr *ngIf="usersList.length === 0">
                   <td colspan="5" class="text-center text-muted">Aucun utilisateur trouvé.</td>

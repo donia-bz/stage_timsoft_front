@@ -13,6 +13,14 @@ export class DevenirLivreurComponent {
   motDePasse = '';
   telephone = '';
   vehicule = '';
+  gouvernorat = '';
+
+  gouvernorats = [
+    'Tunis', 'Ariana', 'Ben Arous', 'Manouba', 'Nabeul', 'Zaghouan',
+    'Bizerte', 'Béja', 'Jendouba', 'Le Kef', 'Siliana', 'Sousse', 'Monastir',
+    'Mahdia', 'Sfax', 'Kairouan', 'Kasserine', 'Sidi Bouzid', 'Gabès',
+    'Médenine', 'Tataouine', 'Gafsa', 'Tozeur', 'Kébili'
+  ];
 
   loading = false;
   successMessage = '';
@@ -21,7 +29,7 @@ export class DevenirLivreurComponent {
   constructor(private authService: AuthService) {}
 
   onSubmit(): void {
-    if (!this.nom || !this.prenom || !this.email || !this.motDePasse || !this.telephone) {
+    if (!this.nom || !this.prenom || !this.email || !this.motDePasse || !this.telephone || !this.gouvernorat) {
       this.errorMessage = 'Veuillez remplir tous les champs obligatoires.';
       return;
     }
@@ -36,8 +44,9 @@ export class DevenirLivreurComponent {
       email: this.email,
       motDePasse: this.motDePasse,
       telephone: this.telephone,
+      gouvernorat: this.gouvernorat,
       role: 'LIVREUR',
-      statut: 'DISPONIBLE',
+      statut: 'INSCRIPTION',
       latitudeActuelle: 0.0,
       longitudeActuelle: 0.0,
       noteMoyenne: 5.0
@@ -54,6 +63,7 @@ export class DevenirLivreurComponent {
         this.motDePasse = '';
         this.telephone = '';
         this.vehicule = '';
+        this.gouvernorat = '';
       },
       error: (err) => {
         this.loading = false;

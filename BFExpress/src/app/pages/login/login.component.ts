@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-login',
@@ -20,6 +21,7 @@ export class LoginComponent {
 
   constructor(
     private authService: AuthService,
+    private apiService: ApiService,
     private router: Router
   ) {}
 
@@ -39,9 +41,31 @@ export class LoginComponent {
         if (res.role === 'ADMIN') {
           this.router.navigate(['/dashboard-admin']);
         } else if (res.role === 'LIVREUR') {
-          this.router.navigate(['/dashboard-livreur']);
+          this.apiService.getLivreurById(res.id).subscribe({
+            next: (livreur) => {
+              if (livreur.statut === 'INSCRIPTION' || livreur.statut === 'SUSPENDU') {
+                this.authService.logout();
+                this.errorMessage = 'Votre compte livreur est en attente d\'approbation ou suspendu.';
+              } else {
+                this.router.navigate(['/dashboard-livreur']);
+              }
+            },
+            error: () => this.router.navigate(['/dashboard-livreur']) // Fallback
+          });
         } else {
-          this.router.navigate(['/dashboard']);
+          // Client
+          this.authService.getAllUsers().subscribe({
+            next: (users) => {
+              const user = users.find(u => u.email === this.email); // or u.id === res.id
+              if (user && (user.statut === 'INSCRIPTION' || user.approuve === false)) {
+                this.authService.logout();
+                this.errorMessage = 'Votre compte client est en attente d\'approbation par un administrateur.';
+              } else {
+                this.router.navigate(['/dashboard']);
+              }
+            },
+            error: () => this.router.navigate(['/dashboard']) // Fallback
+          });
         }
       },
       error: (err) => {
