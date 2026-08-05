@@ -1,8 +1,10 @@
 .modern-footer {
-  background: linear-gradient(135deg, var(--dark), #1e293b);
+  background: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 50%, #8b5cf6 100%);
   color: white;
   padding: 3rem 0 1.5rem;
   margin-top: auto;
+  position: relative;
+  overflow: hidden;
 }
 
 .footer-container {
@@ -30,7 +32,7 @@
 .footer-logo {
   font-size: 1.5rem;
   font-weight: 900;
-  color: var(--primary);
+  color: white;
 }
 
 .footer-tagline {

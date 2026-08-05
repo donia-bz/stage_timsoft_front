@@ -9,14 +9,14 @@ import { filter } from 'rxjs/operators';
 })
 export class AppComponent {
   title = 'BFExpress';
-  isClientSpace = false;
+  isHomePage = false;
 
   constructor(private router: Router) {
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe((event) => {
         const url = event.urlAfterRedirects.split('?')[0];
-        this.isClientSpace = url === '/dashboard' || url === '/suivi';
+        this.isHomePage = url === '/';
       });
   }
 }

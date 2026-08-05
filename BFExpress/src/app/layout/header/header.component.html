@@ -10,21 +10,41 @@
 
     <!-- Navigation -->
     <nav class="nav-menu">
-      <a routerLink="/" class="nav-link active">Accueil</a>
-      <a routerLink="/contact" class="nav-link">Contact</a>
-      
       <!-- Dashboard links when logged in -->
       <a *ngIf="authService.isLoggedIn() && authService.getRole() === 'ADMIN'" routerLink="/dashboard-admin" class="nav-link dashboard-link">Admin</a>
       <a *ngIf="authService.isLoggedIn() && authService.getRole() === 'CLIENT'" routerLink="/dashboard" class="nav-link dashboard-link">Mon Espace</a>
       <a *ngIf="authService.isLoggedIn() && authService.getRole() === 'LIVREUR'" routerLink="/dashboard-livreur" class="nav-link dashboard-link">Livreur</a>
     </nav>
 
-    <!-- Auth Button -->
+    <!-- Auth Button replaced by Hamburger Menu -->
     <div class="auth-section">
-      <a *ngIf="!authService.isLoggedIn()" routerLink="/login" class="btn-login">
-        <span class="btn-icon">🔐</span>
-        <span class="btn-text">Connexion</span>
-      </a>
+      <button class="hamburger-menu" (click)="toggleMenu()" *ngIf="!authService.isLoggedIn()">
+        <span class="hamburger-icon">☰</span>
+      </button>
+      
+      <!-- Dropdown Menu -->
+      <div class="dropdown-menu" *ngIf="showMenu && !authService.isLoggedIn()">
+        <a routerLink="/" (click)="closeMenu()" class="dropdown-item">
+          <span class="dropdown-icon">🏠</span>
+          <span>Accueil</span>
+        </a>
+        <a routerLink="/contact" (click)="closeMenu()" class="dropdown-item">
+          <span class="dropdown-icon">�</span>
+          <span>Contact</span>
+        </a>
+        <a routerLink="/devenir-client" (click)="closeMenu()" class="dropdown-item">
+          <span class="dropdown-icon">👤</span>
+          <span>Devenir Client</span>
+        </a>
+        <a routerLink="/devenir-livreur" (click)="closeMenu()" class="dropdown-item">
+          <span class="dropdown-icon">🚚</span>
+          <span>Devenir Livreur</span>
+        </a>
+        <a routerLink="/login" (click)="closeMenu()" class="dropdown-item">
+          <span class="dropdown-icon">�</span>
+          <span>Se connecter</span>
+        </a>
+      </div>
       
       <div *ngIf="authService.isLoggedIn()" class="user-menu">
         <div class="user-info">

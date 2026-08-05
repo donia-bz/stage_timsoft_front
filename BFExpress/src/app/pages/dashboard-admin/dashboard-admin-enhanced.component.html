@@ -133,6 +133,42 @@
             <div class="stat-trend">Optimal</div>
           </div>
         </div>
+
+        <div class="stat-card success">
+          <div class="stat-icon">⭐</div>
+          <div class="stat-content">
+            <div class="stat-value">{{ getSatisfactionPercentage() }}%</div>
+            <div class="stat-label">Satisfaction client</div>
+            <div class="stat-trend positive">Réel</div>
+          </div>
+        </div>
+
+        <div class="stat-card primary">
+          <div class="stat-icon">🎯</div>
+          <div class="stat-content">
+            <div class="stat-value">{{ getSuccessRate() }}%</div>
+            <div class="stat-label">Taux de réussite</div>
+            <div class="stat-trend positive">Réel</div>
+          </div>
+        </div>
+
+        <div class="stat-card warning">
+          <div class="stat-icon">🔄</div>
+          <div class="stat-content">
+            <div class="stat-value">{{ getReturnRate() }}%</div>
+            <div class="stat-label">Taux de retour</div>
+            <div class="stat-trend">En cours</div>
+          </div>
+        </div>
+
+        <div class="stat-card info">
+          <div class="stat-icon">📊</div>
+          <div class="stat-content">
+            <div class="stat-value">{{ getDailyAverage() }}</div>
+            <div class="stat-label">Moyenne journalière</div>
+            <div class="stat-trend">Commandes/jour</div>
+          </div>
+        </div>
       </div>
 
       <!-- Performance Charts -->
@@ -574,9 +610,6 @@
               <button class="action-btn warning" (click)="libererVehicule(vehicle.id || '')" *ngIf="isVehicleInUse(vehicle)" title="Libérer">
                 <span>🔓</span>
                 <span>Libérer</span>
-              </button>
-              <button class="action-btn danger" (click)="removeVehicule(vehicle.id)" title="Supprimer">
-                <span>🗑️</span>
               </button>
             </div>
           </div>

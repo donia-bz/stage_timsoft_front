@@ -5,30 +5,36 @@
         <p class="badge">Contactez notre équipe</p>
         <h2 class="section-title">Nous Contacter</h2>
         <p class="section-subtitle">Pour toute question de livraison, de suivi ou de réclamation, notre équipe est à votre disposition.</p>
-        <form class="form-card">
+        <form class="form-card" (ngSubmit)="onSubmit()">
           <div class="grid grid-2">
             <div class="field-group">
               <label>Prénom</label>
-              <input placeholder="Prénom" />
+              <input name="prenom" [(ngModel)]="prenom" placeholder="Prénom" required />
             </div>
             <div class="field-group">
               <label>Nom</label>
-              <input placeholder="Nom" />
+              <input name="nom" [(ngModel)]="nom" placeholder="Nom" required />
             </div>
           </div>
           <div class="field-group">
             <label>Email</label>
-            <input placeholder="Email" />
+            <input type="email" name="email" [(ngModel)]="email" placeholder="Email" required />
           </div>
           <div class="field-group">
             <label>Téléphone</label>
-            <input placeholder="Téléphone" />
+            <input name="telephone" [(ngModel)]="telephone" placeholder="Téléphone" />
           </div>
           <div class="field-group">
             <label>Message</label>
-            <textarea placeholder="Expliquez votre demande"></textarea>
+            <textarea name="message" [(ngModel)]="message" placeholder="Expliquez votre demande" required></textarea>
           </div>
-          <button type="submit" class="btn-primary">Envoyer</button>
+
+          <div class="error-banner" *ngIf="errorMessage">⚠️ {{ errorMessage }}</div>
+          <div class="success-banner" *ngIf="successMessage">🎉 {{ successMessage }}</div>
+
+          <button type="submit" class="btn-primary" [disabled]="loading">
+            {{ loading ? 'Envoi en cours...' : 'Envoyer' }}
+          </button>
         </form>
       </div>
       <div class="info-panel">

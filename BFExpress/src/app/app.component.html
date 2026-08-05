@@ -1,5 +1,5 @@
 <app-header></app-header>
-<main [class.container]="!isClientSpace" [class.client-space-main]="isClientSpace">
+<main>
   <router-outlet></router-outlet>
 </main>
-<app-footer *ngIf="!isClientSpace"></app-footer>
+<app-footer *ngIf="isHomePage"></app-footer>

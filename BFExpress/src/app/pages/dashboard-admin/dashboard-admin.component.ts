@@ -6,6 +6,30 @@ import { ApiService, Commande, Livreur } from '../../services/api.service';
 import { AuthService, UserProfile } from '../../services/auth.service';
 import { Router } from '@angular/router';
 
+export interface Depot {
+  id: string;
+  nom: string;
+  ville: string;
+  capacite: number;
+  colisActuels: number;
+}
+
+export interface Vehicule {
+  id: string;
+  immatriculation: string;
+  modele: string;
+  capacite: number;
+  statut: string;
+  dateAjout?: string;
+  photoUrl?: string; // NOUVEAU
+}
+
+interface ToastMessage {
+  id: number;
+  message: string;
+  type: 'success' | 'error' | 'info';
+}
+
 @Component({
   selector: 'app-dashboard-admin',
   standalone: true,
@@ -18,15 +42,23 @@ export class DashboardAdminComponent implements OnInit {
   commandes: Commande[] = [];
   livreurs: Livreur[] = [];
   usersList: UserProfile[] = [];
-  depots: any[] = [];
-  vehicules: any[] = [];
+  depots: Depot[] = [];
+  vehicules: Vehicule[] = [];
   manifests: any[] = []; // Pour la gestion des manifests
+
+  // Toasts
+  toasts: ToastMessage[] = [];
+  private toastIdCounter = 0;
 
   // Stats and history
   deliveriesHistory: any[] = [];
   showHistoryPanel = false;
   historyForOrderId: string | null = null;
-  stats: any = { avgDeliveryMin: 0, avgDelayMin: 0, commandesCount: 0, revenus: 0, driverPerformance: {} };
+  stats: any = { avgDeliveryMin: 0, avgDelayMin: 0, commandesCount: 0, revenus: 0, driverPerformance: {}, successRate: 0, satisfactionRate: 0, satisfactionScore: 0 };
+
+  // User detail modal
+  showUserPanel = false;
+  selectedUser: UserProfile | null = null;
 
   // Selected driver for manual assignment mapped by order ID
   selectedDrivers: { [key: string]: string } = {};
@@ -53,7 +85,8 @@ export class DashboardAdminComponent implements OnInit {
     telephone: '',
     gouvernorat: '',
     typePermis: 'B',
-    statut: 'INSCRIPTION'
+    statut: 'INSCRIPTION',
+    photoUrl: '' // NOUVEAU
   };
 
   // Formulaire nouveau véhicule
@@ -63,7 +96,8 @@ export class DashboardAdminComponent implements OnInit {
     marque: '',
     type: 'Voiture',
     capacite: 10,
-    statut: 'DISPONIBLE'
+    statut: 'DISPONIBLE',
+    photoUrl: '' // NOUVEAU
   };
 
   // Mode édition
@@ -79,6 +113,20 @@ export class DashboardAdminComponent implements OnInit {
     private authService: AuthService,
     private router: Router
   ) {}
+
+  // --- CUSTOM TOAST SYSTEM ---
+  showToast(message: string, type: 'success' | 'error' | 'info' = 'info') {
+    const id = this.toastIdCounter++;
+    this.toasts.push({ id, message, type });
+    setTimeout(() => {
+      this.removeToast(id);
+    }, 4000); // disparait après 4s
+  }
+
+  removeToast(id: number) {
+    this.toasts = this.toasts.filter(t => t.id !== id);
+  }
+  // ---------------------------
 
   ngOnInit(): void {
     this.refreshData();
@@ -125,20 +173,35 @@ export class DashboardAdminComponent implements OnInit {
   refreshData(): void {
     // Fetch orders
     this.apiService.getAllCommandes().subscribe({
-      next: (res) => this.commandes = res,
+      next: (res) => {
+        this.commandes = res;
+        this.updateDepotOccupancy();
+        this.computeStats();
+      },
       error: (err) => console.error('Error fetching orders:', err)
     });
 
     // Fetch users (for approvals)
     this.authService.getAllUsers().subscribe({
-      next: (res) => this.usersList = res,
+      next: (res) => {
+        this.usersList = res;
+        this.mergePendingLivreurUsers();
+      },
       error: (err) => console.error('Error fetching users:', err)
     });
 
     // Fetch drivers
     this.apiService.getAllLivreurs().subscribe({
-      next: (res) => this.livreurs = res,
-      error: (err) => console.error('Error fetching drivers:', err)
+      next: (res) => {
+        this.livreurs = res;
+        this.mergePendingLivreurUsers();
+        this.updateDepotOccupancy();
+        this.computeStats();
+      },
+      error: (err) => {
+        console.error('Error fetching drivers:', err);
+        this.mergePendingLivreurUsers();
+      }
     });
 
     // Load persisted depots/vehicules from localStorage as a fallback
@@ -147,13 +210,59 @@ export class DashboardAdminComponent implements OnInit {
       const v = localStorage.getItem('bf_vehicules');
       this.depots = d ? JSON.parse(d) : [];
       this.vehicules = v ? JSON.parse(v) : [];
+      this.updateDepotOccupancy();
     } catch (e) {
       this.depots = [];
       this.vehicules = [];
     }
+  }
 
-    // Compute statistics after loading commandes and livraisons
-    this.computeStats();
+  // Fusionner les candidatures livreur (auth) avec la liste livreurs
+  mergePendingLivreurUsers(): void {
+    const pendingUsers = this.usersList.filter(u =>
+      u.role === 'LIVREUR' && (u.statut === 'INSCRIPTION' || u.approuve === false)
+    );
+
+    pendingUsers.forEach(u => {
+      const exists = this.livreurs.some(l =>
+        l.email === u.email || l.id === u.id
+      );
+      if (!exists) {
+        this.livreurs.push({
+          id: u.id,
+          nom: u.nom,
+          prenom: u.prenom,
+          email: u.email,
+          telephone: u.telephone,
+          gouvernorat: (u as any).gouvernorat || '',
+          statut: 'INSCRIPTION',
+          noteMoyenne: 5.0,
+          nombreLivraisons: 0,
+          dateInscription: new Date().toISOString()
+        });
+      }
+    });
+  }
+
+  updateDepotOccupancy(): void {
+    this.depots.forEach(depot => {
+      const ville = (depot.ville || '').toLowerCase();
+      depot.colisActuels = this.commandes.filter(c => {
+        const departVille = (c.adresseDepart?.ville || '').toLowerCase();
+        const statut = c.statut || '';
+        return departVille === ville && statut !== 'LIVREE' && statut !== 'ANNULEE';
+      }).length;
+    });
+    localStorage.setItem('bf_depots', JSON.stringify(this.depots));
+  }
+
+  getDepotFillPercent(depot: any): number {
+    if (!depot.capacite) return 0;
+    return Math.min(100, Math.round(((depot.colisActuels || 0) / depot.capacite) * 100));
+  }
+
+  isDepotOverCapacity(depot: any): boolean {
+    return (depot.colisActuels || 0) >= depot.capacite;
   }
 
   // Filter pending approvals
@@ -166,21 +275,49 @@ export class DashboardAdminComponent implements OnInit {
     return this.usersList.filter(u => u.statut !== 'INSCRIPTION' && u.approuve !== false);
   }
 
-  // Approve a user
-  approveUser(userId: string): void {
-    this.authService.approuverUtilisateur(userId).subscribe({
+  getPendingUsersCount(): number {
+    return this.getPendingApprovals().length;
+  }
+
+  // Delete a user
+  deleteUser(user: UserProfile): void {
+    if (!confirm(`Supprimer définitivement ${user.prenom} ${user.nom} ?`)) return;
+
+    this.authService.supprimerUtilisateur(user.id).subscribe({
       next: () => {
-        alert('Utilisateur approuvé avec succès !');
+        this.showToast('Utilisateur supprimé.', 'success');
         this.refreshData();
       },
       error: () => {
-        // Fallback local if backend doesn't support yet
+        this.usersList = this.usersList.filter(u => u.id !== user.id);
+        this.showToast('Utilisateur supprimé (mode local).', 'info');
+      }
+    });
+  }
+
+  viewUserDetails(user: UserProfile): void {
+    this.selectedUser = user;
+    this.showUserPanel = true;
+  }
+
+  closeUserPanel(): void {
+    this.showUserPanel = false;
+    this.selectedUser = null;
+  }
+
+  approveUser(userId: string): void {
+    this.authService.approuverUtilisateur(userId).subscribe({
+      next: () => {
+        this.showToast('Utilisateur approuvé avec succès !', 'success');
+        this.refreshData();
+      },
+      error: () => {
         const user = this.usersList.find(u => u.id === userId);
         if (user) {
           user.approuve = true;
           user.statut = 'ACTIF';
         }
-        alert('Utilisateur approuvé (mode local).');
+        this.showToast('Utilisateur approuvé (mode local).', 'info');
       }
     });
   }
@@ -189,7 +326,7 @@ export class DashboardAdminComponent implements OnInit {
   assignDriverManually(order: Commande): void {
     const driverId = this.selectedDrivers[order.id || ''];
     if (!driverId) {
-      alert('Veuillez sélectionner un livreur.');
+      this.showToast('Veuillez sélectionner un livreur.', 'error');
       return;
     }
 
@@ -202,14 +339,14 @@ export class DashboardAdminComponent implements OnInit {
             // Also update driver status to "EN_COURS"
             this.apiService.updateLivreurStatut(driverId, 'EN_COURS').subscribe({
               next: () => {
-                alert('Livreur affecté manuellement avec succès!');
+                this.showToast('Livreur affecté manuellement avec succès!', 'success');
                 this.refreshData();
               }
             });
           }
         });
       },
-      error: (err) => alert("Erreur d'affectation : " + err.message)
+      error: (err) => this.showToast("Erreur d'affectation : " + err.message, 'error')
     });
   }
 
@@ -251,9 +388,9 @@ export class DashboardAdminComponent implements OnInit {
 
   // Simple depot/vehicle CRUD stored in localStorage until backend exists
   addDepot(nom: string, ville: string, capacite: number) {
-    const depot = { id: 'DEP' + Date.now(), nom, ville, capacite };
+    const depot = { id: 'DEP' + Date.now(), nom, ville, capacite, colisActuels: 0 };
     this.depots.push(depot);
-    localStorage.setItem('bf_depots', JSON.stringify(this.depots));
+    this.updateDepotOccupancy();
   }
 
   removeDepot(id: string) {
@@ -261,8 +398,8 @@ export class DashboardAdminComponent implements OnInit {
     localStorage.setItem('bf_depots', JSON.stringify(this.depots));
   }
 
-  addVehicule(immatriculation: string, modele: string, capacite: number) {
-    const v = { id: 'VEH' + Date.now(), immatriculation, modele, capacite };
+  addVehicule(immatriculation: string, modele: string, capacite: number, photoUrl: string = '') {
+    const v = { id: 'VEH' + Date.now(), immatriculation, modele, capacite, statut: 'DISPONIBLE', dateAjout: new Date().toISOString(), photoUrl };
     this.vehicules.push(v);
     localStorage.setItem('bf_vehicules', JSON.stringify(this.vehicules));
   }
@@ -272,12 +409,34 @@ export class DashboardAdminComponent implements OnInit {
     localStorage.setItem('bf_vehicules', JSON.stringify(this.vehicules));
   }
 
+  cycleVehicleStatus(vehicule: any): void {
+    const states = ['DISPONIBLE', 'EN_UTILISATION', 'EN_PANNE'];
+    const idx = states.indexOf(vehicule.statut || 'DISPONIBLE');
+    vehicule.statut = states[(idx + 1) % states.length];
+    localStorage.setItem('bf_vehicules', JSON.stringify(this.vehicules));
+  }
+
+  getVehicleStatusLabel(statut: string): string {
+    const labels: Record<string, string> = {
+      'DISPONIBLE': 'Opérationnel',
+      'EN_UTILISATION': 'En service',
+      'EN_PANNE': 'En panne'
+    };
+    return labels[statut] || statut;
+  }
+
+  getVehicleStatusClass(statut: string): string {
+    if (statut === 'EN_PANNE') return 'vehicule-panne';
+    if (statut === 'EN_UTILISATION') return 'vehicule-service';
+    return 'vehicule-ok';
+  }
+
   // === GESTION DES LIVREURS ===
 
   // Enregistrer un nouveau livreur
   enregistrerLivreur() {
     if (!this.nouveauLivreur.nom || !this.nouveauLivreur.prenom || !this.nouveauLivreur.gouvernorat) {
-      alert('Veuillez remplir tous les champs obligatoires');
+      this.showToast('Veuillez remplir tous les champs obligatoires', 'error');
       return;
     }
 
@@ -299,14 +458,14 @@ export class DashboardAdminComponent implements OnInit {
       next: (livreur) => {
         this.livreurs.push(livreur);
         this.resetLivreurForm();
-        alert('Livreur enregistré avec succès ! Un email de confirmation sera envoyé.');
+        this.showToast('Livreur enregistré avec succès ! Un email de confirmation sera envoyé.', 'success');
         this.refreshData();
       },
       error: (err) => {
         // En mode local si backend non disponible
         this.livreurs.push(nouveauLivreur);
         this.resetLivreurForm();
-        alert('Livreur enregistré en mode local (backend non disponible)');
+        this.showToast('Livreur enregistré en mode local (backend non disponible)', 'info');
       }
     });
   }
@@ -318,15 +477,37 @@ export class DashboardAdminComponent implements OnInit {
       livreur.statut = 'DISPONIBLE';
       this.apiService.updateLivreurStatut(livreurId, 'DISPONIBLE').subscribe({
         next: () => {
-          alert(`Livreur ${livreur.prenom} ${livreur.nom} validé !`);
+          this.showToast(`Livreur ${livreur.prenom} ${livreur.nom} validé !`, 'success');
           this.refreshData();
         },
         error: () => {
-          alert('Livreur validé en mode local');
+          this.showToast('Livreur validé en mode local', 'info');
           this.refreshData();
         }
       });
     }
+  }
+
+  voirDetailsLivreur(l: Livreur): void {
+    alert(`Détails du Livreur :\n\nNom: ${l.nom} ${l.prenom}\nEmail: ${l.email}\nTéléphone: ${l.telephone}\nGouvernorat: ${l.gouvernorat}\nPermis: ${l.typePermis}`);
+  }
+
+  // Delete driver
+  supprimerLivreur(lId: string): void {
+    const l = this.livreurs.find(liv => liv.id === lId);
+    if (!l) return;
+    if (!confirm(`Voulez-vous vraiment supprimer le livreur ${l.nom} ${l.prenom} ?`)) return;
+    
+    this.apiService.deleteLivreur(lId).subscribe({
+      next: () => {
+        this.showToast('Livreur supprimé avec succès.', 'success');
+        this.refreshData();
+      },
+      error: () => {
+        this.livreurs = this.livreurs.filter(liv => liv.id !== lId);
+        this.showToast('Livreur supprimé (mode local).', 'info');
+      }
+    });
   }
 
   // Valider et affecter le gouvernorat en même temps
@@ -351,11 +532,11 @@ export class DashboardAdminComponent implements OnInit {
       livreur.gouvernorat = gouvernorat;
       this.apiService.updateLivreur(livreurId, { gouvernorat }).subscribe({
         next: () => {
-          alert(`Livreur affecté à ${gouvernorat}`);
+          this.showToast(`Livreur affecté à ${gouvernorat}`, 'success');
           this.refreshData();
         },
         error: () => {
-          alert('Affectation enregistrée en mode local');
+          this.showToast('Affectation enregistrée en mode local', 'info');
           this.refreshData();
         }
       });
@@ -369,11 +550,11 @@ export class DashboardAdminComponent implements OnInit {
       livreur.statut = 'SUSPENDU';
       this.apiService.updateLivreurStatut(livreurId, 'SUSPENDU').subscribe({
         next: () => {
-          alert('Livreur suspendu');
+          this.showToast('Livreur suspendu', 'success');
           this.refreshData();
         },
         error: () => {
-          alert('Livreur suspendu en mode local');
+          this.showToast('Livreur suspendu en mode local', 'info');
           this.refreshData();
         }
       });
@@ -387,11 +568,11 @@ export class DashboardAdminComponent implements OnInit {
       livreur.statut = 'DISPONIBLE';
       this.apiService.updateLivreurStatut(livreurId, 'DISPONIBLE').subscribe({
         next: () => {
-          alert('Livreur réactivé');
+          this.showToast('Livreur réactivé', 'success');
           this.refreshData();
         },
         error: () => {
-          alert('Livreur réactivé en mode local');
+          this.showToast('Livreur réactivé en mode local', 'info');
           this.refreshData();
         }
       });
@@ -474,9 +655,8 @@ export class DashboardAdminComponent implements OnInit {
     const livreur = this.livreurs.find(l => l.id === livreurId);
     
     if (vehicule && livreur) {
-      vehicule.livreurId = livreurId;
-      vehicule.statut = 'EN_UTILISATION';
       livreur.vehiculeId = vehiculeId;
+      vehicule.statut = 'EN_UTILISATION';
       
       localStorage.setItem('bf_vehicules', JSON.stringify(this.vehicules));
       alert(`Véhicule ${vehicule.immatriculation} affecté à ${livreur.prenom} ${livreur.nom}`);
@@ -487,12 +667,10 @@ export class DashboardAdminComponent implements OnInit {
   // Libérer un véhicule
   libererVehicule(vehiculeId: string) {
     const vehicule = this.vehicules.find(v => v.id === vehiculeId);
-    if (vehicule && vehicule.livreurId) {
-      const livreur = this.livreurs.find(l => l.id === vehicule.livreurId);
-      if (livreur) {
-        livreur.vehiculeId = undefined;
-      }
-      vehicule.livreurId = undefined;
+    const livreur = this.livreurs.find(l => l.vehiculeId === vehiculeId);
+    
+    if (vehicule && livreur) {
+      livreur.vehiculeId = undefined;
       vehicule.statut = 'DISPONIBLE';
       
       localStorage.setItem('bf_vehicules', JSON.stringify(this.vehicules));
@@ -571,25 +749,32 @@ export class DashboardAdminComponent implements OnInit {
 
   // Compute basic statistics from commandes + livraisons
   computeStats() {
-    // compute revenue and counts
     const commandes = this.commandes || [];
     this.stats.commandesCount = commandes.length;
     this.stats.revenus = this.getTotalRevenue();
 
-    // compute average delivery duration from livraisons
+    const livree = this.getOrderCountByStatus('LIVREE');
+    const totalFinished = livree + this.getOrderCountByStatus('RETOUR_DEPOT') + this.getOrderCountByStatus('ANNULEE');
+    this.stats.successRate = totalFinished > 0 ? Math.round((livree / totalFinished) * 1000) / 10 : 0;
+
+    const notes = this.livreurs.filter(l => l.noteMoyenne && l.noteMoyenne > 0).map(l => l.noteMoyenne!);
+    this.stats.satisfactionScore = notes.length
+      ? Math.round((notes.reduce((a, b) => a + b, 0) / notes.length) * 10) / 10
+      : 0;
+    this.stats.satisfactionRate = Math.round((this.stats.satisfactionScore / 5) * 1000) / 10;
+
     this.apiService.getAllLivraisons().subscribe({
       next: (livs) => {
         const finished = livs.filter(l => l.dateDebut && l.dateFin);
         const durations = finished.map(l => (new Date(l.dateFin!).getTime() - new Date(l.dateDebut!).getTime()) / 60000);
-        this.stats.avgDeliveryMin = durations.length ? (durations.reduce((a,b) => a+b,0)/durations.length) : 0;
+        this.stats.avgDeliveryMin = durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0;
 
-        // driver performance: deliveries completed and average time
         const byDriver: any = {};
         livs.forEach(l => {
           const d = l.livreurId || 'unknown';
           if (!byDriver[d]) byDriver[d] = { count: 0, totalMin: 0 };
           if (l.dateDebut && l.dateFin) {
-            const mins = (new Date(l.dateFin).getTime() - new Date(l.dateDebut).getTime())/60000;
+            const mins = (new Date(l.dateFin).getTime() - new Date(l.dateDebut).getTime()) / 60000;
             byDriver[d].count += 1;
             byDriver[d].totalMin += mins;
           }
@@ -602,7 +787,6 @@ export class DashboardAdminComponent implements OnInit {
       error: (err) => console.error('Erreur stats livraisons', err)
     });
 
-    // Charger les manifests
     this.chargerManifests();
   }
 
@@ -675,7 +859,7 @@ export class DashboardAdminComponent implements OnInit {
     // Get available drivers
     const availableDrivers = this.livreurs.filter(l => l.statut === 'DISPONIBLE');
     if (availableDrivers.length === 0) {
-      alert("Aucun livreur disponible pour l'affectation IA.");
+      this.showToast("Aucun livreur disponible pour l'affectation IA.", 'info');
       return;
     }
 
@@ -688,7 +872,7 @@ export class DashboardAdminComponent implements OnInit {
       next: (aiRes) => {
         const bestDriver = this.livreurs.find(l => l.id === aiRes.livreurId);
         if (!bestDriver) {
-          alert('IA a recommandé un livreur introuvable.');
+          this.showToast('L\'IA a recommandé un livreur introuvable.', 'error');
           return;
         }
 
@@ -705,18 +889,18 @@ export class DashboardAdminComponent implements OnInit {
                 next: () => {
                   this.apiService.updateLivreurStatut(bestDriver.id, 'EN_COURS').subscribe({
                     next: () => {
-                      alert('Affectation IA validée et enregistrée!');
+                      this.showToast('Affectation IA validée et enregistrée!', 'success');
                       this.refreshData();
                     }
                   });
                 }
               });
             },
-            error: (err) => alert("Erreur lors de la livraison : " + err.message)
+            error: (err) => this.showToast("Erreur lors de la livraison : " + err.message, 'error')
           });
         }
       },
-      error: (err) => alert("Erreur de calcul IA : " + err.message)
+      error: (err) => this.showToast("Erreur de calcul IA : " + err.message, 'error')
     });
   }
 
@@ -726,9 +910,9 @@ export class DashboardAdminComponent implements OnInit {
     this.apiService.updateLivreurStatut(driver.id, newStatus).subscribe({
       next: (res) => {
         driver.statut = res.statut;
-        alert(`Statut du livreur mis à jour: ${newStatus}`);
+        this.showToast(`Statut du livreur mis à jour: ${newStatus}`, 'success');
       },
-      error: (err) => alert('Erreur lors de la mise à jour du statut')
+      error: (err) => this.showToast('Erreur lors de la mise à jour du statut', 'error')
     });
   }
 
@@ -778,6 +962,98 @@ export class DashboardAdminComponent implements OnInit {
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/home']);
+  }
+
+  // === Méthodes pour les statistiques réelles ===
+  
+  getSatisfactionPercentage(): number {
+    // Calculer le pourcentage de satisfaction basé sur les notes des livreurs
+    const availableDrivers = this.livreurs.filter(l => l.statut === 'DISPONIBLE');
+    if (availableDrivers.length === 0) return 0;
+    
+    const totalRating = availableDrivers.reduce((sum, driver) => sum + (driver.noteMoyenne || 0), 0);
+    return Math.round((totalRating / availableDrivers.length) * 20); // Convertir note/5 en pourcentage
+  }
+
+  getSuccessRate(): number {
+    // Calculer le taux de réussite = livrées / total
+    const total = this.commandes.length;
+    if (total === 0) return 0;
+    
+    const delivered = this.commandes.filter(c => c.statut === 'LIVREE').length;
+    return Math.round((delivered / total) * 100);
+  }
+
+  getReturnRate(): number {
+    // Calculer le taux de retour = retours / livrées
+    const delivered = this.commandes.filter(c => c.statut === 'LIVREE').length;
+    if (delivered === 0) return 0;
+    
+    const returned = this.commandes.filter(c => c.statut === 'RETOUR_DEPOT').length;
+    return Math.round((returned / delivered) * 100);
+  }
+
+  getDailyAverage(): number {
+    // Calculer la moyenne journalière de commandes
+    const total = this.commandes.length;
+    if (total === 0) return 0;
+    
+    // Supposons 30 jours pour le calcul
+    return Math.round(total / 30);
+  }
+
+  // === Méthodes pour les véhicules avec suivi pannes ===
+  
+  getVehicleEtat(vehicle: any): string {
+    return vehicle.etat || 'OPERATIONNEL';
+  }
+
+  getVehicleEtatIcon(vehicle: any): string {
+    const etat = this.getVehicleEtat(vehicle);
+    switch (etat) {
+      case 'OPERATIONNEL': return '✅';
+      case 'MAINTENANCE': return '🔧';
+      case 'PANNE': return '⚠️';
+      default: return '❓';
+    }
+  }
+
+  voirDetailsVehicule(vehicle: any) {
+    const details = `
+=== Détails du véhicule ===
+Marque: ${vehicle.marque}
+Modèle: ${vehicle.modele}
+Immatriculation: ${vehicle.immatriculation}
+Type: ${vehicle.type}
+Capacité: ${vehicle.capacite} colis
+État: ${this.getVehicleEtat(vehicle)}
+Kilométrage: ${vehicle.kilometrage || 0} km
+Dernier entretien: ${vehicle.dernierEntretien || 'Jamais'}
+Assigné à: ${this.getDriverForVehicle(vehicle.id || '')?.prenom || 'Non assigné'}
+    `;
+    alert(details);
+  }
+
+  modifierEtatVehicule(vehicle: any) {
+    const etats = ['OPERATIONNEL', 'MAINTENANCE', 'PANNE'];
+    const etatActuel = this.getVehicleEtat(vehicle);
+    const options = etats.map((e, i) => `${i + 1}. ${e}`).join('\n');
+    const selection = prompt(`État actuel: ${etatActuel}\n\nSélectionnez le nouvel état:\n${options}\n\nEntrez le numéro:`);
+    
+    if (selection) {
+      const index = parseInt(selection) - 1;
+      if (index >= 0 && index < etats.length) {
+        vehicle.etat = etats[index];
+        alert(`État du véhicule modifié: ${etats[index]}`);
+      }
+    }
+  }
+
+  supprimerVehicule(vehicleId: string) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ?')) {
+      this.vehicules = this.vehicules.filter(v => v.id !== vehicleId);
+      alert('Véhicule supprimé');
+    }
   }
 
   // === Méthodes de filtre pour le template ===

@@ -76,4 +76,8 @@ export class AuthService {
   approuverUtilisateur(id: string): Observable<UserProfile> {
     return this.http.patch<UserProfile>(`${this.apiUrl}/users/${id}/approuver`, {});
   }
+
+  supprimerUtilisateur(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/users/${id}`);
+  }
 }

@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-devenir-livreur',
@@ -26,7 +27,10 @@ export class DevenirLivreurComponent {
   successMessage = '';
   errorMessage = '';
 
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private apiService: ApiService
+  ) {}
 
   onSubmit(): void {
     if (!this.nom || !this.prenom || !this.email || !this.motDePasse || !this.telephone || !this.gouvernorat) {
@@ -54,21 +58,41 @@ export class DevenirLivreurComponent {
 
     this.authService.register(payload).subscribe({
       next: (res) => {
-        this.loading = false;
-        this.successMessage = 'Votre candidature de livreur a été enregistrée avec succès! Vous recevrez une notification par SMS ou Email dès que l\'administrateur aura approuvé votre dossier.';
-        // Reset form
-        this.nom = '';
-        this.prenom = '';
-        this.email = '';
-        this.motDePasse = '';
-        this.telephone = '';
-        this.vehicule = '';
-        this.gouvernorat = '';
+        const livreurPayload = {
+          id: res.id || 'LIV-' + Date.now(),
+          nom: this.nom,
+          prenom: this.prenom,
+          email: this.email,
+          telephone: this.telephone,
+          gouvernorat: this.gouvernorat,
+          typePermis: 'B',
+          statut: 'INSCRIPTION',
+          dateInscription: new Date().toISOString(),
+          noteMoyenne: 5.0,
+          nombreLivraisons: 0
+        };
+
+        this.apiService.creerLivreur(livreurPayload).subscribe({
+          next: () => this.finishSuccess(),
+          error: () => this.finishSuccess()
+        });
       },
       error: (err) => {
         this.loading = false;
         this.errorMessage = err.error?.message || err.message || 'Une erreur est survenue lors de l\'inscription.';
       }
     });
+  }
+
+  private finishSuccess(): void {
+    this.loading = false;
+    this.successMessage = 'Votre candidature de livreur a été enregistrée avec succès! Un administrateur validera votre dossier et vous affectera à un gouvernorat.';
+    this.nom = '';
+    this.prenom = '';
+    this.email = '';
+    this.motDePasse = '';
+    this.telephone = '';
+    this.vehicule = '';
+    this.gouvernorat = '';
   }
 }

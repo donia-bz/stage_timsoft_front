@@ -18,6 +18,8 @@ export interface Commande {
   clientId?: string;
   adresseDepartId: string;
   adresseArriveeId: string;
+  adresseDepart?: Adresse;
+  adresseArrivee?: Adresse;
   statut: string; // EN_ATTENTE, CONFIRMEE, EN_LIVRAISON, LIVREE, ANNULEE
   typeService: string; // STANDARD, EXPRESS
   dateCreation?: string;

@@ -8,10 +8,20 @@ import { AuthService } from '../../services/auth.service';
   styleUrls: ['./header.component.scss']
 })
 export class HeaderComponent {
+  showMenu: boolean = false;
+
   constructor(
     public authService: AuthService,
     private router: Router
   ) {}
+
+  toggleMenu(): void {
+    this.showMenu = !this.showMenu;
+  }
+
+  closeMenu(): void {
+    this.showMenu = false;
+  }
 
   logout(): void {
     this.authService.logout();
