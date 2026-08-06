@@ -1,50 +1,30 @@
-<section class="login-page">
-  <div class="login-shell">
-    <div class="hero-panel">
-      <div class="hero-card">
-        <div class="hero-copy">
-          <span class="hero-badge">Bienvenue chez BFExpress</span>
-          <h1>Livraison rapide et fiable, en un seul clic</h1>
-          <p>Suivez vos colis en temps réel et accédez à toutes vos commandes depuis un espace moderne et intuitif.</p>
+<section class="page-section">
+  <div class="container">
+    <div class="form-card">
+      <form (ngSubmit)="onSubmit()">
+        <div class="field-group">
+          <label>Email</label>
+          <input type="email" name="email" [(ngModel)]="email" placeholder="Email" required />
         </div>
-        <div class="hero-visual">
-          <img src="assets/client-illustration.svg" alt="Illustration livraison BFExpress" />
-        </div>
-      </div>
-    </div>
-
-    <div class="form-panel">
-      <div class="form-inner">
-        <div class="login-header">
-          <div>
-            <p class="eyebrow">Bienvenue chez BFExpress</p>
-            <h2>Connectez-vous à votre espace</h2>
-          </div>
-          <p>Accédez à votre tableau de bord client, livreur ou admin en quelques secondes.</p>
-        </div>
-
-        <form (ngSubmit)="onSubmit()">
-          <label>Nom d'utilisateur ou email</label>
-          <input type="email" name="email" [(ngModel)]="email" placeholder="john.doe@mail.com" required />
-
+        <div class="field-group">
           <label>Mot de passe</label>
-          <input type="password" name="motDePasse" [(ngModel)]="motDePasse" placeholder="••••••••" required />
+          <input type="password" name="motDePasse" [(ngModel)]="motDePasse" placeholder="Mot de passe" required />
+        </div>
 
-          <div class="error-banner" *ngIf="errorMessage">
-            ⚠️ {{ errorMessage }}
-          </div>
+        <div class="error-banner" *ngIf="errorMessage">
+          ⚠️ {{ errorMessage }}
+        </div>
 
-          <button type="submit" class="btn-primary" [disabled]="loading">
-            {{ loading ? 'Connexion en cours...' : 'Connexion' }}
-          </button>
-        </form>
+        <button type="submit" class="btn-primary" [disabled]="loading">
+          {{ loading ? 'Connexion en cours...' : 'Connexion' }}
+        </button>
+      </form>
 
-        <div class="signup-options">
-          <p class="signup-text">Pas encore de compte ?</p>
-          <div class="signup-links">
-            <a routerLink="/devenir-client" class="signup-link client">Devenir Client</a>
-            <a routerLink="/devenir-livreur" class="signup-link livreur">Devenir Livreur</a>
-          </div>
+      <div class="signup-options">
+        <p class="signup-text">Pas encore de compte ?</p>
+        <div class="signup-links">
+          <a routerLink="/devenir-client" class="signup-link client">Devenir Client</a>
+          <a routerLink="/devenir-livreur" class="signup-link livreur">Devenir Livreur</a>
         </div>
       </div>
     </div>
