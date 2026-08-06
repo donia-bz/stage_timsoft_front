@@ -17,38 +17,73 @@
       </div>
 
       <div class="sidebar-section">
-        <h3>Gestion Administrative</h3>
+        <nav>
+          <a class="sidebar-link" [class.active]="activeTab === 'stats'" (click)="activeTab = 'stats'">
+            <span class="icon">📊</span> Dashboard
+          </a>
+        </nav>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Opérations</h3>
         <nav>
           <a class="sidebar-link" [class.active]="activeTab === 'commandes'" (click)="activeTab = 'commandes'">
-            <span class="icon">📦</span> Commandes & IA
-          </a>
-          <a class="sidebar-link" [class.active]="activeTab === 'carte'" (click)="activeTab = 'carte'; initMapAdmin()">
-            <span class="icon">🗺️</span> Carte Live GPS
+            <span class="icon">📦</span> Commandes
           </a>
           <a class="sidebar-link" [class.active]="activeTab === 'livreurs'" (click)="activeTab = 'livreurs'">
-            <span class="icon">🚚</span> Livreurs & Gouvernorats
+            <span class="icon">🚚</span> Livreurs
             <span class="count-badge alert" *ngIf="getPendingRegistrations().length > 0">{{ getPendingRegistrations().length }}</span>
           </a>
-          <a class="sidebar-link" [class.active]="activeTab === 'inscriptions'" (click)="activeTab = 'inscriptions'">
-            <span class="icon">👥</span> Utilisateurs
-            <span class="count-badge" *ngIf="getPendingUsersCount() > 0">{{ getPendingUsersCount() }}</span>
+          <a class="sidebar-link" [class.active]="activeTab === 'carte'" (click)="openCarteTab()">
+            <span class="icon">🗺️</span> Carte Direct
+          </a>
+          <a class="sidebar-link" [class.active]="activeTab === 'manifests'" (click)="activeTab = 'manifests'">
+            <span class="icon">�</span> Manifests
+          </a>
+        </nav>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Ressources</h3>
+        <nav>
+          <a class="sidebar-link" [class.active]="activeTab === 'vehicules'" (click)="activeTab = 'vehicules'">
+            <span class="icon">🚗</span> Flotte
           </a>
           <a class="sidebar-link" [class.active]="activeTab === 'depots'" (click)="activeTab = 'depots'">
             <span class="icon">🏬</span> Dépôts
           </a>
-          <a class="sidebar-link" [class.active]="activeTab === 'vehicules'" (click)="activeTab = 'vehicules'">
-            <span class="icon">🚗</span> Flotte Véhicules
+        </nav>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Clients</h3>
+        <nav>
+          <a class="sidebar-link" [class.active]="activeTab === 'inscriptions'" (click)="activeTab = 'inscriptions'">
+            <span class="icon">👥</span> Clients
+            <span class="count-badge" *ngIf="getPendingUsersCount() > 0">{{ getPendingUsersCount() }}</span>
           </a>
-          <a class="sidebar-link" [class.active]="activeTab === 'stats'" (click)="activeTab = 'stats'">
-            <span class="icon">📊</span> Statistiques & IA
+          <a class="sidebar-link" [class.active]="activeTab === 'reclamations'" (click)="activeTab = 'reclamations'">
+            <span class="icon">📝</span> Réclamations
+            <span class="count-badge alert">5</span>
           </a>
         </nav>
       </div>
-      <div class="sidebar-section mt-auto">
-        <h3>Navigation</h3>
+
+      <div class="sidebar-section">
+        <h3>Analytics</h3>
         <nav>
-          <a class="sidebar-link" routerLink="/">Page d'accueil</a>
-          <a class="sidebar-link logout" (click)="logout()">🚪 Déconnexion</a>
+          <a class="sidebar-link" [class.active]="activeTab === 'analytics'" (click)="activeTab = 'analytics'">
+            <span class="icon">�</span> Statistiques
+          </a>
+        </nav>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Configuration</h3>
+        <nav>
+          <a class="sidebar-link" [class.active]="activeTab === 'parametres'" (click)="activeTab = 'parametres'">
+            <span class="icon">⚙️</span> Paramètres
+          </a>
         </nav>
       </div>
     </aside>
@@ -63,8 +98,14 @@
           <div class="dashboard-greeting">Centre de contrôle et dispatching intelligent de BFExpress</div>
         </div>
         <div class="header-right">
+          <button class="btn-home" routerLink="/">
+            <span class="home-ic">🏠</span> Accueil
+          </button>
           <button class="btn-refresh" (click)="refreshData()">
             <span class="spin-ic">🔄</span> Actualiser
+          </button>
+          <button class="btn-logout" (click)="logout()">
+            <span class="logout-ic">🚪</span> Déconnexion
           </button>
         </div>
       </div>
@@ -103,8 +144,61 @@
 
       <!-- Tab Content Area -->
       <div class="page-card mt-4">
-        
-        <!-- Tab 1: Commandes & Affectations IA -->
+
+        <!-- Tab: Dashboard (Stats) -->
+        <div *ngIf="activeTab === 'stats'">
+          <div class="tab-header-flex">
+            <div>
+              <h2>Dashboard</h2>
+              <p>Vue d'ensemble de l'activité en temps réel</p>
+            </div>
+          </div>
+
+          <div class="dashboard-grid">
+            <div class="status-card status-blue">
+              <div class="status-icon">📦</div>
+              <div>
+                <div class="status-title">Commandes du jour</div>
+                <div class="status-value">{{ commandes.length }}</div>
+              </div>
+            </div>
+            <div class="status-card status-yellow">
+              <div class="status-icon">⏳</div>
+              <div>
+                <div class="status-title">En attente affectation</div>
+                <div class="status-value">{{ getOrderCountByStatus('EN_ATTENTE') }}</div>
+              </div>
+            </div>
+            <div class="status-card status-green">
+              <div class="status-icon">🚚</div>
+              <div>
+                <div class="status-title">Livreurs actifs</div>
+                <div class="status-value">{{ getActiveDriversCount() }}</div>
+              </div>
+            </div>
+            <div class="status-card status-teal-dark">
+              <div class="status-icon">💵</div>
+              <div>
+                <div class="status-title">Chiffre d'Affaires</div>
+                <div class="status-value">{{ getTotalRevenue() | number:'1.2-2' }} DT</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="alerts-section mt-4">
+            <h3>⚠️ Alertes urgentes</h3>
+            <div class="alert-item">
+              <span class="alert-icon">🔴</span>
+              <span>{{ getOrderCountByStatus('EN_ATTENTE') }} commandes en attente d'affectation</span>
+            </div>
+            <div class="alert-item">
+              <span class="alert-icon">🟡</span>
+              <span>{{ getPendingRegistrations().length }} inscriptions livreur en attente</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Commandes -->
         <div *ngIf="activeTab === 'commandes'">
           <div class="tab-header-flex">
             <div>
@@ -135,8 +229,8 @@
                   <td>{{ order.dateCreation ? (order.dateCreation | date:'dd/MM/yyyy HH:mm') : 'Récents' }}</td>
                   <td>
                     <div class="path-details">
-                      <span class="tag-dep">Dép: {{ order.adresseDepart?.ville || 'Tunis' }}</span>
-                      <span class="tag-arr">Arr: {{ order.adresseArrivee?.ville || 'Sousse' }}</span>
+                      <span class="tag-dep">Dép: {{ getDepartVille(order) }}</span>
+                      <span class="tag-arr">Arr: {{ getArriveeVille(order) }}</span>
                     </div>
                   </td>
                   <td>
@@ -146,12 +240,12 @@
                   </td>
                   <td><strong>{{ order.montantTotal || 25 }} DT</strong></td>
                   <td>
-                    <span class="status-pill" [ngClass]="'status-' + (order.statut || 'EN_ATTENTE').toLowerCase()">
+                    <span class="status-pill" [ngClass]="getOrderStatusClass(order)">
                       {{ order.statut }}
                     </span>
                   </td>
                   <td>
-                    <div class="action-dispatch" *ngIf="order.statut === 'EN_ATTENTE' || !order.statut">
+                    <div class="action-dispatch" *ngIf="isOrderPending(order)">
                       <!-- AI dispatch -->
                       <button class="btn-ai" (click)="assignDriverAI(order)">
                         🤖 Proposer par IA
@@ -270,12 +364,12 @@
                     </div>
                   </td>
                   <td>
-                    <span *ngIf="l.statut !== 'INSCRIPTION' && l.statut" class="gouv-tag">{{ l.gouvernorat || 'Tunis' }}</span>
+                    <span *ngIf="l.statut !== 'INSCRIPTION' && l.statut" class="gouv-tag">{{ getLivreurGouvernorat(l) }}</span>
                     <select *ngIf="l.statut === 'INSCRIPTION' || !l.statut" [(ngModel)]="l.gouvernorat" class="small-select">
                       <option value="" disabled selected>Choisir...</option>
                       <option *ngFor="let g of gouvernorats" [value]="g">{{ g }}</option>
                     </select>
-                    <button *ngIf="l.statut !== 'INSCRIPTION' && l.statut" class="btn-ghost-sm mt-1" (click)="affecterGouvernorat(l.id, l.gouvernorat || '')">
+                    <button *ngIf="l.statut !== 'INSCRIPTION' && l.statut" class="btn-ghost-sm mt-1" (click)="affecterGouvernorat(l.id, getLivreurGouvernorat(l))">
                       Changer gouvernorat
                     </button>
                   </td>
@@ -285,9 +379,9 @@
                     </span>
                   </td>
                   <td>
-                    <span class="coord-tag">Lat: {{ (l.latitudeActuelle || 36.8).toFixed(3) }}, Lon: {{ (l.longitudeActuelle || 10.1).toFixed(3) }}</span>
+                    <span class="coord-tag">Lat: {{ getLivreurCoordLat(l).toFixed(3) }}, Lon: {{ getLivreurCoordLon(l).toFixed(3) }}</span>
                   </td>
-                  <td><span class="star-rating">⭐ {{ l.noteMoyenne || '4.8' }}/5</span></td>
+                  <td><span class="star-rating">⭐ {{ getLivreurNote(l) }}/5</span></td>
                   <td>
                     <div class="action-row">
                       <button class="btn-ghost-sm" (click)="voirDetailsLivreur(l)" title="Voir détails">👁️</button>
@@ -332,7 +426,7 @@
                   <td><strong>{{ u.nom }} {{ u.prenom }}</strong></td>
                   <td>{{ u.email }}</td>
                   <td>{{ u.telephone || 'Non renseigné' }}</td>
-                  <td><span class="role-badge" [ngClass]="(u.role || 'client').toLowerCase()">{{ u.role }}</span></td>
+                  <td><span class="role-badge" [ngClass]="getUserRole(u).toLowerCase()">{{ u.role }}</span></td>
                   <td>
                     <span *ngIf="u.approuve === true || u.statut === 'ACTIF' || u.statut === 'DISPONIBLE'" class="badge-active">Actif</span>
                     <span *ngIf="u.approuve !== true && u.statut !== 'ACTIF' && u.statut !== 'DISPONIBLE'" class="badge-pending">En attente</span>
@@ -361,10 +455,10 @@
           </div>
 
           <div class="row-form mb-4">
-            <input #depotNom placeholder="Nom dépôt (ex: Dépôt Sousse)" />
-            <input #depotVille placeholder="Ville" />
-            <input #depotCap type="number" placeholder="Capacité (colis)" />
-            <button class="btn-primary" (click)="addDepot(depotNom.value, depotVille.value, +depotCap.value); depotNom.value=''; depotVille.value=''; depotCap.value='';">Ajouter Dépôt</button>
+            <input [(ngModel)]="nouveauDepot.nom" placeholder="Nom dépôt (ex: Dépôt Sousse)" />
+            <input [(ngModel)]="nouveauDepot.ville" placeholder="Ville" />
+            <input [(ngModel)]="nouveauDepot.capacite" type="number" placeholder="Capacité (colis)" />
+            <button class="btn-primary" (click)="addDepotAndReset()">Ajouter Dépôt</button>
           </div>
 
           <div class="depot-cards-grid">
@@ -395,29 +489,50 @@
             <p>Gérez les camionnettes, motos et véhicules d'acheminement.</p>
           </div>
 
-          <div class="row-form mb-4">
-            <input #vImma placeholder="Immatriculation (ex: 210 TN 4500)" [(ngModel)]="nouveauVehicule.immatriculation" />
-            <input #vModele placeholder="Modèle (ex: Peugeot Partner)" [(ngModel)]="nouveauVehicule.modele" />
-            <input #vCap type="number" placeholder="Capacité Colis" [(ngModel)]="nouveauVehicule.capacite" />
-            <input #vPhoto placeholder="URL Photo (optionnel)" [(ngModel)]="nouveauVehicule.photoUrl" />
-            <button class="btn-primary" (click)="addVehicule(nouveauVehicule.immatriculation, nouveauVehicule.modele, nouveauVehicule.capacite, nouveauVehicule.photoUrl); nouveauVehicule = {capacite: 10, type: 'Voiture', statut: 'DISPONIBLE'}">Ajouter Véhicule</button>
+          <div class="row-form compact mb-4">
+            <input #vImma placeholder="Immatriculation" [(ngModel)]="nouveauVehicule.immatriculation" class="compact-input" />
+            <input #vModele placeholder="Modèle" [(ngModel)]="nouveauVehicule.modele" class="compact-input" />
+            <input #vCap type="number" placeholder="Capacité" [(ngModel)]="nouveauVehicule.capacite" class="compact-input" />
+            <input #vPhoto type="file" (change)="uploadNewVehiclePhoto($event)" accept="image/*" class="compact-input-file" />
+            <button class="btn-primary compact-btn" (click)="addVehiculeAndReset()">➕</button>
           </div>
 
           <div class="vehicule-cards-grid">
-            <div class="vehicule-card" *ngFor="let v of vehicules" [ngClass]="getVehicleStatusClass(v.statut)">
-              <div class="vehicule-header">
-                <div class="vehicule-ic-wrapper">
-                  <img *ngIf="v.photoUrl" [src]="v.photoUrl" alt="Vehicule" class="vehicule-photo" />
-                  <span *ngIf="!v.photoUrl" class="vehicule-ic">🚗</span>
+            <div class="vehicule-card team-card compact square" *ngFor="let v of vehicules" [ngClass]="getVehicleStatusClass(v.statut)">
+              <div class="card-header">
+                <div class="vehicle-photo">
+                  <img *ngIf="v.photoUrl" [src]="v.photoUrl" [alt]="v.modele" />
+                  <span *ngIf="!v.photoUrl" class="vehicle-placeholder">🚗</span>
+                  <input type="file" #photoInput (change)="uploadVehiclePhoto(v.id, $event)" accept="image/*" class="photo-upload" title="Changer photo" />
                 </div>
-                <span class="vehicule-status-badge">{{ getVehicleStatusLabel(v.statut) }}</span>
+                <div class="vehicle-info">
+                  <h4>{{ v.immatriculation }}</h4>
+                  <p>{{ v.modele }}</p>
+                </div>
+                <button class="btn-delete" (click)="removeVehicule(v.id)">🗑️</button>
               </div>
-              <h4>{{ v.immatriculation }}</h4>
-              <p class="vehicule-modele">{{ v.modele }}</p>
-              <p class="vehicule-cap">Capacité: {{ v.capacite }} colis</p>
-              <div class="vehicule-actions">
-                <button class="btn-ghost-sm" (click)="cycleVehicleStatus(v)">Modifier état</button>
-                <button class="btn-danger-sm" (click)="removeVehicule(v.id)">Supprimer</button>
+              
+              <div class="card-body">
+                <div class="editable-field">
+                  <label>Capacité:</label>
+                  <input type="number" [(ngModel)]="v.capacite" (change)="updateVehicleCapacity(v.id, v.capacite)" class="compact-input" />
+                  <span>colis</span>
+                </div>
+                
+                <div class="editable-field">
+                  <label>État:</label>
+                  <select [(ngModel)]="v.statut" (change)="updateVehicleStatus(v.id, v.statut)" class="compact-select">
+                    <option value="DISPONIBLE">Disponible</option>
+                    <option value="EN_COURSE">En course</option>
+                    <option value="MAINTENANCE">Maintenance</option>
+                    <option value="HORS_SERVICE">Hors service</option>
+                  </select>
+                </div>
+                
+                <div class="vehicle-meta">
+                  <span class="meta-tag">Type: {{ getVehicleTypeDisplay(v) }}</span>
+                  <span class="meta-tag">Ajouté: {{ v.dateAjout | date:'dd/MM/yyyy' }}</span>
+                </div>
               </div>
             </div>
             <div *ngIf="vehicules.length === 0" class="empty-state">
@@ -426,65 +541,57 @@
           </div>
         </div>
 
-        <!-- Tab 7: Statistiques -->
-        <div *ngIf="activeTab === 'stats'">
-          <div class="tab-header">
-            <h2>Indicateurs & Performance IA</h2>
-            <p>Synthèse complète de la rentabilité, des retards et du taux de satisfaction.</p>
+        <!-- Tab: Réclamations -->
+        <div *ngIf="activeTab === 'reclamations'">
+          <div class="tab-header-flex">
+            <div>
+              <h2>Réclamations</h2>
+              <p>Gestion des réclamations clients</p>
+            </div>
           </div>
+          <div class="empty-state">
+            Aucune réclamation pour le moment.
+          </div>
+        </div>
 
+        <!-- Tab: Analytics (Statistiques détaillées) -->
+        <div *ngIf="activeTab === 'analytics'">
+          <div class="tab-header-flex">
+            <div>
+              <h2>Statistiques</h2>
+              <p>Analyse détaillée des performances</p>
+            </div>
+          </div>
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-title">Temps Moyen Livraison</div>
-              <div class="stat-value">{{ stats.avgDeliveryMin || 0 }} min</div>
-              <div class="stat-sub">Calculé sur les livraisons terminées</div>
+              <div class="stat-value">{{ getStatsAvgDelivery() }} min</div>
             </div>
             <div class="stat-card">
               <div class="stat-title">Taux de Réussite</div>
-              <div class="stat-value text-green">{{ stats.successRate || 0 }}%</div>
-              <div class="stat-sub">Commandes livrées vs total finalisées</div>
+              <div class="stat-value text-green">{{ getStatsSuccessRate() }}%</div>
             </div>
             <div class="stat-card">
               <div class="stat-title">Satisfaction Client</div>
-              <div class="stat-value">⭐ {{ stats.satisfactionScore || 0 }}/5</div>
-              <div class="stat-sub">{{ stats.satisfactionRate || 0 }}% de satisfaction réelle</div>
+              <div class="stat-value">⭐ {{ getStatsSatisfaction() }}/5</div>
             </div>
             <div class="stat-card">
               <div class="stat-title">Chiffre d'Affaires</div>
               <div class="stat-value">{{ getTotalRevenue() | number:'1.2-2' }} DT</div>
-              <div class="stat-sub">{{ stats.commandesCount }} commandes totales</div>
             </div>
           </div>
+        </div>
 
-          <div class="stats-breakdown mt-4">
-            <h3>Répartition des commandes</h3>
-            <div class="breakdown-bars">
-              <div class="breakdown-item">
-                <span>En attente</span>
-                <div class="breakdown-bar"><div class="fill yellow" [style.width.%]="getEnAttentePercentage()"></div></div>
-                <span>{{ getEnAttenteCount() }} ({{ getEnAttentePercentage() | number:'1.0-0' }}%)</span>
-              </div>
-              <div class="breakdown-item">
-                <span>En livraison</span>
-                <div class="breakdown-bar"><div class="fill purple" [style.width.%]="getEnLivraisonPercentage()"></div></div>
-                <span>{{ getEnLivraisonCount() }} ({{ getEnLivraisonPercentage() | number:'1.0-0' }}%)</span>
-              </div>
-              <div class="breakdown-item">
-                <span>Livrées</span>
-                <div class="breakdown-bar"><div class="fill green" [style.width.%]="getLivreePercentage()"></div></div>
-                <span>{{ getLivreeCount() }} ({{ getLivreePercentage() | number:'1.0-0' }}%)</span>
-              </div>
+        <!-- Tab: Paramètres -->
+        <div *ngIf="activeTab === 'parametres'">
+          <div class="tab-header-flex">
+            <div>
+              <h2>Paramètres</h2>
+              <p>Configuration du système</p>
             </div>
           </div>
-
-          <div class="top-drivers mt-4" *ngIf="getTopDrivers().length > 0">
-            <h3>Top Livreurs</h3>
-            <div class="driver-perf-list">
-              <div class="driver-perf-item" *ngFor="let d of getTopDrivers()">
-                <span>{{ d.prenom }} {{ d.nom }} — {{ d.gouvernorat || 'N/A' }}</span>
-                <span class="star-rating">⭐ {{ d.noteMoyenne || 0 }}/5 · {{ getDriverDeliveryCount(d.id) }} livraisons</span>
-              </div>
-            </div>
+          <div class="empty-state">
+            Paramètres du système à configurer.
           </div>
         </div>
 

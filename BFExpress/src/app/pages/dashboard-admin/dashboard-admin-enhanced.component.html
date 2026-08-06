@@ -69,13 +69,6 @@
         </a>
       </div>
     </nav>
-
-    <div class="sidebar-footer">
-      <button class="logout-btn" (click)="logout()">
-        <span>🚪</span>
-        <span>Déconnexion</span>
-      </button>
-    </div>
   </aside>
 
   <!-- Main Content -->
@@ -89,9 +82,17 @@
           <p>Vue d'ensemble de l'ensemble des opérations</p>
         </div>
         <div class="header-actions">
+          <button class="action-btn secondary" routerLink="/">
+            <span>🏠</span>
+            <span>Accueil</span>
+          </button>
           <button class="action-btn primary" (click)="refreshData()">
             <span>🔄</span>
             <span>Actualiser</span>
+          </button>
+          <button class="action-btn danger" (click)="logout()">
+            <span>🚪</span>
+            <span>Déconnexion</span>
           </button>
         </div>
       </div>
@@ -298,9 +299,17 @@
           <p>Affectation aux gouvernorats et validation des inscriptions</p>
         </div>
         <div class="header-actions">
+          <button class="action-btn secondary" routerLink="/">
+            <span>🏠</span>
+            <span>Accueil</span>
+          </button>
           <button class="action-btn primary" (click)="refreshData()">
             <span>🔄</span>
             <span>Actualiser</span>
+          </button>
+          <button class="action-btn danger" (click)="logout()">
+            <span>🚪</span>
+            <span>Déconnexion</span>
           </button>
         </div>
       </div>
@@ -524,28 +533,36 @@
           <p>Flotte de livraison et affectation aux livreurs</p>
         </div>
         <div class="header-actions">
+          <button class="action-btn secondary" routerLink="/">
+            <span>🏠</span>
+            <span>Accueil</span>
+          </button>
           <button class="action-btn primary" (click)="refreshData()">
             <span>🔄</span>
             <span>Actualiser</span>
+          </button>
+          <button class="action-btn danger" (click)="logout()">
+            <span>🚪</span>
+            <span>Déconnexion</span>
           </button>
         </div>
       </div>
 
       <!-- Formulaire nouveau véhicule -->
-      <div class="form-card">
-        <h3>Ajouter un nouveau véhicule</h3>
-        <div class="form-grid">
+      <div class="form-card compact">
+        <h3>Ajouter un véhicule</h3>
+        <div class="form-grid compact">
           <div class="form-group">
-            <label>Immatriculation *</label>
+            <label>Immatriculation</label>
             <input type="text" [(ngModel)]="nouveauVehicule.immatriculation" placeholder="123 TN 4567">
           </div>
           <div class="form-group">
-            <label>Marque *</label>
-            <input type="text" [(ngModel)]="nouveauVehicule.marque" placeholder="Renault, Peugeot...">
+            <label>Marque</label>
+            <input type="text" [(ngModel)]="nouveauVehicule.marque" placeholder="Renault">
           </div>
           <div class="form-group">
-            <label>Modèle *</label>
-            <input type="text" [(ngModel)]="nouveauVehicule.modele" placeholder="Clio, 208...">
+            <label>Modèle</label>
+            <input type="text" [(ngModel)]="nouveauVehicule.modele" placeholder="Clio">
           </div>
           <div class="form-group">
             <label>Type</label>
@@ -557,18 +574,18 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Capacité (colis)</label>
+            <label>Capacité</label>
             <input type="number" [(ngModel)]="nouveauVehicule.capacite" placeholder="10">
           </div>
+          <div class="form-group">
+            <label>Photo</label>
+            <input type="file" (change)="uploadNewVehiclePhoto($event)" accept="image/*">
+          </div>
         </div>
-        <div class="form-actions">
+        <div class="form-actions compact">
           <button class="action-btn primary" (click)="enregistrerVehicule()">
             <span>➕</span>
-            <span>Ajouter le véhicule</span>
-          </button>
-          <button class="action-btn secondary" (click)="resetVehiculeForm()">
-            <span>🔄</span>
-            <span>Réinitialiser</span>
+            <span>Ajouter</span>
           </button>
         </div>
       </div>
@@ -576,41 +593,42 @@
       <!-- Liste des véhicules -->
       <div class="vehicles-section">
         <h3>Flotte de véhicules</h3>
-        <div class="vehicles-grid">
-          <div class="vehicle-card" *ngFor="let vehicle of getAllVehicles()">
-            <div class="vehicle-header">
-              <div class="vehicle-icon">🚗</div>
+        <div class="vehicles-grid team-grid">
+          <div class="vehicle-card team-card compact square" *ngFor="let vehicle of getAllVehicles()">
+            <div class="card-header">
+              <div class="vehicle-photo">
+                <img *ngIf="vehicle.photoUrl" [src]="vehicle.photoUrl" [alt]="vehicle.marque" />
+                <span *ngIf="!vehicle.photoUrl" class="vehicle-placeholder">🚗</span>
+                <input type="file" #photoInput (change)="uploadVehiclePhoto(vehicle.id || '', $event)" accept="image/*" class="photo-upload" title="Changer photo" />
+              </div>
               <div class="vehicle-info">
-                <div class="vehicle-model">{{ vehicle.marque }} {{ getVehicleModel(vehicle) }}</div>
-                <div class="vehicle-immat">{{ getVehicleImmatriculation(vehicle) }}</div>
+                <h4>{{ getVehicleImmatriculation(vehicle) }}</h4>
+                <p>{{ vehicle.marque }} {{ getVehicleModel(vehicle) }}</p>
               </div>
-              <div class="vehicle-statut" [class.available]="isVehicleAvailable(vehicle)" [class.in-use]="isVehicleInUse(vehicle)">
-                {{ getVehicleStatus(vehicle) }}
-              </div>
+              <button class="btn-delete" (click)="deleteVehicle(vehicle.id || '')">🗑️</button>
             </div>
-            <div class="vehicle-details">
-              <div class="detail-row">
-                <span class="detail-label">Type:</span>
-                <span class="detail-value">{{ getVehicleType(vehicle) }}</span>
+            
+            <div class="card-body">
+              <div class="editable-field">
+                <label>Capacité:</label>
+                <input type="number" [(ngModel)]="vehicle.capacite" (change)="updateVehicleCapacity(vehicle.id || '', vehicle.capacite)" class="compact-input" />
+                <span>colis</span>
               </div>
-              <div class="detail-row">
-                <span class="detail-label">Capacité:</span>
-                <span class="detail-value">{{ getVehicleCapacity(vehicle) }} colis</span>
+              
+              <div class="editable-field">
+                <label>État:</label>
+                <select [(ngModel)]="vehicle.statut" (change)="updateVehicleStatus(vehicle.id || '', vehicle.statut)" class="compact-select">
+                  <option value="DISPONIBLE">Disponible</option>
+                  <option value="EN_COURSE">En course</option>
+                  <option value="MAINTENANCE">Maintenance</option>
+                  <option value="HORS_SERVICE">Hors service</option>
+                </select>
               </div>
-              <div class="detail-row">
-                <span class="detail-label">Assigné à:</span>
-                <span class="detail-value">{{ getDriverForVehicle(vehicle.id || '')?.prenom }} {{ getDriverForVehicle(vehicle.id || '')?.nom || 'Non assigné' }}</span>
+              
+              <div class="vehicle-meta">
+                <span class="meta-tag">Type: {{ getVehicleType(vehicle) }}</span>
+                <span class="meta-tag">Assigné à: {{ getDriverForVehicle(vehicle.id || '')?.prenom }} {{ getDriverForVehicle(vehicle.id || '')?.nom || 'Non assigné' }}</span>
               </div>
-            </div>
-            <div class="vehicle-actions">
-              <button class="action-btn info" (click)="assignVehicleToDriver(vehicle.id || '')" *ngIf="isVehicleAvailable(vehicle)" title="Affecter">
-                <span>👤</span>
-                <span>Affecter</span>
-              </button>
-              <button class="action-btn warning" (click)="libererVehicule(vehicle.id || '')" *ngIf="isVehicleInUse(vehicle)" title="Libérer">
-                <span>🔓</span>
-                <span>Libérer</span>
-              </button>
             </div>
           </div>
         </div>
@@ -625,9 +643,17 @@
           <p>Validation et affectation des manifests aux livreurs</p>
         </div>
         <div class="header-actions">
+          <button class="action-btn secondary" routerLink="/">
+            <span>🏠</span>
+            <span>Accueil</span>
+          </button>
           <button class="action-btn primary" (click)="refreshData()">
             <span>🔄</span>
             <span>Actualiser</span>
+          </button>
+          <button class="action-btn danger" (click)="logout()">
+            <span>🚪</span>
+            <span>Déconnexion</span>
           </button>
         </div>
       </div>

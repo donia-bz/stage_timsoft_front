@@ -34,6 +34,36 @@ export class LoginComponent {
     this.loading = true;
     this.errorMessage = '';
 
+    // Mode développement : redirection directe selon l'email
+    if (this.email.includes('admin')) {
+      this.loading = false;
+      localStorage.setItem('currentUser', JSON.stringify({
+        id: 'admin-dev',
+        nom: 'Admin',
+        prenom: 'Dev',
+        email: this.email,
+        role: 'ADMIN',
+        token: 'dev-token'
+      }));
+      this.router.navigate(['/dashboard-admin']);
+      return;
+    }
+
+    if (this.email.includes('livreur')) {
+      this.loading = false;
+      localStorage.setItem('currentUser', JSON.stringify({
+        id: 'livreur-dev',
+        nom: 'Livreur',
+        prenom: 'Dev',
+        email: this.email,
+        role: 'LIVREUR',
+        token: 'dev-token'
+      }));
+      this.router.navigate(['/dashboard-livreur']);
+      return;
+    }
+
+    // Pour les clients, tente la connexion normale
     this.authService.login(this.email, this.motDePasse).subscribe({
       next: (res) => {
         this.loading = false;
@@ -71,7 +101,7 @@ export class LoginComponent {
       error: (err) => {
         this.loading = false;
         if (err.status === 0) {
-          this.errorMessage = "Impossible de se connecter au serveur d'authentification (port 8082). Veuillez vous assurer que le microservice Spring Boot (auth-service) est bien démarré.";
+          this.errorMessage = "Mode développement : Le serveur d'authentification n'est pas disponible. Utilisez un email contenant 'admin' ou 'livreur' pour accéder aux dashboards en mode dev.";
         } else if (typeof err.error === 'string') {
           this.errorMessage = err.error;
         } else if (err.error && err.error.message) {

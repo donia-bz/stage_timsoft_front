@@ -26,8 +26,12 @@ export class DashboardLivreurComponent implements OnInit {
   driverName = 'Livreur';
   driverId = '';
   driverInfo: Livreur | null = null;
+  driverPhoto = '';
   livraisons: Livraison[] = [];
   commandesMap: { [colisId: string]: Commande } = {};
+  activeTab: 'dashboard' | 'historique' | 'vehicule' | 'revenus' | 'parametres' = 'dashboard';
+  deliveryHistory: any[] = [];
+  notifications: any[] = [];
 
   stats = [
     { title: 'Courses du jour', value: 16, color: 'status-blue' },
@@ -83,6 +87,10 @@ export class DashboardLivreurComponent implements OnInit {
       // poll for new assignments every 12s
       this.pollInterval = setInterval(() => this.checkForNewAssignments(), 12000);
       this.initMapDriver();
+      // Load new features
+      this.driverPhoto = localStorage.getItem('driverPhoto') || '';
+      this.loadDeliveryHistory();
+      this.loadNotifications();
     }
   }
 
@@ -110,6 +118,136 @@ export class DashboardLivreurComponent implements OnInit {
   ngOnDestroy(): void {
     if (this.gpsInterval) clearInterval(this.gpsInterval);
     if (this.pollInterval) clearInterval(this.pollInterval);
+  }
+
+  uploadDriverPhoto(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.driverPhoto = e.target.result;
+        localStorage.setItem('driverPhoto', e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  loadDeliveryHistory(): void {
+    // Simulated delivery history
+    this.deliveryHistory = [
+      { id: 'DEL001', date: '2024-08-07', client: 'Client A', statut: 'LIVREE', note: 5 },
+      { id: 'DEL002', date: '2024-08-07', client: 'Client B', statut: 'LIVREE', note: 4 },
+      { id: 'DEL003', date: '2024-08-06', client: 'Client C', statut: 'LIVREE', note: 5 },
+      { id: 'DEL004', date: '2024-08-06', client: 'Client D', statut: 'RETARD', note: 3 },
+      { id: 'DEL005', date: '2024-08-05', client: 'Client E', statut: 'LIVREE', note: 5 }
+    ];
+  }
+
+  loadNotifications(): void {
+    // Simulated notifications
+    this.notifications = [
+      { id: 1, type: 'NEW_ORDER', message: 'Nouvelle commande affectée', time: 'Il y a 5 min', read: false },
+      { id: 2, type: 'REMINDER', message: 'Maintenance véhicule prévue', time: 'Il y a 1h', read: false },
+      { id: 3, type: 'INFO', message: 'Statut du jour mis à jour', time: 'Il y a 2h', read: true }
+    ];
+  }
+
+  // Helper methods for template bindings
+  getUnreadNotificationCount(): number {
+    return this.notifications.filter(n => !n.read).length;
+  }
+
+  isNotificationUnread(notif: any): boolean {
+    return !notif.read;
+  }
+
+  getNotificationIcon(notif: any): string {
+    if (notif.type === 'NEW_ORDER') return '📦';
+    if (notif.type === 'REMINDER') return '⏰';
+    if (notif.type === 'INFO') return 'ℹ️';
+    return '📢';
+  }
+
+  getDeliveryRefShort(delivery: any): string {
+    if (!delivery || !delivery.id) return 'N/A';
+    return '#' + delivery.id.substring(delivery.id.length - 6);
+  }
+
+  getDeliveryStatutClass(statut: string): string {
+    return statut.toLowerCase();
+  }
+
+  getLivraisonRefShort(livraison: any): string {
+    if (!livraison || !livraison.id) return 'N/A';
+    return '#' + livraison.id.substring(livraison.id.length - 6);
+  }
+
+  getDeliveryDestination(): string {
+    return this.currentDeliveryCommande?.adresseArrivee?.ville || 'Adresse Destinataire';
+  }
+
+  getDeliveryClient(): string {
+    return this.currentDeliveryCommande?.clientNom || 'Client BFExpress';
+  }
+
+  getStatsValue(): number {
+    return this.stats[0]?.value || 0;
+  }
+
+  getDriverNote(): string {
+    return String(this.driverInfo?.noteMoyenne || '4.9');
+  }
+
+  getDeliveryId(delivery: any): string {
+    return delivery.id || 'N/A';
+  }
+
+  getDeliveryDate(delivery: any): string {
+    return delivery.date || '';
+  }
+
+  getDeliveryClientName(delivery: any): string {
+    return delivery.client || '';
+  }
+
+  getDeliveryStatut(delivery: any): string {
+    return delivery.statut || '';
+  }
+
+  getDeliveryNote(delivery: any): number {
+    return delivery.note || 0;
+  }
+
+  isTabHistorique(): boolean {
+    return this.activeTab === 'historique';
+  }
+
+  isTabRevenus(): boolean {
+    return this.activeTab === 'revenus';
+  }
+
+  isTabParametres(): boolean {
+    return this.activeTab === 'parametres';
+  }
+
+  isDriverAvailable(): boolean {
+    return this.driverInfo?.statut === 'DISPONIBLE' || this.driverInfo?.statut === 'EN_COURSE';
+  }
+
+  isDriverOffline(): boolean {
+    return this.driverInfo?.statut === 'HORS_LIGNE';
+  }
+
+  isDriverStatusAvailable(): boolean {
+    return this.driverInfo?.statut === 'DISPONIBLE';
+  }
+
+  isDriverStatusBusy(): boolean {
+    return this.driverInfo?.statut === 'EN_COURSE';
+  }
+
+  isDriverStatusOffline(): boolean {
+    return this.driverInfo?.statut === 'HORS_LIGNE';
   }
 
   loadDriverData(): void {

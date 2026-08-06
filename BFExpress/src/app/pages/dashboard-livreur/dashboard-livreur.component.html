@@ -9,25 +9,43 @@
       </div>
 
       <div class="driver-profile-card">
-        <div class="driver-avatar">{{ driverName.charAt(0) }}</div>
+        <div class="driver-avatar-wrapper">
+          <div class="driver-avatar">
+            <img *ngIf="driverPhoto" [src]="driverPhoto" [alt]="driverName" />
+            <span *ngIf="!driverPhoto">{{ driverName.charAt(0) }}</span>
+          </div>
+          <div class="online-indicator" *ngIf="isDriverAvailable()"></div>
+          <div class="offline-indicator" *ngIf="isDriverOffline()"></div>
+          <input type="file" #photoInput (change)="uploadDriverPhoto($event)" accept="image/*" class="photo-upload" title="Changer photo" />
+        </div>
         <div class="driver-meta">
           <div class="d-name">{{ driverName }}</div>
-          <div class="d-sub">⭐ {{ driverInfo?.noteMoyenne || '4.9' }} / 5.0</div>
+          <div class="d-sub">⭐ {{ getDriverNote() }} / 5.0</div>
         </div>
       </div>
 
       <div class="sidebar-section">
-        <h3>Commandes & Actions</h3>
+        <h3>Commandes</h3>
         <nav>
-          <a class="sidebar-link active"><span class="icon">📱</span> Mon Espace Driver</a>
+          <a class="sidebar-link active" (click)="activeTab = 'dashboard'"><span class="icon">📱</span> Tableau de bord</a>
+          <a class="sidebar-link" (click)="activeTab = 'historique'"><span class="icon">📋</span> Historique Livraisons</a>
           <a class="sidebar-link" routerLink="/recherche-colis"><span class="icon">🔍</span> Recherche Colis</a>
-          <a class="sidebar-link" routerLink="/reclamations"><span class="icon">⚠️</span> Signaler un Incident</a>
         </nav>
       </div>
 
-      <div class="sidebar-section mt-auto">
+      <div class="sidebar-section">
+        <h3>Véhicule</h3>
         <nav>
-          <a class="sidebar-link logout" (click)="logout()"><span class="icon">🚪</span> Déconnexion</a>
+          <a class="sidebar-link" (click)="activeTab = 'vehicule'"><span class="icon">🚗</span> Mon Véhicule</a>
+          <a class="sidebar-link" routerLink="/reclamations"><span class="icon">⚠️</span> Signaler Incident</a>
+        </nav>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Profil</h3>
+        <nav>
+          <a class="sidebar-link" (click)="activeTab = 'revenus'"><span class="icon">�</span> Mes Revenus</a>
+          <a class="sidebar-link" (click)="activeTab = 'parametres'"><span class="icon">⚙️</span> Paramètres</a>
         </nav>
       </div>
     </aside>
@@ -44,13 +62,13 @@
 
         <!-- Big Toggle Status Buttons -->
         <div class="toggle-status-box">
-          <button class="status-btn btn-available" [class.on]="driverInfo?.statut === 'DISPONIBLE'" (click)="toggleStatut('DISPONIBLE')">
+          <button class="status-btn btn-available" [class.on]="isDriverStatusAvailable()" (click)="toggleStatut('DISPONIBLE')">
             🟢 Disponible
           </button>
-          <button class="status-btn btn-busy" [class.on]="driverInfo?.statut === 'EN_COURSE'" (click)="toggleStatut('EN_COURSE')">
+          <button class="status-btn btn-busy" [class.on]="isDriverStatusBusy()" (click)="toggleStatut('EN_COURSE')">
             🟡 En Course
           </button>
-          <button class="status-btn btn-offline" [class.on]="driverInfo?.statut === 'HORS_LIGNE'" (click)="toggleStatut('HORS_LIGNE')">
+          <button class="status-btn btn-offline" [class.on]="isDriverStatusOffline()" (click)="toggleStatut('HORS_LIGNE')">
             🔴 Hors Ligne
           </button>
         </div>
@@ -63,6 +81,25 @@
           <div>
             <strong>{{ newAssignments.length }} Nouvelle(s) course(s) vous a/ont été affectée(s) !</strong>
             <p>Cliquez sur démarrer ci-dessous pour lancer votre navigation GPS.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notifications Panel -->
+      <div class="notifications-panel" *ngIf="notifications.length > 0">
+        <div class="notifications-header">
+          <h3>🔔 Notifications</h3>
+          <span class="notification-count">{{ getUnreadNotificationCount() }}</span>
+        </div>
+        <div class="notifications-list">
+          <div class="notification-item" *ngFor="let notif of notifications" [class.unread]="isNotificationUnread(notif)">
+            <div class="notif-icon">
+              <span>{{ getNotificationIcon(notif) }}</span>
+            </div>
+            <div class="notif-content">
+              <div class="notif-message">{{ notif.message }}</div>
+              <div class="notif-time">{{ notif.time }}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -85,7 +122,7 @@
 
           <div *ngIf="currentDelivery" class="active-delivery-body">
             <div class="delivery-ref-row">
-              <span class="ref">Réf: #{{ currentDelivery.id ? currentDelivery.id.substring(currentDelivery.id.length - 6) : 'N/A' }}</span>
+              <span class="ref">Réf: {{ getDeliveryRefShort(currentDelivery) }}</span>
               <span class="colis-tag">📦 Colis ID: {{ currentDelivery.colisId }}</span>
             </div>
 
@@ -109,8 +146,8 @@
             <div class="destination-box">
               <div class="dest-icon">📍</div>
               <div class="dest-details">
-                <div class="dest-title">Destination : {{ currentDeliveryCommande?.adresseArrivee?.ville || 'Adresse Destinataire' }}</div>
-                <div class="dest-sub">Client : {{ currentDeliveryCommande?.clientNom || 'Client BFExpress' }}</div>
+                <div class="dest-title">Destination : {{ getDeliveryDestination() }}</div>
+                <div class="dest-sub">Client : {{ getDeliveryClient() }}</div>
               </div>
               <a class="btn-call" href="tel:21650000000">📞 Appeler</a>
             </div>
@@ -145,12 +182,12 @@
       <div class="grid-3-kpi mb-4">
         <div class="kpi-card">
           <div class="kpi-title">Livraisons Effectuées</div>
-          <div class="kpi-value">{{ stats[0]?.value || 0 }}</div>
+          <div class="kpi-value">{{ getStatsValue() }}</div>
           <div class="kpi-sub">Aujourd'hui</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-title">Note Satisfaction</div>
-          <div class="kpi-value text-gold">⭐ {{ driverInfo?.noteMoyenne || '4.9' }}</div>
+          <div class="kpi-value text-gold">⭐ {{ getDriverNote() }}</div>
           <div class="kpi-sub">Client Feedback</div>
         </div>
         <div class="kpi-card">
@@ -175,7 +212,7 @@
             </thead>
             <tbody>
               <tr *ngFor="let l of waitingLivraisons">
-                <td><strong>#{{ l.id ? l.id.substring(l.id.length - 6) : 'N/A' }}</strong></td>
+                <td><strong>{{ getLivraisonRefShort(l) }}</strong></td>
                 <td>{{ l.colisId }}</td>
                 <td><span class="status-pill status-validee">{{ l.statut }}</span></td>
                 <td>
@@ -189,6 +226,73 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Historique des livraisons -->
+      <div class="delivery-history-section" *ngIf="isTabHistorique()">
+        <h3>📋 Historique des livraisons</h3>
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Date</th>
+              <th>Client</th>
+              <th>Statut</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let delivery of deliveryHistory">
+              <td><strong>{{ getDeliveryId(delivery) }}</strong></td>
+              <td>{{ getDeliveryDate(delivery) }}</td>
+              <td>{{ getDeliveryClientName(delivery) }}</td>
+              <td><span class="status-badge" [class]="getDeliveryStatutClass(delivery.statut)">{{ getDeliveryStatut(delivery) }}</span></td>
+              <td><span class="rating">⭐ {{ getDeliveryNote(delivery) }}/5</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Revenus Section -->
+      <div class="page-card" *ngIf="isTabRevenus()">
+        <h3>💰 Mes Revenus</h3>
+        <div class="grid-3-kpi">
+          <div class="kpi-card">
+            <div class="kpi-title">Gains du jour</div>
+            <div class="kpi-value">125 DT</div>
+            <div class="kpi-sub">8 livraisons</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">Gains semaine</div>
+            <div class="kpi-value">850 DT</div>
+            <div class="kpi-sub">48 livraisons</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">Gains mois</div>
+            <div class="kpi-value">3,200 DT</div>
+            <div class="kpi-sub">180 livraisons</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paramètres Section -->
+      <div class="page-card" *ngIf="isTabParametres()">
+        <h3>⚙️ Paramètres</h3>
+        <div class="settings-form">
+          <div class="form-group">
+            <label>Nom complet</label>
+            <input type="text" value="{{ driverName }}" disabled />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" disabled />
+          </div>
+          <div class="form-group">
+            <label>Téléphone</label>
+            <input type="tel" disabled />
+          </div>
+          <button class="btn-primary">Sauvegarder</button>
         </div>
       </div>
 

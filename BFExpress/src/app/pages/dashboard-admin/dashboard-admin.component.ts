@@ -22,6 +22,7 @@ export interface Vehicule {
   statut: string;
   dateAjout?: string;
   photoUrl?: string; // NOUVEAU
+  type?: string; // NOUVEAU
 }
 
 interface ToastMessage {
@@ -38,7 +39,7 @@ interface ToastMessage {
   styleUrls: ['./dashboard-admin.component.scss']
 })
 export class DashboardAdminComponent implements OnInit {
-  activeTab: 'commandes' | 'inscriptions' | 'livreurs' | 'depots' | 'vehicules' | 'carte' | 'stats' | 'manifests' = 'commandes';
+  activeTab: 'stats' | 'commandes' | 'livreurs' | 'carte' | 'manifests' | 'vehicules' | 'depots' | 'inscriptions' | 'reclamations' | 'analytics' | 'parametres' = 'stats';
   commandes: Commande[] = [];
   livreurs: Livreur[] = [];
   usersList: UserProfile[] = [];
@@ -98,6 +99,13 @@ export class DashboardAdminComponent implements OnInit {
     capacite: 10,
     statut: 'DISPONIBLE',
     photoUrl: '' // NOUVEAU
+  };
+
+  // Formulaire nouveau dépôt
+  nouveauDepot: any = {
+    nom: '',
+    ville: '',
+    capacite: 100
   };
 
   // Mode édition
@@ -398,10 +406,96 @@ export class DashboardAdminComponent implements OnInit {
     localStorage.setItem('bf_depots', JSON.stringify(this.depots));
   }
 
-  addVehicule(immatriculation: string, modele: string, capacite: number, photoUrl: string = '') {
-    const v = { id: 'VEH' + Date.now(), immatriculation, modele, capacite, statut: 'DISPONIBLE', dateAjout: new Date().toISOString(), photoUrl };
+  addVehicule(immatriculation: string, modele: string, capacite: number) {
+    const v = {
+      id: 'VEH' + Date.now(),
+      immatriculation,
+      modele,
+      capacite,
+      statut: 'DISPONIBLE',
+      dateAjout: new Date().toISOString(),
+      photoUrl: this.nouveauVehicule.photoUrl || '',
+      type: this.nouveauVehicule.type || 'Voiture'
+    };
     this.vehicules.push(v);
     localStorage.setItem('bf_vehicules', JSON.stringify(this.vehicules));
+    this.showToast('Véhicule ajouté', 'success');
+  }
+
+  addVehiculeAndReset() {
+    this.addVehicule(this.nouveauVehicule.immatriculation, this.nouveauVehicule.modele, this.nouveauVehicule.capacite);
+    this.nouveauVehicule = { capacite: 10, type: 'Voiture', statut: 'DISPONIBLE', photoUrl: '' };
+  }
+
+  openCarteTab() {
+    this.activeTab = 'carte';
+    this.initMapAdmin();
+  }
+
+  addDepotAndReset() {
+    this.addDepot(this.nouveauDepot.nom, this.nouveauDepot.ville, this.nouveauDepot.capacite);
+    this.nouveauDepot = { nom: '', ville: '', capacite: 100 };
+  }
+
+  // Helper methods for template bindings
+  getActiveDriversCount(): number {
+    return this.livreurs.filter(l => l.statut === 'DISPONIBLE' || l.statut === 'EN_COURSE').length;
+  }
+
+  getDepartVille(order: Commande): string {
+    return order.adresseDepart?.ville || 'Tunis';
+  }
+
+  getArriveeVille(order: Commande): string {
+    return order.adresseArrivee?.ville || 'Sousse';
+  }
+
+  getOrderStatus(order: Commande): string {
+    return order.statut || 'EN_ATTENTE';
+  }
+
+  getOrderStatusClass(order: Commande): string {
+    return 'status-' + (order.statut || 'EN_ATTENTE').toLowerCase();
+  }
+
+  getLivreurGouvernorat(livreur: Livreur): string {
+    return livreur.gouvernorat || 'Tunis';
+  }
+
+  getLivreurCoordLat(livreur: Livreur): number {
+    return livreur.latitudeActuelle || 36.8;
+  }
+
+  getLivreurCoordLon(livreur: Livreur): number {
+    return livreur.longitudeActuelle || 10.1;
+  }
+
+  getLivreurNote(livreur: Livreur): string {
+    return String(livreur.noteMoyenne || 4.8);
+  }
+
+  getUserRole(user: UserProfile): string {
+    return user.role || 'client';
+  }
+
+  getVehicleTypeDisplay(vehicle: Vehicule): string {
+    return vehicle.type || 'Voiture';
+  }
+
+  getStatsAvgDelivery(): number {
+    return this.stats.avgDeliveryMin || 0;
+  }
+
+  getStatsSuccessRate(): number {
+    return this.stats.successRate || 0;
+  }
+
+  getStatsSatisfaction(): number {
+    return this.stats.satisfactionScore || 0;
+  }
+
+  isOrderPending(order: Commande): boolean {
+    return order.statut === 'EN_ATTENTE' || !order.statut;
   }
 
   removeVehicule(id: string) {
@@ -414,6 +508,60 @@ export class DashboardAdminComponent implements OnInit {
     const idx = states.indexOf(vehicule.statut || 'DISPONIBLE');
     vehicule.statut = states[(idx + 1) % states.length];
     localStorage.setItem('bf_vehicules', JSON.stringify(this.vehicules));
+  }
+
+  updateVehicleCapacity(vehicleId: string, newCapacity: number): void {
+    const vehicle = this.vehicules.find(v => v.id === vehicleId);
+    if (vehicle) {
+      vehicle.capacite = newCapacity;
+      localStorage.setItem('bf_vehicules', JSON.stringify(this.vehicules));
+      this.showToast('Capacité mise à jour', 'success');
+    }
+  }
+
+  updateVehicleStatus(vehicleId: string, newStatus: string): void {
+    const vehicle = this.vehicules.find(v => v.id === vehicleId);
+    if (vehicle) {
+      vehicle.statut = newStatus;
+      localStorage.setItem('bf_vehicules', JSON.stringify(this.vehicules));
+      this.showToast('État mis à jour', 'success');
+    }
+  }
+
+  deleteVehicle(vehicleId: string): void {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ?')) {
+      this.vehicules = this.vehicules.filter(v => v.id !== vehicleId);
+      localStorage.setItem('bf_vehicules', JSON.stringify(this.vehicules));
+      this.showToast('Véhicule supprimé', 'success');
+    }
+  }
+
+  uploadVehiclePhoto(vehicleId: string, event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        const vehicle = this.vehicules.find(v => v.id === vehicleId);
+        if (vehicle) {
+          vehicle.photoUrl = e.target.result;
+          localStorage.setItem('bf_vehicules', JSON.stringify(this.vehicules));
+          this.showToast('Photo mise à jour', 'success');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  uploadNewVehiclePhoto(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.nouveauVehicule.photoUrl = e.target.result;
+        this.showToast('Photo chargée', 'success');
+      };
+      reader.readAsDataURL(file);
+    }
   }
 
   getVehicleStatusLabel(statut: string): string {
