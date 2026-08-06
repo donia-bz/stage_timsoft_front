@@ -178,10 +178,61 @@
     background: #f8f9fa;
     color: #3498db;
   }
+}
 
-  .dropdown-icon {
-    font-size: 1.1rem;
-  }
+.dropdown-item.logout-item:hover {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.dropdown-icon {
+  font-size: 1.1rem;
+}
+
+/* Logged User Menu */
+.logged-user-menu {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+}
+
+.notification-btn {
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.notification-btn:hover {
+  border-color: #3498db;
+  background: #f8f9fa;
+  transform: translateY(-2px);
+}
+
+.notification-icon {
+  font-size: 1.25rem;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  min-width: 18px;
+  text-align: center;
 }
 
 .btn-login {

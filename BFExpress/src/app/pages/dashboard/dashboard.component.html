@@ -7,13 +7,6 @@
         <span class="brand-text">BFExpress</span>
         <span class="brand-dot">.</span>
       </div>
-      <div class="user-mini-profile">
-        <div class="user-avatar">{{ clientName.charAt(0) }}</div>
-        <div class="user-info">
-          <span class="user-name">{{ clientName }}</span>
-          <span class="user-role">Client</span>
-        </div>
-      </div>
     </div>
 
     <nav class="sidebar-nav">
@@ -84,11 +77,6 @@
           <span class="nav-icon">🎧</span>
           <span>Service Client</span>
         </a>
-        <a class="nav-link" [class.active]="activeTab === 'notifications'" (click)="setTab('notifications')">
-          <span class="nav-icon">🔔</span>
-          <span>Notifications</span>
-          <span class="nav-badge" *ngIf="unreadNotifications > 0">{{ unreadNotifications }}</span>
-        </a>
         <a class="nav-link" routerLink="/contact">
           <span class="nav-icon">📞</span>
           <span>Contact</span>
@@ -97,10 +85,26 @@
     </nav>
 
     <div class="sidebar-footer">
-      <button class="logout-btn" (click)="logout()">
-        <span>🚪</span>
-        <span>Déconnexion</span>
+      <button class="hamburger-menu" (click)="toggleSidebarMenu()">
+        <span class="hamburger-icon">☰</span>
       </button>
+      
+      <!-- Dropdown Menu -->
+      <div class="sidebar-dropdown" *ngIf="showSidebarMenu">
+        <a class="dropdown-item" (click)="setTab('profil'); toggleSidebarMenu()">
+          <span class="dropdown-icon">👤</span>
+          <span>Mon Profil</span>
+        </a>
+        <a class="dropdown-item" (click)="setTab('notifications'); toggleSidebarMenu()">
+          <span class="dropdown-icon">🔔</span>
+          <span>Notifications</span>
+          <span class="dropdown-badge" *ngIf="unreadNotifications > 0">{{ unreadNotifications }}</span>
+        </a>
+        <a class="dropdown-item logout-item" (click)="logout()">
+          <span class="dropdown-icon">🚪</span>
+          <span>Déconnexion</span>
+        </a>
+      </div>
     </div>
   </aside>
 
@@ -124,32 +128,99 @@
 
       <!-- Stats Cards -->
       <div class="stats-grid">
-        <div class="stat-card stat-primary">
-          <div class="stat-icon">📦</div>
-          <div class="stat-info">
-            <div class="stat-value">{{ commandes.length }}</div>
-            <div class="stat-label">Total Commandes</div>
-          </div>
-        </div>
-        <div class="stat-card stat-warning">
+        <div class="stat-card status-en-attente">
           <div class="stat-icon">⏳</div>
           <div class="stat-info">
-            <div class="stat-value">{{ pendingCommandes.length }}</div>
+            <div class="stat-value">{{ getStatusCount('EN_ATTENTE') }}</div>
             <div class="stat-label">En Attente</div>
           </div>
         </div>
-        <div class="stat-card stat-success">
+        <div class="stat-card status-enleves">
           <div class="stat-icon">🚚</div>
           <div class="stat-info">
-            <div class="stat-value">{{ enCoursCount }}</div>
+            <div class="stat-value">{{ getStatusCount('ENLEVE') }}</div>
+            <div class="stat-label">Enlevés</div>
+          </div>
+        </div>
+        <div class="stat-card status-au-depot">
+          <div class="stat-icon">📦</div>
+          <div class="stat-info">
+            <div class="stat-value">{{ getStatusCount('AU_DEPOT') }}</div>
+            <div class="stat-label">Au Dépôt</div>
+          </div>
+        </div>
+        <div class="stat-card status-retour-depot">
+          <div class="stat-icon">🔄</div>
+          <div class="stat-info">
+            <div class="stat-value">{{ getStatusCount('RETOUR_DEPOT') }}</div>
+            <div class="stat-label">Retour Dépôt</div>
+          </div>
+        </div>
+        <div class="stat-card status-en-cours">
+          <div class="stat-icon">🚛</div>
+          <div class="stat-info">
+            <div class="stat-value">{{ getStatusCount('EN_COURS') }}</div>
             <div class="stat-label">En Cours</div>
           </div>
         </div>
-        <div class="stat-card stat-info">
+        <div class="stat-card status-a-verifier">
+          <div class="stat-icon">🔍</div>
+          <div class="stat-info">
+            <div class="stat-value">{{ getStatusCount('A_VERIFIER') }}</div>
+            <div class="stat-label">À Vérifier</div>
+          </div>
+        </div>
+        <div class="stat-card status-livres">
           <div class="stat-icon">✅</div>
           <div class="stat-info">
-            <div class="stat-value">{{ livreeCount }}</div>
-            <div class="stat-label">Livrées</div>
+            <div class="stat-value">{{ getStatusCount('LIVRE') }}</div>
+            <div class="stat-label">Livrés</div>
+          </div>
+        </div>
+        <div class="stat-card status-livres-paye">
+          <div class="stat-icon">💰</div>
+          <div class="stat-info">
+            <div class="stat-value">{{ getStatusCount('LIVRE_PAYE') }}</div>
+            <div class="stat-label">Livrés Payé</div>
+          </div>
+        </div>
+        <div class="stat-card status-echange">
+          <div class="stat-icon">�</div>
+          <div class="stat-info">
+            <div class="stat-value">{{ getStatusCount('ECHANGE') }}</div>
+            <div class="stat-label">Échange</div>
+          </div>
+        </div>
+        <div class="stat-card status-retour-definitif">
+          <div class="stat-icon">❌</div>
+          <div class="stat-info">
+            <div class="stat-value">{{ getStatusCount('RETOUR_DEFINITIF') }}</div>
+            <div class="stat-label">Retour Définitif</div>
+          </div>
+        </div>
+        <div class="stat-card status-retour-interagence">
+          <div class="stat-icon">⚠️</div>
+          <div class="stat-info">
+            <div class="stat-value">{{ getStatusCount('RETOUR_INTERAGENCE') }}</div>
+            <div class="stat-label">Retour Interagence</div>
+          </div>
+        </div>
+        <div class="stat-card status-retour-recu">
+          <div class="stat-icon">📥</div>
+          <div class="stat-info">
+            <div class="stat-value">{{ getStatusCount('RETOUR_RECU') }}</div>
+            <div class="stat-label">Retour Reçu</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Return Rate -->
+      <div class="return-rate-section">
+        <div class="return-rate-card">
+          <div class="return-rate-icon">📊</div>
+          <div class="return-rate-info">
+            <div class="return-rate-value">{{ calculateReturnRate() }}%</div>
+            <div class="return-rate-label">Taux de Retour</div>
           </div>
         </div>
       </div>

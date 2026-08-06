@@ -40,6 +40,7 @@ export class DashboardComponent implements OnInit {
   activeTab = 'dashboard';
   isConnected = true;
   showAddAddress = false;
+  showSidebarMenu = false;
 
   // Live Map GPS Client
   private clientMap: any = null;
@@ -75,6 +76,23 @@ export class DashboardComponent implements OnInit {
   retourInterAgenceCount = 0;
   retourExpediteursCount = 0;
   retourRecuCount = 0;
+
+  // Method to get count by status
+  getStatusCount(status: string): number {
+    return this.commandes.filter(cmd => cmd.statut === status).length;
+  }
+
+  // Method to calculate return rate
+  calculateReturnRate(): number {
+    const totalDeliveries = this.getStatusCount('LIVRE') + this.getStatusCount('LIVRE_PAYE');
+    const totalReturns = this.getStatusCount('ECHANGE') + 
+                      this.getStatusCount('RETOUR_DEFINITIF') + 
+                      this.getStatusCount('RETOUR_INTERAGENCE') + 
+                      this.getStatusCount('RETOUR_RECU');
+    
+    if (totalDeliveries === 0) return 0;
+    return Math.round((totalReturns / totalDeliveries) * 100);
+  }
 
   // Search filter inside table
   searchTerm = '';
@@ -338,6 +356,10 @@ export class DashboardComponent implements OnInit {
     if (tab === 'suivi') {
       this.initMapClient();
     }
+  }
+
+  toggleSidebarMenu(): void {
+    this.showSidebarMenu = !this.showSidebarMenu;
   }
 
   updateAIEstimation(): void {

@@ -10,10 +10,7 @@
 
     <!-- Navigation -->
     <nav class="nav-menu">
-      <!-- Dashboard links when logged in -->
-      <a *ngIf="authService.isLoggedIn() && authService.getRole() === 'ADMIN'" routerLink="/dashboard-admin" class="nav-link dashboard-link">Admin</a>
-      <a *ngIf="authService.isLoggedIn() && authService.getRole() === 'CLIENT'" routerLink="/dashboard" class="nav-link dashboard-link">Mon Espace</a>
-      <a *ngIf="authService.isLoggedIn() && authService.getRole() === 'LIVREUR'" routerLink="/dashboard-livreur" class="nav-link dashboard-link">Livreur</a>
+      <!-- Dashboard links when logged in - REMOVED per user request -->
     </nav>
 
     <!-- Auth Button replaced by Hamburger Menu -->
@@ -22,14 +19,14 @@
         <span class="hamburger-icon">☰</span>
       </button>
       
-      <!-- Dropdown Menu -->
+      <!-- Dropdown Menu for non-logged users -->
       <div class="dropdown-menu" *ngIf="showMenu && !authService.isLoggedIn()">
         <a routerLink="/" (click)="closeMenu()" class="dropdown-item">
           <span class="dropdown-icon">🏠</span>
           <span>Accueil</span>
         </a>
         <a routerLink="/contact" (click)="closeMenu()" class="dropdown-item">
-          <span class="dropdown-icon">�</span>
+          <span class="dropdown-icon">📞</span>
           <span>Contact</span>
         </a>
         <a routerLink="/devenir-client" (click)="closeMenu()" class="dropdown-item">
@@ -41,19 +38,44 @@
           <span>Devenir Livreur</span>
         </a>
         <a routerLink="/login" (click)="closeMenu()" class="dropdown-item">
-          <span class="dropdown-icon">�</span>
+          <span class="dropdown-icon">🔑</span>
           <span>Se connecter</span>
         </a>
       </div>
       
-      <div *ngIf="authService.isLoggedIn()" class="user-menu">
-        <div class="user-info">
-          <span class="user-name">{{ authService.getCurrentUser()?.prenom }} {{ authService.getCurrentUser()?.nom }}</span>
-          <span class="user-role">{{ authService.getRole() }}</span>
-        </div>
-        <button (click)="logout()" class="btn-logout">
-          <span>🚪</span>
+      <!-- Notification and Hamburger Menu for logged users -->
+      <div class="logged-user-menu" *ngIf="authService.isLoggedIn()">
+        <button class="notification-btn">
+          <span class="notification-icon">🔔</span>
+          <span class="notification-badge">3</span>
         </button>
+        <button class="hamburger-menu" (click)="toggleMenu()">
+          <span class="hamburger-icon">☰</span>
+        </button>
+        
+        <!-- Dropdown Menu for logged users -->
+        <div class="dropdown-menu" *ngIf="showMenu">
+          <a *ngIf="authService.getRole() === 'CLIENT'" routerLink="/dashboard" (click)="closeMenu()" class="dropdown-item">
+            <span class="dropdown-icon">📊</span>
+            <span>Mon Espace</span>
+          </a>
+          <a *ngIf="authService.getRole() === 'ADMIN'" routerLink="/dashboard-admin" (click)="closeMenu()" class="dropdown-item">
+            <span class="dropdown-icon">📊</span>
+            <span>Admin</span>
+          </a>
+          <a *ngIf="authService.getRole() === 'LIVREUR'" routerLink="/dashboard-livreur" (click)="closeMenu()" class="dropdown-item">
+            <span class="dropdown-icon">📊</span>
+            <span>Livreur</span>
+          </a>
+          <a routerLink="/contact" (click)="closeMenu()" class="dropdown-item">
+            <span class="dropdown-icon">📞</span>
+            <span>Contact</span>
+          </a>
+          <a (click)="logout(); closeMenu()" class="dropdown-item logout-item">
+            <span class="dropdown-icon">🚪</span>
+            <span>Déconnexion</span>
+          </a>
+        </div>
       </div>
     </div>
   </div>
