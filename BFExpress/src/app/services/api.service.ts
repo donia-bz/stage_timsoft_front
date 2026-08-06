@@ -29,6 +29,11 @@ export interface Commande {
   affectationIAId?: string;
   colis?: Colis[];
   clientNom?: string; // Pour compatibilité avec les composants existants
+  codeBarre?: string;
+  nomDestinataire?: string;
+  telephone?: string;
+  prix?: number;
+  numeroCommande?: string;
 }
 
 export interface Colis {

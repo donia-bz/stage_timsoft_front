@@ -32,6 +32,10 @@ export class DashboardEnhancedComponent implements OnInit {
   activeTab = 'dashboard';
   isConnected = true;
 
+  // Status packages modal
+  selectedStatus = '';
+  selectedStatusPackages: Commande[] = [];
+
   // Stats Grid matching exact screenshot requirements
   nonSerieuxCount = 0;
   enAttenteCount = 0;
@@ -296,13 +300,39 @@ export class DashboardEnhancedComponent implements OnInit {
     });
   }
 
+  showPackagesByStatus(status: string): void {
+    console.log('showPackagesByStatus called with:', status);
+    console.log('Total commandes:', this.commandes.length);
+    console.log('Commandes with status:', this.commandes.filter(cmd => cmd.statut === status).length);
+    
+    this.selectedStatus = status;
+    this.selectedStatusPackages = this.commandes.filter(cmd => cmd.statut === status);
+    
+    console.log('Selected packages:', this.selectedStatusPackages);
+  }
+
+  closeStatusPackages(): void {
+    this.selectedStatus = '';
+    this.selectedStatusPackages = [];
+  }
+
+  viewOrderDetails(cmd: Commande): void {
+    alert(`Détails de la commande ${cmd.id} en cours de développement`);
+  }
+
+  formatDate(dateString: string | undefined): string {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
   imprimerManifeste(): void {
     window.print();
   }
 
   get filteredPendingCommandes(): Commande[] {
     if (!this.searchTerm) return this.pendingCommandes;
-    return this.pendingCommandes.filter(c => 
+    return this.pendingCommandes.filter(c =>
       (c.id && c.id.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
       (c.adresseArriveeId && c.adresseArriveeId.toLowerCase().includes(this.searchTerm.toLowerCase()))
     );
@@ -311,11 +341,6 @@ export class DashboardEnhancedComponent implements OnInit {
   onDashboardSearch(): void {
     // placeholder function for dashboard search
     console.log('Searching for:', this.searchTerm);
-  }
-
-  formatDate(date: Date | string): string {
-    if (!date) return '';
-    return new Date(date).toLocaleDateString('fr-FR');
   }
 
   getCurrentTime(): string {

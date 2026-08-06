@@ -18,7 +18,6 @@
 
     <nav class="sidebar-nav">
       <div class="nav-section">
-        <div class="nav-section-title">Principal</div>
         <a class="nav-link" [class.active]="activeTab === 'dashboard'" (click)="setTab('dashboard')">
           <span class="nav-icon">📊</span>
           <span>Tableau de bord</span>
@@ -31,10 +30,13 @@
           <span class="nav-icon">🔍</span>
           <span>Rechercher</span>
         </a>
+        <a class="nav-link" [class.active]="activeTab === 'suivi'" (click)="setTab('suivi')">
+          <span class="nav-icon">🔍</span>
+          <span>Suivi en direct</span>
+        </a>
       </div>
 
       <div class="nav-section">
-        <div class="nav-section-title">Gestion</div>
         <a class="nav-link" [class.active]="activeTab === 'manifeste'" (click)="setTab('manifeste')">
           <span class="nav-icon">📋</span>
           <span>Manifeste</span>
@@ -50,7 +52,6 @@
       </div>
 
       <div class="nav-section">
-        <div class="nav-section-title">Finance</div>
         <a class="nav-link" [class.active]="activeTab === 'paiements'" (click)="setTab('paiements')">
           <span class="nav-icon">💰</span>
           <span>Paiements</span>
@@ -62,7 +63,6 @@
       </div>
 
       <div class="nav-section">
-        <div class="nav-section-title">Support</div>
         <a class="nav-link" [class.active]="activeTab === 'service-client'" (click)="setTab('service-client')">
           <span class="nav-icon">🎧</span>
           <span>Service Client</span>
@@ -147,57 +147,87 @@
       <div class="detailed-stats-section">
         <h3>Statistiques détaillées</h3>
         <div class="detailed-stats-grid">
-          <div class="detail-stat">
+          <div class="detail-stat" (click)="showPackagesByStatus('NON_SERIEUX')">
             <div class="detail-label">Non sérieux</div>
             <div class="detail-value">{{ nonSerieuxCount }}</div>
           </div>
-          <div class="detail-stat">
+          <div class="detail-stat" (click)="showPackagesByStatus('EN_ATTENTE')">
             <div class="detail-label">En attente</div>
             <div class="detail-value">{{ enAttenteCount }}</div>
           </div>
-          <div class="detail-stat">
+          <div class="detail-stat" (click)="showPackagesByStatus('A_ENLEVER')">
             <div class="detail-label">À enlever</div>
             <div class="detail-value">{{ aEnleverCount }}</div>
           </div>
-          <div class="detail-stat">
+          <div class="detail-stat" (click)="showPackagesByStatus('ENLEVE')">
             <div class="detail-label">Enlevés</div>
             <div class="detail-value">{{ enlevesCount }}</div>
           </div>
-          <div class="detail-stat">
+          <div class="detail-stat" (click)="showPackagesByStatus('AU_DEPOT')">
             <div class="detail-label">Au dépôt</div>
             <div class="detail-value">{{ auDepotCount }}</div>
           </div>
-          <div class="detail-stat">
+          <div class="detail-stat" (click)="showPackagesByStatus('RETOUR_DEPOT')">
             <div class="detail-label">Retour dépôt</div>
             <div class="detail-value">{{ retourDepotCount }}</div>
           </div>
-          <div class="detail-stat">
+          <div class="detail-stat" (click)="showPackagesByStatus('A_VERIFIER')">
             <div class="detail-label">À vérifier</div>
             <div class="detail-value">{{ aVerifierCount }}</div>
           </div>
-          <div class="detail-stat">
+          <div class="detail-stat" (click)="showPackagesByStatus('ECHANGE')">
             <div class="detail-label">Échanges</div>
             <div class="detail-value">{{ echangesCount }}</div>
           </div>
-          <div class="detail-stat">
+          <div class="detail-stat" (click)="showPackagesByStatus('REMBOURSE')">
             <div class="detail-label">Remboursés</div>
             <div class="detail-value">{{ remboursesCount }}</div>
           </div>
-          <div class="detail-stat">
+          <div class="detail-stat" (click)="showPackagesByStatus('RETOUR_DEFINITIF')">
             <div class="detail-label">Retour définitif</div>
             <div class="detail-value">{{ retourDefinitifCount }}</div>
           </div>
-          <div class="detail-stat">
+          <div class="detail-stat" (click)="showPackagesByStatus('RETOUR_INTERAGENCE')">
             <div class="detail-label">Retour Inter-agence</div>
             <div class="detail-value">{{ retourInterAgenceCount }}</div>
           </div>
-          <div class="detail-stat">
+          <div class="detail-stat" (click)="showPackagesByStatus('RETOUR_EXPEDITEURS')">
             <div class="detail-label">Retour Expéditeurs</div>
             <div class="detail-value">{{ retourExpediteursCount }}</div>
           </div>
-          <div class="detail-stat">
+          <div class="detail-stat" (click)="showPackagesByStatus('RETOUR_RECU')">
             <div class="detail-label">Retour reçu</div>
             <div class="detail-value">{{ retourRecuCount }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Packages Modal -->
+      <div class="status-packages-modal" *ngIf="selectedStatus">
+        <div class="modal-overlay" (click)="closeStatusPackages()"></div>
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Colis {{ selectedStatus }}</h2>
+            <button class="close-btn" (click)="closeStatusPackages()">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="packages-list" *ngIf="selectedStatusPackages.length > 0">
+              <div class="package-item" *ngFor="let pkg of selectedStatusPackages">
+                <div class="package-info">
+                  <div class="package-id">{{ pkg.id }}</div>
+                  <div class="package-dest">{{ pkg.nomDestinataire || pkg.adresseArriveeId }}</div>
+                  <div class="package-address">{{ pkg.adresseArriveeId }}</div>
+                  <div class="package-phone">{{ pkg.telephone || 'N/A' }}</div>
+                  <div class="package-price">{{ pkg.prix || pkg.montantTotal || 0 }} DT</div>
+                </div>
+                <div class="package-actions">
+                  <button class="btn-icon" (click)="viewOrderDetails(pkg)">👁️</button>
+                </div>
+              </div>
+            </div>
+            <div class="empty-state" *ngIf="selectedStatusPackages.length === 0">
+              <p>Aucun colis trouvé pour ce statut</p>
+            </div>
           </div>
         </div>
       </div>

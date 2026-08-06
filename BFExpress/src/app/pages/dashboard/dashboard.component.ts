@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ApiService, Commande } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
+import { DatePipe } from '@angular/common';
 
 interface Manifeste {
   id?: string;
@@ -46,6 +47,12 @@ export class DashboardComponent implements OnInit {
   private clientMap: any = null;
   selectedTrackingCmd: Commande | null = null;
   driverPosition = { lat: 36.8065, lon: 10.1815, name: 'Livreur BFExpress' };
+  trackingSearchTerm = '';
+  trackingSearched = false;
+
+  // Status packages modal
+  selectedStatus = '';
+  selectedStatusPackages: Commande[] = [];
 
   // IA Estimation
   estimatedPrice: number = 7.0;
@@ -114,9 +121,33 @@ export class DashboardComponent implements OnInit {
 
   // Team list for Service Client
   teamMembers = [
-    { initials: 'FB', nom: 'Farid Bouzouita', poste: 'Service Client', tel: '+216 98 218 003' },
-    { initials: 'DB', nom: 'Donia Bouzouita', poste: 'Service Client', tel: '+216 57 178 469' },
-    { initials: 'CB', nom: 'Chirine Bouzouita', poste: 'Service Client', tel: '+216 57 178 491' }
+    { 
+      initials: 'FB', 
+      nom: 'Farid Bouzouita', 
+      poste: 'Service Client', 
+      tel: '+216 98 218 003',
+      photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
+      rating: 4.9,
+      bio: 'Expert en logistique avec 5 ans d\'expérience. Spécialisé dans la résolution de problèmes complexes.'
+    },
+    { 
+      initials: 'DB', 
+      nom: 'Donia Bouzouita', 
+      poste: 'Service Client', 
+      tel: '+216 57 178 469',
+      photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face',
+      rating: 4.8,
+      bio: 'Passionnée par le service client. Expert en satisfaction client et gestion des réclamations.'
+    },
+    { 
+      initials: 'CB', 
+      nom: 'Chirine Bouzouita', 
+      poste: 'Service Client', 
+      tel: '+216 57 178 491',
+      photo: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face',
+      rating: 4.7,
+      bio: 'Spécialiste en support technique. Résolution rapide des problèmes de livraison et de suivi.'
+    }
   ];
 
   // Options for Object drop-down matching screenshot 2
@@ -356,6 +387,51 @@ export class DashboardComponent implements OnInit {
     if (tab === 'suivi') {
       this.initMapClient();
     }
+  }
+
+  searchTracking(): void {
+    if (!this.trackingSearchTerm.trim()) {
+      this.selectedTrackingCmd = null;
+      this.trackingSearched = false;
+      return;
+    }
+
+    this.trackingSearched = true;
+    const searchTerm = this.trackingSearchTerm.toLowerCase().trim();
+    
+    // Search by ID or any other identifier
+    this.selectedTrackingCmd = this.commandes.find(cmd => 
+      cmd.id?.toLowerCase().includes(searchTerm) ||
+      cmd.codeBarre?.toLowerCase().includes(searchTerm) ||
+      cmd.numeroCommande?.toLowerCase().includes(searchTerm)
+    ) || null;
+
+    if (this.selectedTrackingCmd) {
+      // Initialize map when order is found
+      setTimeout(() => this.initMapClient(), 100);
+    }
+  }
+
+  showPackagesByStatus(status: string): void {
+    console.log('showPackagesByStatus called with:', status);
+    console.log('Total commandes:', this.commandes.length);
+    console.log('Commandes with status:', this.commandes.filter(cmd => cmd.statut === status).length);
+    
+    this.selectedStatus = status;
+    this.selectedStatusPackages = this.commandes.filter(cmd => cmd.statut === status);
+    
+    console.log('Selected packages:', this.selectedStatusPackages);
+  }
+
+  closeStatusPackages(): void {
+    this.selectedStatus = '';
+    this.selectedStatusPackages = [];
+  }
+
+  formatDate(dateString: string | undefined): string {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
   toggleSidebarMenu(): void {
@@ -736,7 +812,11 @@ export class DashboardComponent implements OnInit {
     return now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   }
 
-  formatDate(date: string): string {
-    return new Date(date).toLocaleString('fr-FR');
+  contactMember(member: any): void {
+    alert(`Ouverture du chat avec ${member.nom}...`);
+  }
+
+  callMember(member: any): void {
+    window.location.href = `tel:${member.tel}`;
   }
 }

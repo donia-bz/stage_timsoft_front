@@ -11,23 +11,13 @@
 
     <nav class="sidebar-nav">
       <div class="nav-section">
-        <span class="nav-section-title">Principal</span>
         <a class="nav-link" [class.active]="activeTab === 'dashboard'" (click)="setTab('dashboard')">
           <span class="nav-icon">📊</span>
           <span>Tableau de bord</span>
         </a>
-        <a class="nav-link" [class.active]="activeTab === 'profil'" (click)="setTab('profil')">
-          <span class="nav-icon">👤</span>
-          <span>Mon Profil</span>
-        </a>
-        <a class="nav-link" [class.active]="activeTab === 'adresses'" (click)="setTab('adresses')">
-          <span class="nav-icon">📍</span>
-          <span>Mes Adresses</span>
-        </a>
       </div>
 
       <div class="nav-section">
-        <span class="nav-section-title">Commandes</span>
         <a class="nav-link" [class.active]="activeTab === 'nouvelle-commande'" (click)="setTab('nouvelle-commande')">
           <span class="nav-icon">📦</span>
           <span>Nouvelle Commande</span>
@@ -52,7 +42,6 @@
       </div>
 
       <div class="nav-section">
-        <span class="nav-section-title">Finance</span>
         <a class="nav-link" [class.active]="activeTab === 'paiements'" (click)="setTab('paiements')">
           <span class="nav-icon">💳</span>
           <span>Mes Paiements</span>
@@ -68,7 +57,6 @@
       </div>
 
       <div class="nav-section">
-        <span class="nav-section-title">Support</span>
         <a class="nav-link" [class.active]="activeTab === 'reclamations'" (click)="setTab('reclamations')">
           <span class="nav-icon">❓</span>
           <span>Réclamations</span>
@@ -76,10 +64,6 @@
         <a class="nav-link" [class.active]="activeTab === 'service-client'" (click)="setTab('service-client')">
           <span class="nav-icon">🎧</span>
           <span>Service Client</span>
-        </a>
-        <a class="nav-link" routerLink="/contact">
-          <span class="nav-icon">📞</span>
-          <span>Contact</span>
         </a>
       </div>
     </nav>
@@ -91,10 +75,6 @@
       
       <!-- Dropdown Menu -->
       <div class="sidebar-dropdown" *ngIf="showSidebarMenu">
-        <a class="dropdown-item" (click)="setTab('profil'); toggleSidebarMenu()">
-          <span class="dropdown-icon">👤</span>
-          <span>Mon Profil</span>
-        </a>
         <a class="dropdown-item" (click)="setTab('notifications'); toggleSidebarMenu()">
           <span class="dropdown-icon">🔔</span>
           <span>Notifications</span>
@@ -128,88 +108,118 @@
 
       <!-- Stats Cards -->
       <div class="stats-grid">
-        <div class="stat-card status-en-attente">
+        <div class="stat-card status-en-attente" (click)="showPackagesByStatus('EN_ATTENTE')">
           <div class="stat-icon">⏳</div>
           <div class="stat-info">
             <div class="stat-value">{{ getStatusCount('EN_ATTENTE') }}</div>
             <div class="stat-label">En Attente</div>
           </div>
         </div>
-        <div class="stat-card status-enleves">
+        <div class="stat-card status-enleves" (click)="showPackagesByStatus('ENLEVE')">
           <div class="stat-icon">🚚</div>
           <div class="stat-info">
             <div class="stat-value">{{ getStatusCount('ENLEVE') }}</div>
             <div class="stat-label">Enlevés</div>
           </div>
         </div>
-        <div class="stat-card status-au-depot">
+        <div class="stat-card status-au-depot" (click)="showPackagesByStatus('AU_DEPOT')">
           <div class="stat-icon">📦</div>
           <div class="stat-info">
             <div class="stat-value">{{ getStatusCount('AU_DEPOT') }}</div>
             <div class="stat-label">Au Dépôt</div>
           </div>
         </div>
-        <div class="stat-card status-retour-depot">
+        <div class="stat-card status-retour-depot" (click)="showPackagesByStatus('RETOUR_DEPOT')">
           <div class="stat-icon">🔄</div>
           <div class="stat-info">
             <div class="stat-value">{{ getStatusCount('RETOUR_DEPOT') }}</div>
             <div class="stat-label">Retour Dépôt</div>
           </div>
         </div>
-        <div class="stat-card status-en-cours">
+        <div class="stat-card status-en-cours" (click)="showPackagesByStatus('EN_COURS')">
           <div class="stat-icon">🚛</div>
           <div class="stat-info">
             <div class="stat-value">{{ getStatusCount('EN_COURS') }}</div>
             <div class="stat-label">En Cours</div>
           </div>
         </div>
-        <div class="stat-card status-a-verifier">
+        <div class="stat-card status-a-verifier" (click)="showPackagesByStatus('A_VERIFIER')">
           <div class="stat-icon">🔍</div>
           <div class="stat-info">
             <div class="stat-value">{{ getStatusCount('A_VERIFIER') }}</div>
             <div class="stat-label">À Vérifier</div>
           </div>
         </div>
-        <div class="stat-card status-livres">
+        <div class="stat-card status-livres" (click)="showPackagesByStatus('LIVRE')">
           <div class="stat-icon">✅</div>
           <div class="stat-info">
             <div class="stat-value">{{ getStatusCount('LIVRE') }}</div>
             <div class="stat-label">Livrés</div>
           </div>
         </div>
-        <div class="stat-card status-livres-paye">
+        <div class="stat-card status-livres-paye" (click)="showPackagesByStatus('LIVRE_PAYE')">
           <div class="stat-icon">💰</div>
           <div class="stat-info">
             <div class="stat-value">{{ getStatusCount('LIVRE_PAYE') }}</div>
             <div class="stat-label">Livrés Payé</div>
           </div>
         </div>
-        <div class="stat-card status-echange">
-          <div class="stat-icon">�</div>
+        <div class="stat-card status-echange" (click)="showPackagesByStatus('ECHANGE')">
+          <div class="stat-icon">🔄</div>
           <div class="stat-info">
             <div class="stat-value">{{ getStatusCount('ECHANGE') }}</div>
             <div class="stat-label">Échange</div>
           </div>
         </div>
-        <div class="stat-card status-retour-definitif">
+        <div class="stat-card status-retour-definitif" (click)="showPackagesByStatus('RETOUR_DEFINITIF')">
           <div class="stat-icon">❌</div>
           <div class="stat-info">
             <div class="stat-value">{{ getStatusCount('RETOUR_DEFINITIF') }}</div>
             <div class="stat-label">Retour Définitif</div>
           </div>
         </div>
-        <div class="stat-card status-retour-interagence">
+        <div class="stat-card status-retour-interagence" (click)="showPackagesByStatus('RETOUR_INTERAGENCE')">
           <div class="stat-icon">⚠️</div>
           <div class="stat-info">
             <div class="stat-value">{{ getStatusCount('RETOUR_INTERAGENCE') }}</div>
             <div class="stat-label">Retour Interagence</div>
           </div>
         </div>
-        <div class="stat-card status-retour-recu">
+        <div class="stat-card status-retour-recu" (click)="showPackagesByStatus('RETOUR_RECU')">
           <div class="stat-icon">📥</div>
           <div class="stat-info">
             <div class="stat-value">{{ getStatusCount('RETOUR_RECU') }}</div>
             <div class="stat-label">Retour Reçu</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Packages Modal -->
+      <div class="status-packages-modal" *ngIf="selectedStatus">
+        <div class="modal-overlay" (click)="closeStatusPackages()"></div>
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Colis {{ selectedStatus }}</h2>
+            <button class="close-btn" (click)="closeStatusPackages()">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="packages-list" *ngIf="selectedStatusPackages.length > 0">
+              <div class="package-item" *ngFor="let pkg of selectedStatusPackages">
+                <div class="package-info">
+                  <div class="package-id">{{ pkg.id }}</div>
+                  <div class="package-dest">{{ pkg.nomDestinataire || pkg.adresseArriveeId }}</div>
+                  <div class="package-address">{{ pkg.adresseArriveeId }}</div>
+                  <div class="package-phone">{{ pkg.telephone || 'N/A' }}</div>
+                  <div class="package-price">{{ pkg.prix || pkg.montantTotal || 0 }} DT</div>
+                </div>
+                <div class="package-actions">
+                  <button class="btn-icon" (click)="viewOrderDetails(pkg)">👁️</button>
+                </div>
+              </div>
+            </div>
+            <div class="empty-state" *ngIf="selectedStatusPackages.length === 0">
+              <p>Aucun colis trouvé pour ce statut</p>
+            </div>
           </div>
         </div>
       </div>
@@ -222,63 +232,6 @@
             <div class="return-rate-value">{{ calculateReturnRate() }}%</div>
             <div class="return-rate-label">Taux de Retour</div>
           </div>
-        </div>
-      </div>
-
-      <!-- Recent Orders -->
-      <div class="content-section">
-        <div class="section-header">
-          <h2>Commandes Récentes</h2>
-          <a class="view-all" (click)="setTab('mes-commandes')">Voir tout →</a>
-        </div>
-        <div class="orders-table">
-          <div class="table-header">
-            <div>Référence</div>
-            <div>Destinataire</div>
-            <div>Statut</div>
-            <div>Date</div>
-            <div>Montant</div>
-          </div>
-          <div class="table-body">
-            <div class="table-row" *ngFor="let cmd of commandes.slice(0, 5)">
-              <div class="order-ref">{{ cmd.id || 'CMD-' + Math.floor(Math.random() * 10000) }}</div>
-              <div class="order-dest">{{ cmd.adresseArriveeId || 'N/A' }}</div>
-              <div class="order-status">
-                <span class="status-badge" [class]="'status-' + (cmd.statut || 'EN_ATTENTE').toLowerCase().replace('_', '-')">
-                  {{ cmd.statut || 'EN_ATTENTE' }}
-                </span>
-              </div>
-              <div class="order-date">{{ cmd.dateCreation | date:'short' }}</div>
-              <div class="order-amount">{{ cmd.montantTotal || 0 }} DT</div>
-            </div>
-            <div class="empty-state" *ngIf="commandes.length === 0">
-              <p>Aucune commande récente</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Quick Actions -->
-      <div class="quick-actions-grid">
-        <div class="action-card" (click)="setTab('nouvelle-commande')">
-          <div class="action-icon">📦</div>
-          <h3>Créer Commande</h3>
-          <p>Ajouter un nouveau colis</p>
-        </div>
-        <div class="action-card" (click)="setTab('manifest')">
-          <div class="action-icon">📋</div>
-          <h3>Gérer Manifest</h3>
-          <p>Valider les commandes en attente</p>
-        </div>
-        <div class="action-card" (click)="setTab('suivi')">
-          <div class="action-icon">🔍</div>
-          <h3>Suivre Livraison</h3>
-          <p>Tracking en temps réel</p>
-        </div>
-        <div class="action-card" (click)="setTab('profil')">
-          <div class="action-icon">👤</div>
-          <h3>Mon Profil</h3>
-          <p>Gérer mes informations</p>
         </div>
       </div>
     </div>
@@ -448,19 +401,23 @@
 
       <div class="orders-table">
         <div class="table-header">
-          <div>ID Commande</div>
-          <div>Destinataire</div>
+          <div>Date Ajout</div>
+          <div>Code à Barre</div>
+          <div>Nom Destinataire</div>
           <div>Adresse</div>
-          <div>Montant</div>
+          <div>Téléphone</div>
+          <div>Prix</div>
           <div>Statut</div>
           <div>Actions</div>
         </div>
         <div class="table-body">
           <div class="table-row" *ngFor="let cmd of pendingCommandes">
-            <div class="order-ref">{{ cmd.id }}</div>
-            <div class="order-dest">{{ cmd.adresseArriveeId }}</div>
+            <div class="order-date">{{ formatDate(cmd.dateCreation) }}</div>
+            <div class="order-barcode">{{ cmd.codeBarre || cmd.id }}</div>
+            <div class="order-dest">{{ cmd.nomDestinataire || cmd.adresseArriveeId }}</div>
             <div class="order-address">{{ cmd.adresseArriveeId }}</div>
-            <div class="order-amount">{{ cmd.montantTotal }} DT</div>
+            <div class="order-phone">{{ cmd.telephone || 'N/A' }}</div>
+            <div class="order-price">{{ cmd.prix || cmd.montantTotal || 0 }} DT</div>
             <div class="order-status">
               <span class="status-badge" [class]="'status-' + cmd.statut.toLowerCase()">{{ cmd.statut }}</span>
             </div>
@@ -520,21 +477,70 @@
     <!-- Live Tracking GPS Tab -->
     <div *ngIf="activeTab === 'suivi'" class="dashboard-content">
       <div class="dashboard-header">
-        <h1>Suivi GPS en Temps Réel</h1>
-        <p class="header-subtitle">Visualisez votre livreur sur la carte en direct</p>
+        <h1>Suivi en direct</h1>
+        <p class="header-subtitle">Rechercher une commande par ID ou numéro de commande</p>
       </div>
 
       <div class="page-card mb-4">
-        <div class="tracking-top-bar mb-3">
-          <div class="status-indicator">
-            <span class="pulse-dot-green"></span>
-            <strong>Livraison en cours — Livreur : {{ driverPosition.name }}</strong>
+        <div class="tracking-search">
+          <div class="search-input-group">
+            <input type="text" 
+                   class="search-input" 
+                   placeholder="Entrez l'ID ou le numéro de commande..." 
+                   [(ngModel)]="trackingSearchTerm"
+                   (keyup.enter)="searchTracking()">
+            <button class="btn-primary" (click)="searchTracking()">
+              <span>🔍</span>
+              <span>Rechercher</span>
+            </button>
           </div>
-          <div class="eta-tag">⏰ ETA Arrivée: ~18 Minutes</div>
         </div>
 
-        <div class="map-wrapper">
-          <div id="client-map" class="real-leaflet-map"></div>
+        <div *ngIf="selectedTrackingCmd" class="tracking-result">
+          <div class="tracking-info">
+            <div class="tracking-header">
+              <h3>Commande #{{ selectedTrackingCmd.id }}</h3>
+              <span class="status-badge" [class]="'status-' + selectedTrackingCmd.statut.toLowerCase()">
+                {{ selectedTrackingCmd.statut }}
+              </span>
+            </div>
+            
+            <div class="tracking-details">
+              <div class="detail-row">
+                <span class="detail-label">Destinataire:</span>
+                <span class="detail-value">{{ selectedTrackingCmd.nomDestinataire || selectedTrackingCmd.adresseArriveeId }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Adresse:</span>
+                <span class="detail-value">{{ selectedTrackingCmd.adresseArriveeId }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Téléphone:</span>
+                <span class="detail-value">{{ selectedTrackingCmd.telephone || 'N/A' }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Prix:</span>
+                <span class="detail-value">{{ selectedTrackingCmd.prix || selectedTrackingCmd.montantTotal || 0 }} DT</span>
+              </div>
+            </div>
+
+            <div class="tracking-map">
+              <div class="map-wrapper">
+                <div id="client-map" class="real-leaflet-map"></div>
+              </div>
+              <div class="tracking-status">
+                <div class="status-indicator">
+                  <span class="pulse-dot-green"></span>
+                  <strong>Livraison en cours — Livreur : {{ driverPosition.name }}</strong>
+                </div>
+                <div class="eta-tag">⏰ ETA Arrivée: ~18 Minutes</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="empty-state" *ngIf="!selectedTrackingCmd && trackingSearched">
+          <p>Aucune commande trouvée avec cet ID ou numéro</p>
         </div>
       </div>
     </div>
@@ -683,17 +689,78 @@
     <!-- Service Client Tab -->
     <div *ngIf="activeTab === 'service-client'" class="dashboard-content">
       <div class="dashboard-header">
-        <h1>Service Client</h1>
+        <div>
+          <h1>Service Client</h1>
+          <p class="header-subtitle">Notre équipe est à votre écoute 24/7</p>
+        </div>
       </div>
-      <div class="service-client-card">
-        <h2>Notre équipe</h2>
+      
+      <div class="service-client-section">
         <div class="team-grid">
-          <div class="team-member" *ngFor="let member of teamMembers">
-            <div class="member-avatar">{{ member.initials }}</div>
-            <div class="member-info">
+          <div class="team-card" *ngFor="let member of teamMembers">
+            <div class="member-photo">
+              <img [src]="member.photo" [alt]="member.nom" />
+              <div class="member-status online"></div>
+            </div>
+            <div class="member-details">
               <h3>{{ member.nom }}</h3>
-              <p>{{ member.poste }}</p>
-              <a class="member-contact" href="tel:{{ member.tel }}">{{ member.tel }}</a>
+              <p class="member-role">{{ member.poste }}</p>
+              <div class="member-badges">
+                <span class="badge">⭐ {{ member.rating }}</span>
+                <span class="badge">📞 {{ member.tel }}</span>
+              </div>
+              <p class="member-bio">{{ member.bio }}</p>
+              <div class="member-actions">
+                <button class="btn-primary" (click)="contactMember(member)">
+                  <span>💬</span>
+                  <span>Contacter</span>
+                </button>
+                <button class="btn-secondary" (click)="callMember(member)">
+                  <span>📞</span>
+                  <span>Appeler</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="contact-options">
+          <div class="contact-card">
+            <div class="contact-icon">📞</div>
+            <h3>Contactez-nous</h3>
+            <div class="contact-details">
+              <div class="contact-item">
+                <span class="contact-label">Téléphone</span>
+                <span class="contact-value">+216 71 123 456</span>
+                <span class="contact-badge">24/7</span>
+              </div>
+              <div class="contact-item">
+                <span class="contact-label">Email</span>
+                <span class="contact-value">support@bfexpress.tn</span>
+                <span class="contact-badge">Réponse < 2h</span>
+              </div>
+            </div>
+          </div>
+          <div class="contact-card hours-card">
+            <div class="contact-icon">�</div>
+            <h3>Horaires</h3>
+            <div class="hours-schedule">
+              <div class="hours-item">
+                <span class="hours-day">Lundi - Vendredi</span>
+                <span class="hours-time">8h00 - 18h00</span>
+              </div>
+              <div class="hours-item">
+                <span class="hours-day">Samedi</span>
+                <span class="hours-time">9h00 - 13h00</span>
+              </div>
+              <div class="hours-item">
+                <span class="hours-day">Dimanche</span>
+                <span class="hours-time closed">Fermé</span>
+              </div>
+              <div class="hours-urgent">
+                <span class="urgent-icon">🚨</span>
+                <span class="urgent-text">Service d'urgence 24h/24 pour les problèmes critiques</span>
+              </div>
             </div>
           </div>
         </div>
