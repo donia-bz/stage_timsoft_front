@@ -1,10 +1,174 @@
-.devenir-page h1 { font-size:48px; margin-bottom:18px }
-.devenir-page .panel { border-top:6px solid var(--accent); background:white; padding:34px; display:flex; gap:40px; box-shadow:0 8px 20px rgba(0,0,0,0.04); }
-.devenir-page .panel .left { flex:1; max-width:420px }
-.devenir-page .panel .left h2 { font-size:56px; margin:0 0 18px 0 }
-.devenir-page .panel .left p { color:var(--muted); line-height:1.8 }
-.devenir-page .panel .right { flex:1 }
-.devenir-page form input, .devenir-page form textarea { width:100%; padding:12px; border:1px solid #e5e5e5; border-radius:4px; margin-bottom:12px }
-.devenir-page .name-row { display:flex; gap:12px }
-.devenir-page .name-row input { flex:1 }
-.devenir-page .primary { background:var(--accent); border:none; color:#082635; padding:12px 18px; border-radius:6px; font-weight:700 }
+/* Page Section */
+.page-section {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 50%, #8b5cf6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Background Blobs */
+.page-section::before {
+  content: '';
+  position: absolute;
+  top: -100px;
+  right: -100px;
+  width: 400px;
+  height: 400px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: blobMove 8s ease-in-out infinite;
+}
+
+.page-section::after {
+  content: '';
+  position: absolute;
+  bottom: -50px;
+  left: -50px;
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.05));
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: blobMove 8s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+@keyframes blobMove {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(20px, -20px) scale(1.1); }
+  50% { transform: translate(-20px, 20px) scale(0.9); }
+  75% { transform: translate(20px, 20px) scale(1.05); }
+}
+
+/* Container */
+.container {
+  max-width: 600px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Grid */
+.grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.grid-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* Form Card */
+.form-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 3rem;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.2);
+  position: relative;
+  z-index: 1;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.field-group label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #334155;
+  margin-bottom: 0.25rem;
+}
+
+.field-group input {
+  padding: 1rem 1.25rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: white;
+  color: #1e293b;
+}
+
+.field-group input:focus {
+  outline: none;
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+}
+
+.field-group input::placeholder {
+  color: #94a3b8;
+}
+
+/* Buttons */
+.btn-primary {
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #0ea5e9, #14b8a6);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(14, 165, 233, 0.3);
+  margin-top: 1rem;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(14, 165, 233, 0.4);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Messages */
+.error-banner {
+  padding: 1rem 1.5rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  color: #dc2626;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.success-banner {
+  padding: 1rem 1.5rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 12px;
+  color: #059669;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-section {
+    padding: 2rem 1rem;
+  }
+
+  .form-card {
+    padding: 2rem;
+  }
+
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}

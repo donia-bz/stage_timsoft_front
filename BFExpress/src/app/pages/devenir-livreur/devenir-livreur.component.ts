@@ -8,13 +8,42 @@ import { ApiService } from '../../services/api.service';
   styleUrls: ['./devenir-livreur.component.scss']
 })
 export class DevenirLivreurComponent {
+  // Informations personnelles
   nom = '';
   prenom = '';
   email = '';
   motDePasse = '';
   telephone = '';
-  vehicule = '';
+  adresse = '';
+  ville = '';
+  codePostal = '';
   gouvernorat = '';
+  dateNaissance = '';
+
+  // Informations véhicule
+  typeVehicule = '';
+  marqueModele = '';
+  immatriculation = '';
+  numeroPermis = '';
+  compagnieAssurance = '';
+  numeroPolice = '';
+
+  // Disponibilité
+  dateDebut = '';
+  disponibilite = {
+    lundi: false,
+    mardi: false,
+    mercredi: false,
+    jeudi: false,
+    vendredi: false,
+    samedi: false,
+    dimanche: false
+  };
+  heureDebut = '';
+  heureFin = '';
+
+  // Accord
+  acceptConditions = false;
 
   gouvernorats = [
     'Tunis', 'Ariana', 'Ben Arous', 'Manouba', 'Nabeul', 'Zaghouan',
@@ -33,8 +62,20 @@ export class DevenirLivreurComponent {
   ) {}
 
   onSubmit(): void {
-    if (!this.nom || !this.prenom || !this.email || !this.motDePasse || !this.telephone || !this.gouvernorat) {
-      this.errorMessage = 'Veuillez remplir tous les champs obligatoires.';
+    // Validation des champs obligatoires
+    if (!this.nom || !this.prenom || !this.email || !this.motDePasse || 
+        !this.telephone || !this.adresse || !this.ville || !this.gouvernorat || 
+        !this.dateNaissance || !this.typeVehicule || !this.immatriculation || 
+        !this.numeroPermis || !this.compagnieAssurance || !this.numeroPolice || 
+        !this.dateDebut || !this.acceptConditions) {
+      this.errorMessage = 'Veuillez remplir tous les champs obligatoires (*).';
+      return;
+    }
+
+    // Vérifier qu'au moins un jour de disponibilité est sélectionné
+    const hasAvailability = Object.values(this.disponibilite).some(day => day === true);
+    if (!hasAvailability) {
+      this.errorMessage = 'Veuillez sélectionner au moins un jour de disponibilité.';
       return;
     }
 
@@ -48,7 +89,11 @@ export class DevenirLivreurComponent {
       email: this.email,
       motDePasse: this.motDePasse,
       telephone: this.telephone,
+      adresse: this.adresse,
+      ville: this.ville,
+      codePostal: this.codePostal,
       gouvernorat: this.gouvernorat,
+      dateNaissance: this.dateNaissance,
       role: 'LIVREUR',
       statut: 'INSCRIPTION',
       latitudeActuelle: 0.0,
@@ -64,7 +109,21 @@ export class DevenirLivreurComponent {
           prenom: this.prenom,
           email: this.email,
           telephone: this.telephone,
+          adresse: this.adresse,
+          ville: this.ville,
+          codePostal: this.codePostal,
           gouvernorat: this.gouvernorat,
+          dateNaissance: this.dateNaissance,
+          typeVehicule: this.typeVehicule,
+          marqueModele: this.marqueModele,
+          immatriculation: this.immatriculation,
+          numeroPermis: this.numeroPermis,
+          compagnieAssurance: this.compagnieAssurance,
+          numeroPolice: this.numeroPolice,
+          dateDebut: this.dateDebut,
+          disponibilite: this.disponibilite,
+          heureDebut: this.heureDebut,
+          heureFin: this.heureFin,
           typePermis: 'B',
           statut: 'INSCRIPTION',
           dateInscription: new Date().toISOString(),
@@ -87,12 +146,38 @@ export class DevenirLivreurComponent {
   private finishSuccess(): void {
     this.loading = false;
     this.successMessage = 'Votre candidature de livreur a été enregistrée avec succès! Un administrateur validera votre dossier et vous affectera à un gouvernorat.';
+    this.resetForm();
+  }
+
+  private resetForm(): void {
     this.nom = '';
     this.prenom = '';
     this.email = '';
     this.motDePasse = '';
     this.telephone = '';
-    this.vehicule = '';
+    this.adresse = '';
+    this.ville = '';
+    this.codePostal = '';
     this.gouvernorat = '';
+    this.dateNaissance = '';
+    this.typeVehicule = '';
+    this.marqueModele = '';
+    this.immatriculation = '';
+    this.numeroPermis = '';
+    this.compagnieAssurance = '';
+    this.numeroPolice = '';
+    this.dateDebut = '';
+    this.disponibilite = {
+      lundi: false,
+      mardi: false,
+      mercredi: false,
+      jeudi: false,
+      vendredi: false,
+      samedi: false,
+      dimanche: false
+    };
+    this.heureDebut = '';
+    this.heureFin = '';
+    this.acceptConditions = false;
   }
 }

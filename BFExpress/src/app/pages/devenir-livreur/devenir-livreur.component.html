@@ -1,59 +1,201 @@
 <section class="page-section">
-  <div class="container page-card">
-    <div class="grid grid-2">
-      <div>
-        <span class="badge">Devenir Livreur</span>
-        <h2 class="section-title">Rejoignez notre réseau de partenaires</h2>
-        <p class="section-subtitle">Rejoignez BFExpress et développez votre activité de livraison avec un accompagnement clair et des gains attractifs.</p>
-      </div>
-      <div class="form-card">
-        <form (submit)="onSubmit()">
-          <div class="grid grid-2">
-            <div class="field-group">
-              <label>Prénom</label>
-              <input name="prenom" [(ngModel)]="prenom" placeholder="Prénom" required />
-            </div>
-            <div class="field-group">
-              <label>Nom</label>
-              <input name="nom" [(ngModel)]="nom" placeholder="Nom" required />
-            </div>
+  <div class="container">
+    <div class="form-card">
+      <form (submit)="onSubmit()">
+        <!-- Informations personnelles -->
+        <div class="form-section-title">Informations personnelles</div>
+        
+        <div class="grid grid-2">
+          <div class="field-group">
+            <label>Prénom *</label>
+            <input name="prenom" [(ngModel)]="prenom" placeholder="Prénom" required />
           </div>
           <div class="field-group">
-            <label>Email</label>
-            <input type="email" name="email" [(ngModel)]="email" placeholder="Email" required />
+            <label>Nom *</label>
+            <input name="nom" [(ngModel)]="nom" placeholder="Nom" required />
           </div>
+        </div>
+        
+        <div class="field-group">
+          <label>Email *</label>
+          <input type="email" name="email" [(ngModel)]="email" placeholder="example@example.com" required />
+        </div>
+        
+        <div class="field-group">
+          <label>Mot de passe *</label>
+          <input type="password" name="motDePasse" [(ngModel)]="motDePasse" placeholder="Choisissez un mot de passe" required />
+        </div>
+        
+        <div class="field-group">
+          <label>Adresse *</label>
+          <input name="adresse" [(ngModel)]="adresse" placeholder="N° et rue" required />
+        </div>
+        
+        <div class="field-group">
+          <label>Ville *</label>
+          <input name="ville" [(ngModel)]="ville" placeholder="Ville" required />
+        </div>
+        
+        <div class="grid grid-2">
           <div class="field-group">
-            <label>Mot de passe</label>
-            <input type="password" name="motDePasse" [(ngModel)]="motDePasse" placeholder="Choisissez un mot de passe" required />
-          </div>
-          <div class="field-group">
-            <label>Téléphone</label>
-            <input name="telephone" [(ngModel)]="telephone" placeholder="Téléphone" required />
-          </div>
-          <div class="field-group">
-            <label>Gouvernorat souhaité</label>
+            <label>Gouvernorat *</label>
             <select name="gouvernorat" [(ngModel)]="gouvernorat" required>
               <option value="" disabled selected>Choisissez un gouvernorat...</option>
               <option *ngFor="let g of gouvernorats" [value]="g">{{ g }}</option>
             </select>
           </div>
           <div class="field-group">
-            <label>Type de Véhicule (Optionnel)</label>
-            <input name="vehicule" [(ngModel)]="vehicule" placeholder="Ex: Moto, Voiture..." />
+            <label>Code postal</label>
+            <input name="codePostal" [(ngModel)]="codePostal" placeholder="Code postal" />
           </div>
+        </div>
+        
+        <div class="field-group">
+          <label>Numéro de téléphone *</label>
+          <input name="telephone" [(ngModel)]="telephone" placeholder="Numéro de téléphone" required />
+        </div>
+        
+        <div class="field-group">
+          <label>Date de naissance *</label>
+          <input type="date" name="dateNaissance" [(ngModel)]="dateNaissance" required />
+        </div>
+        
+        <!-- Informations véhicule -->
+        <div class="form-section-title">Informations véhicule</div>
+        
+        <div class="field-group">
+          <label>Type de véhicule *</label>
+          <select name="typeVehicule" [(ngModel)]="typeVehicule" required>
+            <option value="" disabled selected>Sélectionnez le type...</option>
+            <option value="moto">Moto</option>
+            <option value="voiture">Voiture</option>
+            <option value="utilitaire">Utilitaire léger</option>
+            <option value="camionnette">Camionnette</option>
+          </select>
+        </div>
+        
+        <div class="field-group">
+          <label>Marque et modèle du véhicule</label>
+          <input name="marqueModele" [(ngModel)]="marqueModele" placeholder="Ex: Renault Clio" />
+        </div>
+        
+        <div class="field-group">
+          <label>Numéro d'immatriculation *</label>
+          <input name="immatriculation" [(ngModel)]="immatriculation" placeholder="Numéro d'immatriculation" required />
+        </div>
+        
+        <div class="field-group">
+          <label>Numéro de permis de conduire *</label>
+          <input name="numeroPermis" [(ngModel)]="numeroPermis" placeholder="Numéro de permis de conduire" required />
+        </div>
+        
+        <div class="field-group">
+          <label>Compagnie d'assurance *</label>
+          <input name="compagnieAssurance" [(ngModel)]="compagnieAssurance" placeholder="Compagnie d'assurance" required />
+        </div>
+        
+        <div class="field-group">
+          <label>Numéro de police d'assurance *</label>
+          <input name="numeroPolice" [(ngModel)]="numeroPolice" placeholder="Numéro de police d'assurance" required />
+        </div>
+        
+        <!-- Disponibilité -->
+        <div class="form-section-title">Disponibilité</div>
+        
+        <div class="field-group">
+          <label>Quand pouvez-vous commencer ? *</label>
+          <input type="date" name="dateDebut" [(ngModel)]="dateDebut" required />
+        </div>
+        
+        <div class="field-group">
+          <label>Jours de disponibilité *</label>
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" name="jours" [(ngModel)]="disponibilite.lundi" />
+              <span>Lundi</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="jours" [(ngModel)]="disponibilite.mardi" />
+              <span>Mardi</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="jours" [(ngModel)]="disponibilite.mercredi" />
+              <span>Mercredi</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="jours" [(ngModel)]="disponibilite.jeudi" />
+              <span>Jeudi</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="jours" [(ngModel)]="disponibilite.vendredi" />
+              <span>Vendredi</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="jours" [(ngModel)]="disponibilite.samedi" />
+              <span>Samedi</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="jours" [(ngModel)]="disponibilite.dimanche" />
+              <span>Dimanche</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="grid grid-2">
+          <div class="field-group">
+            <label>Heure de début</label>
+            <input type="time" name="heureDebut" [(ngModel)]="heureDebut" />
+          </div>
+          <div class="field-group">
+            <label>Heure de fin</label>
+            <input type="time" name="heureFin" [(ngModel)]="heureFin" />
+          </div>
+        </div>
+        
+        <!-- Accord -->
+        <div class="form-section-title">Accord et conditions</div>
+        
+        <div class="agreement-section">
+          <p class="agreement-text">En signant ce formulaire de candidature, j'accepte les exigences suivantes de l'accord :</p>
+          
+          <div class="agreement-list">
+            <div class="agreement-item">
+              <span class="agreement-number">1</span>
+              <span>Les informations concernant le permis de conduire sont valides.</span>
+            </div>
+            <div class="agreement-item">
+              <span class="agreement-number">2</span>
+              <span>Mon véhicule est entièrement assuré.</span>
+            </div>
+            <div class="agreement-item">
+              <span class="agreement-number">3</span>
+              <span>J'accepte toutes les responsabilités en cas de blessure, de dommage et d'infractions au code de la route.</span>
+            </div>
+            <div class="agreement-item">
+              <span class="agreement-number">4</span>
+              <span>Je reconnais que je ne fume pas dans le véhicule.</span>
+            </div>
+          </div>
+          
+          <div class="agreement-checkbox">
+            <label class="checkbox-label agreement-checkbox-label">
+              <input type="checkbox" name="acceptConditions" [(ngModel)]="acceptConditions" required />
+              <span>J'accepte toutes les conditions ci-dessus *</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="error-banner" *ngIf="errorMessage">
+          ⚠️ {{ errorMessage }}
+        </div>
+        <div class="success-banner" *ngIf="successMessage">
+          🎉 {{ successMessage }}
+        </div>
 
-          <div class="error-banner" *ngIf="errorMessage">
-            ⚠️ {{ errorMessage }}
-          </div>
-          <div class="success-banner" *ngIf="successMessage">
-            🎉 {{ successMessage }}
-          </div>
-
-          <button type="submit" class="btn-primary" [disabled]="loading">
-            {{ loading ? 'Envoi en cours...' : 'Postuler maintenant' }}
-          </button>
-        </form>
-      </div>
+        <button type="submit" class="btn-primary" [disabled]="loading">
+          {{ loading ? 'Envoi en cours...' : 'Soumettre ma candidature' }}
+        </button>
+      </form>
     </div>
   </div>
 </section>
