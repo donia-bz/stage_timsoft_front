@@ -105,6 +105,20 @@ export interface Livraison {
   distanceKm?: number;
 }
 
+export interface Reclamation {
+  id?: string;
+  clientId: string;
+  commandeId: string;
+  type: string; // COLIS_ENDOMMAGE, RETARD, PAIEMENT, AUTRE
+  description: string;
+  statut: string; // EN_ATTENTE, EN_COURS, RESOLUE, REJETEE
+  adminCommentaire?: string;
+  dateCreation?: string;
+  dateResolution?: string;
+  objet?: string; // Pour compatibilité avec le frontend
+  codeBarre?: string; // Pour compatibilité avec le frontend
+}
+
 export interface PositionTracking {
   id?: string;
   livraisonId: string;
@@ -129,6 +143,43 @@ export interface AffectationIA {
   dateCalcul: string;
 }
 
+export interface Vehicule {
+  id?: string;
+  immatriculation: string;
+  marque: string;
+  modele: string;
+  type: string; // CAMIONNETTE, UTILITAIRE, CAMION
+  capaciteKg: number;
+  capaciteVolume: number;
+  annee: number;
+  statut: string; // DISPONIBLE, EN_SERVICE, MAINTENANCE, HORS_SERVICE
+  depotId?: string;
+  livreurId?: string;
+}
+
+export interface Depot {
+  id?: string;
+  nom: string;
+  adresse: string;
+  gouvernorat: string;
+  telephone: string;
+  capacite: number;
+  capaciteActuelle: number;
+  latitude?: number;
+  longitude?: number;
+  statut: string; // ACTIF, INACTIF
+}
+
+export interface EvaluationLivreur {
+  id?: string;
+  livreurId: string;
+  clientId: string;
+  commandeId: string;
+  note: number; // 1-5
+  commentaire?: string;
+  date?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -138,6 +189,10 @@ export class ApiService {
   private trackingUrl = environment.trackingUrl;
   private iaUrl = environment.iaUrl;
   private adressesUrl = environment.adressesUrl;
+  private vehiclesUrl = environment.vehiclesUrl;
+  private depotsUrl = environment.depotsUrl;
+  private reclamationsUrl = environment.reclamationsUrl;
+  private statsUrl = environment.statsUrl;
 
   constructor(private http: HttpClient) {}
 
@@ -310,6 +365,12 @@ export class ApiService {
     });
   }
 
+  assignerGouvernorat(id: string, gouvernorat: string): Observable<Livreur> {
+    return this.http.patch<Livreur>(`${this.livreursUrl}/livreurs/${id}/gouvernorat`, null, {
+      params: new HttpParams().set('gouvernorat', gouvernorat)
+    });
+  }
+
   // --- Livraisons & Tracking ---
   creerLivraison(colisId: string, livreurId: string): Observable<Livraison> {
     return this.http.post<Livraison>(`${this.trackingUrl}/livraisons`, null, {
@@ -339,10 +400,6 @@ export class ApiService {
 
   getLivraisonsByLivreur(livreurId: string): Observable<Livraison[]> {
     return this.http.get<Livraison[]>(`${this.trackingUrl}/livraisons/livreur/${livreurId}`);
-  }
-
-  getLivraisonsByColis(colisId: string): Observable<Livraison[]> {
-    return this.http.get<Livraison[]>(`${this.trackingUrl}/livraisons/colis/${colisId}`);
   }
 
   // --- Position Tracking ---
@@ -394,5 +451,121 @@ export class ApiService {
     }));
 
     return this.http.post<AffectationIA>(`${this.iaUrl}/affecter-livreur`, livreurDTOs, { params });
+  }
+
+  // --- Véhicules ---
+  getAllVehicules(): Observable<Vehicule[]> {
+    return this.http.get<Vehicule[]>(`${this.vehiclesUrl}/vehicules`);
+  }
+
+  getVehiculeById(id: string): Observable<Vehicule> {
+    return this.http.get<Vehicule>(`${this.vehiclesUrl}/vehicules/${id}`);
+  }
+
+  creerVehicule(vehicule: Vehicule): Observable<Vehicule> {
+    return this.http.post<Vehicule>(`${this.vehiclesUrl}/vehicules`, vehicule);
+  }
+
+  updateVehicule(id: string, vehicule: Vehicule): Observable<Vehicule> {
+    return this.http.put<Vehicule>(`${this.vehiclesUrl}/vehicules/${id}`, vehicule);
+  }
+
+  deleteVehicule(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.vehiclesUrl}/vehicules/${id}`);
+  }
+
+  affecterVehicule(livreurId: string, vehiculeId: string): Observable<any> {
+    return this.http.post<any>(`${this.livreursUrl}/livreurs/${livreurId}/vehicule`, null, {
+      params: new HttpParams().set('vehiculeId', vehiculeId)
+    });
+  }
+
+  desaffecterVehicule(livreurId: string): Observable<any> {
+    return this.http.delete<any>(`${this.livreursUrl}/livreurs/${livreurId}/vehicule`);
+  }
+
+  // --- Dépôts ---
+  getAllDepots(): Observable<Depot[]> {
+    return this.http.get<Depot[]>(`${this.depotsUrl}/depots`);
+  }
+
+  getDepotById(id: string): Observable<Depot> {
+    return this.http.get<Depot>(`${this.depotsUrl}/depots/${id}`);
+  }
+
+  creerDepot(depot: Depot): Observable<Depot> {
+    return this.http.post<Depot>(`${this.depotsUrl}/depots`, depot);
+  }
+
+  updateDepot(id: string, depot: Depot): Observable<Depot> {
+    return this.http.put<Depot>(`${this.depotsUrl}/depots/${id}`, depot);
+  }
+
+  deleteDepot(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.depotsUrl}/depots/${id}`);
+  }
+
+  getDepotsByGouvernorat(gouvernorat: string): Observable<Depot[]> {
+    return this.http.get<Depot[]>(`${this.depotsUrl}/depots/gouvernorat/${gouvernorat}`);
+  }
+
+  // --- Réclamations ---
+  getAllReclamations(): Observable<Reclamation[]> {
+    return this.http.get<Reclamation[]>(`${this.reclamationsUrl}/reclamations`);
+  }
+
+  getReclamationById(id: string): Observable<Reclamation> {
+    return this.http.get<Reclamation>(`${this.reclamationsUrl}/reclamations/${id}`);
+  }
+
+  creerReclamation(reclamation: Reclamation): Observable<Reclamation> {
+    return this.http.post<Reclamation>(`${this.reclamationsUrl}/reclamations`, reclamation);
+  }
+
+  updateReclamation(id: string, reclamation: Reclamation): Observable<Reclamation> {
+    return this.http.put<Reclamation>(`${this.reclamationsUrl}/reclamations/${id}`, reclamation);
+  }
+
+  deleteReclamation(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.reclamationsUrl}/reclamations/${id}`);
+  }
+
+  updateReclamationStatut(id: string, statut: string): Observable<Reclamation> {
+    return this.http.patch<Reclamation>(`${this.reclamationsUrl}/reclamations/${id}/statut`, null, {
+      params: new HttpParams().set('statut', statut)
+    });
+  }
+
+  getReclamationsByClient(clientId: string): Observable<Reclamation[]> {
+    return this.http.get<Reclamation[]>(`${this.reclamationsUrl}/reclamations/client/${clientId}`);
+  }
+
+  getReclamationsByStatut(statut: string): Observable<Reclamation[]> {
+    return this.http.get<Reclamation[]>(`${this.reclamationsUrl}/reclamations/statut/${statut}`);
+  }
+
+  // --- Évaluations ---
+  creerEvaluation(evaluation: EvaluationLivreur): Observable<EvaluationLivreur> {
+    return this.http.post<EvaluationLivreur>(`${this.statsUrl}/stats/evaluations`, evaluation);
+  }
+
+  getEvaluationById(id: string): Observable<EvaluationLivreur> {
+    return this.http.get<EvaluationLivreur>(`${this.statsUrl}/stats/evaluations/${id}`);
+  }
+
+  getEvaluationsByLivreur(livreurId: string): Observable<EvaluationLivreur[]> {
+    return this.http.get<EvaluationLivreur[]>(`${this.statsUrl}/stats/evaluations/livreur/${livreurId}`);
+  }
+
+  getEvaluationsByClient(clientId: string): Observable<EvaluationLivreur[]> {
+    return this.http.get<EvaluationLivreur[]>(`${this.statsUrl}/stats/evaluations/client/${clientId}`);
+  }
+
+  getMoyenneNoteLivreur(livreurId: string): Observable<{ moyenne: number }> {
+    return this.http.get<{ moyenne: number }>(`${this.statsUrl}/stats/evaluations/livreur/${livreurId}/moyenne`);
+  }
+
+  getAllEvaluations(): Observable<EvaluationLivreur[]> {
+    return this.http.get<EvaluationLivreur[]>(`${this.statsUrl}/stats/evaluations`);
   }
 }

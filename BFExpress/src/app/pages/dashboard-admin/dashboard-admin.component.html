@@ -304,8 +304,8 @@
 
           <!-- Demandes en attente -->
           <div class="pending-section mb-4" *ngIf="getPendingRegistrations().length > 0">
-            <h3>📋 Demandes en attente ({{ getPendingRegistrations().length }})</h3>
-            <p class="section-hint">Candidatures reçues via « Devenir Livreur » — choisissez un gouvernorat puis validez.</p>
+            <h3>📋 Devenir Livreur (Demandes en attente : {{ getPendingRegistrations().length }})</h3>
+            <p class="section-hint">Affectez un gouvernorat pour approuver les candidatures "Devenir Livreur".</p>
             <div class="pending-cards">
               <div class="pending-card" *ngFor="let l of getPendingRegistrations()">
                 <div class="pending-info">
@@ -384,15 +384,18 @@
                   <td><span class="star-rating">⭐ {{ getLivreurNote(l) }}/5</span></td>
                   <td>
                     <div class="action-row">
-                      <button class="btn-ghost-sm" (click)="voirDetailsLivreur(l)" title="Voir détails">👁️</button>
-                      <button *ngIf="l.statut === 'INSCRIPTION' || !l.statut" class="btn-primary-sm" (click)="affecterGouvernoratEtValider(l)">
-                        Approuver
+                      <button class="btn-icon view" (click)="voirDetailsLivreur(l)" title="Voir détails">👁️</button>
+                      
+                      <button *ngIf="l.statut === 'INSCRIPTION' || !l.statut" class="btn-icon approve" (click)="affecterGouvernoratEtValider(l)" title="Approuver & Affecter">
+                        ✅
                       </button>
-                      <button *ngIf="l.statut === 'INSCRIPTION' || !l.statut" class="btn-danger-sm" (click)="supprimerLivreur(l.id || '')">
-                        Supprimer
+                      
+                      <button *ngIf="l.statut === 'INSCRIPTION' || !l.statut" class="btn-icon delete" (click)="supprimerLivreur(l.id || '')" title="Refuser / Supprimer">
+                        🗑️
                       </button>
-                      <button *ngIf="l.statut !== 'INSCRIPTION' && l.statut" class="btn-ghost-sm" (click)="toggleDriverStatus(l)">
-                        {{ l.statut === 'DISPONIBLE' ? 'Mettre Hors Ligne' : 'Rendre Disponible' }}
+                      
+                      <button *ngIf="l.statut !== 'INSCRIPTION' && l.statut" class="btn-icon view" [ngClass]="l.statut === 'DISPONIBLE' ? 'delete' : 'approve'" (click)="toggleDriverStatus(l)" [title]="l.statut === 'DISPONIBLE' ? 'Mettre Hors Ligne' : 'Rendre Disponible'">
+                        {{ l.statut === 'DISPONIBLE' ? '🛑' : '⚡' }}
                       </button>
                     </div>
                   </td>
@@ -433,9 +436,15 @@
                   </td>
                   <td>
                     <div class="action-row">
-                      <button class="btn-ghost-sm" (click)="viewUserDetails(u)">Voir</button>
-                      <button *ngIf="u.approuve !== true && u.statut !== 'ACTIF' && u.statut !== 'DISPONIBLE'" class="btn-primary-sm" (click)="approveUser(u.id)">Approuver</button>
-                      <button class="btn-danger-sm" (click)="deleteUser(u)">Supprimer</button>
+                      <button class="btn-icon view" (click)="viewUserDetails(u)" title="Voir les coordonnées et détails">
+                        👁️
+                      </button>
+                      <button *ngIf="u.approuve !== true && u.statut !== 'ACTIF' && u.statut !== 'DISPONIBLE'" class="btn-icon approve" (click)="approveUser(u.id)" title="Approuver l'inscription">
+                        ✅
+                      </button>
+                      <button class="btn-icon delete" (click)="deleteUser(u)" title="Supprimer l'utilisateur">
+                        🗑️
+                      </button>
                     </div>
                   </td>
                 </tr>

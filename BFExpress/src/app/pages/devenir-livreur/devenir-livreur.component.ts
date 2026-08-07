@@ -89,16 +89,7 @@ export class DevenirLivreurComponent {
       email: this.email,
       motDePasse: this.motDePasse,
       telephone: this.telephone,
-      adresse: this.adresse,
-      ville: this.ville,
-      codePostal: this.codePostal,
-      gouvernorat: this.gouvernorat,
-      dateNaissance: this.dateNaissance,
-      role: 'LIVREUR',
-      statut: 'INSCRIPTION',
-      latitudeActuelle: 0.0,
-      longitudeActuelle: 0.0,
-      noteMoyenne: 5.0
+      role: 'LIVREUR'
     };
 
     this.authService.register(payload).subscribe({

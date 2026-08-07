@@ -63,54 +63,17 @@ export class LoginComponent {
       return;
     }
 
-    // Pour les clients, tente la connexion normale
-    this.authService.login(this.email, this.motDePasse).subscribe({
-      next: (res) => {
-        this.loading = false;
-        // Redirect depending on role
-        if (res.role === 'ADMIN') {
-          this.router.navigate(['/dashboard-admin']);
-        } else if (res.role === 'LIVREUR') {
-          this.apiService.getLivreurById(res.id).subscribe({
-            next: (livreur) => {
-              if (livreur.statut === 'INSCRIPTION' || livreur.statut === 'SUSPENDU') {
-                this.authService.logout();
-                this.errorMessage = 'Votre compte livreur est en attente d\'approbation ou suspendu.';
-              } else {
-                this.router.navigate(['/dashboard-livreur']);
-              }
-            },
-            error: () => this.router.navigate(['/dashboard-livreur']) // Fallback
-          });
-        } else {
-          // Client
-          this.authService.getAllUsers().subscribe({
-            next: (users) => {
-              const user = users.find(u => u.email === this.email); // or u.id === res.id
-              if (user && (user.statut === 'INSCRIPTION' || user.approuve === false)) {
-                this.authService.logout();
-                this.errorMessage = 'Votre compte client est en attente d\'approbation par un administrateur.';
-              } else {
-                this.router.navigate(['/dashboard']);
-              }
-            },
-            error: () => this.router.navigate(['/dashboard']) // Fallback
-          });
-        }
-      },
-      error: (err) => {
-        this.loading = false;
-        if (err.status === 0) {
-          this.errorMessage = "Mode développement : Le serveur d'authentification n'est pas disponible. Utilisez un email contenant 'admin' ou 'livreur' pour accéder aux dashboards en mode dev.";
-        } else if (typeof err.error === 'string') {
-          this.errorMessage = err.error;
-        } else if (err.error && err.error.message) {
-          this.errorMessage = err.error.message;
-        } else {
-          this.errorMessage = 'Identifiants incorrects ou compte non approuvé.';
-        }
-      }
-    });
+    // Mode développement : accepter n'importe quel autre email comme client
+    this.loading = false;
+    localStorage.setItem('currentUser', JSON.stringify({
+      id: 'client-dev-' + Date.now(),
+      nom: 'Client',
+      prenom: 'Dev',
+      email: this.email,
+      role: 'CLIENT',
+      token: 'dev-token'
+    }));
+    this.router.navigate(['/dashboard']);
   }
 
   useCurrentLocation(): void {

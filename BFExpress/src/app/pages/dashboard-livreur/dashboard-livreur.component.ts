@@ -29,7 +29,7 @@ export class DashboardLivreurComponent implements OnInit {
   driverPhoto = '';
   livraisons: Livraison[] = [];
   commandesMap: { [colisId: string]: Commande } = {};
-  activeTab: 'dashboard' | 'historique' | 'vehicule' | 'revenus' | 'parametres' = 'dashboard';
+  activeTab: 'dashboard' | 'historique' | 'vehicule' | 'revenus' | 'parametres' | 'suivi-colis' = 'dashboard';
   deliveryHistory: any[] = [];
   notifications: any[] = [];
 
@@ -56,6 +56,14 @@ export class DashboardLivreurComponent implements OnInit {
     return this.livraisons.filter(item => item.statut === 'affectee');
   }
 
+  get deliveredLivraisons(): Livraison[] {
+    return this.livraisons.filter(item => item.statut === 'livree' || item.statut === 'LIVREE');
+  }
+
+  get recentFeedbacks(): any[] {
+    return this.deliveryHistory.filter(h => h.note && h.note > 0).slice(0, 4);
+  }
+
   quickActions = [
     { label: 'Nouvelle collecte', route: '/ajout-colis' },
     { label: 'Suivi colis', route: '/recherche-colis' },
@@ -71,6 +79,18 @@ export class DashboardLivreurComponent implements OnInit {
   latitude = 36.8065;
   longitude = 10.1815;
   private driverMap: any = null;
+
+  // Variables pour Suivi Colis
+  searchColisId: string = '';
+  foundColis: Commande | null = null;
+  searchError: string = '';
+  trackingSteps = [
+    { id: 'EN_ATTENTE', label: 'En attente' },
+    { id: 'ENLEVE', label: 'Enlevé' },
+    { id: 'AU_DEPOT', label: 'Au Dépôt' },
+    { id: 'EN_COURS', label: 'En Livraison' },
+    { id: 'LIVREE', label: 'Livré' }
+  ];
 
   constructor(
     private apiService: ApiService,
@@ -417,5 +437,46 @@ export class DashboardLivreurComponent implements OnInit {
     this.router.navigate(['/reclamations'], {
       queryParams: { livraisonId: livraison.id }
     });
+  }
+
+  // --- Suivi Colis Methods ---
+  
+  rechercherColis(): void {
+    if (!this.searchColisId.trim()) return;
+    this.searchError = '';
+    this.foundColis = null;
+    this.apiService.getCommandeById(this.searchColisId).subscribe({
+      next: (colis) => {
+        this.foundColis = colis;
+      },
+      error: () => {
+        this.searchError = "Aucun colis trouvé avec cet identifiant.";
+      }
+    });
+  }
+
+  changerStatutColis(newStatut: string): void {
+    if (!this.foundColis || !this.foundColis.id) return;
+    const statusFormatted = newStatut.toUpperCase();
+    
+    if (!confirm(`Voulez-vous vraiment changer le statut en ${statusFormatted} ?`)) return;
+
+    this.apiService.updateCommandeStatut(this.foundColis.id, statusFormatted).subscribe({
+      next: () => {
+        if (this.foundColis) this.foundColis.statut = statusFormatted;
+        alert(`Succès : Le statut a été mis à jour en ${statusFormatted}`);
+        this.loadDriverData(); // Refresh current driver data just in case
+      },
+      error: (err) => {
+        alert('Erreur lors du changement de statut');
+      }
+    });
+  }
+
+  getColisStepIndex(statut: string): number {
+    if (!statut) return -1;
+    const s = statut.toUpperCase();
+    if (s === 'EN_LIVRAISON') return 3; // Alias for EN_COURS
+    return this.trackingSteps.findIndex(step => step.id === s);
   }
 }

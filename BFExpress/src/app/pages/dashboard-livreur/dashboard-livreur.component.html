@@ -29,7 +29,7 @@
         <nav>
           <a class="sidebar-link active" (click)="activeTab = 'dashboard'"><span class="icon">📱</span> Tableau de bord</a>
           <a class="sidebar-link" (click)="activeTab = 'historique'"><span class="icon">📋</span> Historique Livraisons</a>
-          <a class="sidebar-link" routerLink="/recherche-colis"><span class="icon">🔍</span> Recherche Colis</a>
+          <a class="sidebar-link" [class.active]="activeTab === 'suivi-colis'" (click)="activeTab = 'suivi-colis'"><span class="icon">🔍</span> Suivi & Statut Colis</a>
         </nav>
       </div>
 
@@ -53,179 +53,135 @@
     <!-- Main Content Livreur -->
     <main class="dashboard-content">
       
-      <!-- Top Driver Header & Quick Status Switcher -->
-      <div class="dashboard-header">
-        <div>
-          <h1>Bonjour, {{ driverName }} 👋</h1>
-          <p class="dashboard-greeting">Consultez votre tournée du jour et mettez à jour votre statut en direct</p>
-        </div>
-
-        <!-- Big Toggle Status Buttons -->
-        <div class="toggle-status-box">
-          <button class="status-btn btn-available" [class.on]="isDriverStatusAvailable()" (click)="toggleStatut('DISPONIBLE')">
-            🟢 Disponible
-          </button>
-          <button class="status-btn btn-busy" [class.on]="isDriverStatusBusy()" (click)="toggleStatut('EN_COURSE')">
-            🟡 En Course
-          </button>
-          <button class="status-btn btn-offline" [class.on]="isDriverStatusOffline()" (click)="toggleStatut('HORS_LIGNE')">
-            🔴 Hors Ligne
-          </button>
-        </div>
-      </div>
-
-      <!-- Alert Section for New Assignments -->
-      <div class="new-assignment-alert" *ngIf="newAssignments.length > 0">
-        <div class="alert-content">
-          <div class="alert-icon">🔔</div>
-          <div>
-            <strong>{{ newAssignments.length }} Nouvelle(s) course(s) vous a/ont été affectée(s) !</strong>
-            <p>Cliquez sur démarrer ci-dessous pour lancer votre navigation GPS.</p>
+      <div *ngIf="activeTab === 'dashboard'">
+        <!-- Top Driver Header & Quick Status Switcher -->
+        <div class="dashboard-header-modern">
+          <div class="header-welcome">
+            <h1>Bonjour, {{ driverName }} 👋</h1>
+            <p class="dashboard-greeting">Voici votre tournée du jour. Gérez vos courses efficacement.</p>
+          </div>
+          <div class="status-dropdown-wrapper">
+            <select [ngModel]="driverInfo?.statut || 'DISPONIBLE'" (ngModelChange)="toggleStatut($event)" class="modern-status-select" [ngClass]="'status-' + (driverInfo?.statut || 'DISPONIBLE').toLowerCase()">
+              <option value="DISPONIBLE">🟢 Disponible</option>
+              <option value="EN_COURSE">🟡 En Course</option>
+              <option value="HORS_LIGNE">🔴 Hors Ligne</option>
+            </select>
           </div>
         </div>
-      </div>
 
-      <!-- Notifications Panel -->
-      <div class="notifications-panel" *ngIf="notifications.length > 0">
-        <div class="notifications-header">
-          <h3>🔔 Notifications</h3>
-          <span class="notification-count">{{ getUnreadNotificationCount() }}</span>
-        </div>
-        <div class="notifications-list">
-          <div class="notification-item" *ngFor="let notif of notifications" [class.unread]="isNotificationUnread(notif)">
-            <div class="notif-icon">
-              <span>{{ getNotificationIcon(notif) }}</span>
-            </div>
-            <div class="notif-content">
-              <div class="notif-message">{{ notif.message }}</div>
-              <div class="notif-time">{{ notif.time }}</div>
+        <!-- Alert Section for New Assignments -->
+        <div class="new-assignment-alert" *ngIf="newAssignments.length > 0">
+          <div class="alert-content">
+            <div class="alert-icon">🔔</div>
+            <div>
+              <strong>{{ newAssignments.length }} Nouvelle(s) course(s) vous a/ont été affectée(s) !</strong>
+              <p>Consultez vos commandes affectées pour les démarrer.</p>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Main Course Grid (Current Delivery & Map) -->
-      <div class="grid-2-col mb-4">
-        
-        <!-- Active Course Card -->
-        <div class="page-card highlight-card">
-          <div class="card-header-flex">
-            <h3>⚡ Delivery en cours</h3>
-            <span class="badge-live" *ngIf="currentDelivery">EN COURS</span>
-          </div>
-
-          <div *ngIf="!currentDelivery" class="empty-delivery-box">
-            <div class="ic">🛵</div>
-            <p>Aucune livraison actuellement en cours.</p>
-            <span class="subtext">Sélectionnez une livraison dans la file d'attente pour démarrer.</span>
-          </div>
-
-          <div *ngIf="currentDelivery" class="active-delivery-body">
-            <div class="delivery-ref-row">
-              <span class="ref">Réf: {{ getDeliveryRefShort(currentDelivery) }}</span>
-              <span class="colis-tag">📦 Colis ID: {{ currentDelivery.colisId }}</span>
-            </div>
-
-            <!-- Steps timeline -->
-            <div class="delivery-timeline">
-              <div class="t-step done">
-                <div class="t-node">✓</div>
-                <div class="t-label">Prise en charge</div>
+        <!-- Modern Grid Layout -->
+        <div class="dashboard-grid-modern">
+          <!-- Left Column: Map & Assigned Orders -->
+          <div class="main-column">
+            <!-- Small Map Section -->
+            <div class="page-card map-card-small mb-4">
+              <div class="card-header-flex">
+                <h3>📍 Ma Position Live</h3>
+                <span class="pulse-dot-green"></span>
               </div>
-              <div class="t-step active">
-                <div class="t-node">🚚</div>
-                <div class="t-label">En Transit</div>
-              </div>
-              <div class="t-step">
-                <div class="t-node">📍</div>
-                <div class="t-label">Livraison</div>
+              <div class="map-wrapper-small mt-3">
+                <div id="driver-map" class="real-leaflet-map"></div>
               </div>
             </div>
 
-            <!-- Destination Info -->
-            <div class="destination-box">
-              <div class="dest-icon">📍</div>
-              <div class="dest-details">
-                <div class="dest-title">Destination : {{ getDeliveryDestination() }}</div>
-                <div class="dest-sub">Client : {{ getDeliveryClient() }}</div>
+            <!-- Assigned Orders Section -->
+            <div class="page-card assigned-card">
+              <h3>📋 Commandes Affectées</h3>
+              
+              <!-- Active Course -->
+              <div *ngIf="currentDelivery" class="active-delivery-highlight mt-3">
+                <div class="active-header">
+                  <span class="live-badge">EN COURS</span>
+                  <span class="ref">Réf: {{ getDeliveryRefShort(currentDelivery) }}</span>
+                </div>
+                <div class="destination-box mt-2">
+                  <div class="dest-icon">📍</div>
+                  <div class="dest-details">
+                    <div class="dest-title">Destination : {{ getDeliveryDestination() }}</div>
+                    <div class="dest-sub">Client : {{ getDeliveryClient() }}</div>
+                  </div>
+                </div>
+                <div class="action-buttons-group mt-3">
+                  <button class="btn-complete-delivery" (click)="terminer(currentDelivery)">✅ Marquer comme Livré</button>
+                  <button class="btn-report-issue" (click)="reportIssue(currentDelivery)">⚠️ Incident</button>
+                </div>
               </div>
-              <a class="btn-call" href="tel:21650000000">📞 Appeler</a>
+
+              <!-- Waiting Queue -->
+              <div class="table-container mt-3">
+                <table class="premium-table">
+                  <thead>
+                    <tr>
+                      <th>Réf Course</th>
+                      <th>Colis ID</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let l of waitingLivraisons">
+                      <td><strong>{{ getLivraisonRefShort(l) }}</strong></td>
+                      <td>{{ l.colisId }}</td>
+                      <td>
+                        <button class="btn-start-course" (click)="demarrer(l)" [disabled]="currentDelivery != null">
+                          🚀 Démarrer
+                        </button>
+                      </td>
+                    </tr>
+                    <tr *ngIf="waitingLivraisons.length === 0">
+                      <td colspan="3" class="text-center text-muted">Aucune course en attente.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Delivered & Feedback -->
+          <div class="side-column">
+            <!-- Delivered Today -->
+            <div class="page-card delivered-card mb-4">
+              <h3>📦 Livrées Aujourd'hui</h3>
+              <div class="delivered-list mt-3">
+                <div class="delivered-item" *ngFor="let dl of deliveredLivraisons">
+                  <div class="dl-icon">✅</div>
+                  <div class="dl-info">
+                    <strong>{{ getLivraisonRefShort(dl) }}</strong>
+                    <span>Colis ID: {{ dl.colisId }}</span>
+                  </div>
+                </div>
+                <div *ngIf="deliveredLivraisons.length === 0" class="text-muted text-center mt-2">
+                  Aucune livraison terminée aujourd'hui.
+                </div>
+              </div>
             </div>
 
-            <!-- Action buttons -->
-            <div class="action-buttons-group mt-4">
-              <button class="btn-complete-delivery" (click)="terminer(currentDelivery)">
-                ✅ Marquer comme Livré & Clôturer
-              </button>
-              <button class="btn-report-issue" (click)="reportIssue(currentDelivery)">
-                ⚠️ Incident
-              </button>
+            <!-- Client Feedback -->
+            <div class="page-card feedback-card">
+              <h3>⭐ Avis Clients Récents</h3>
+              <div class="feedback-list mt-3">
+                <div class="feedback-item" *ngFor="let fb of recentFeedbacks">
+                  <div class="fb-client-name">{{ fb.client }}</div>
+                  <div class="fb-stars">
+                    <span *ngFor="let s of [1,2,3,4,5]" [class.filled]="s <= fb.note">★</span>
+                  </div>
+                </div>
+                <div *ngIf="recentFeedbacks.length === 0" class="text-muted text-center mt-2">
+                  Aucun avis récent.
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-
-        <!-- GPS Navigation Map -->
-        <div class="page-card">
-          <div class="card-header-flex">
-            <h3>🗺️ Itinéraire GPS Live</h3>
-            <span class="gps-status-badge">🟢 GPS 10s Active</span>
-          </div>
-
-          <div class="map-wrapper">
-            <div id="driver-map" class="real-leaflet-map"></div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Drivers Metrics KPI -->
-      <div class="grid-3-kpi mb-4">
-        <div class="kpi-card">
-          <div class="kpi-title">Livraisons Effectuées</div>
-          <div class="kpi-value">{{ getStatsValue() }}</div>
-          <div class="kpi-sub">Aujourd'hui</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-title">Note Satisfaction</div>
-          <div class="kpi-value text-gold">⭐ {{ getDriverNote() }}</div>
-          <div class="kpi-sub">Client Feedback</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-title">Distance Parcourue</div>
-          <div class="kpi-value">34 Km</div>
-          <div class="kpi-sub">GPS Trajet</div>
-        </div>
-      </div>
-
-      <!-- File d'attente (Waiting Queue) -->
-      <div class="page-card">
-        <h3>📋 File d'attente des livraisons assignées</h3>
-        <div class="table-container mt-3">
-          <table class="premium-table">
-            <thead>
-              <tr>
-                <th>Réf Course</th>
-                <th>Colis ID</th>
-                <th>Statut</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let l of waitingLivraisons">
-                <td><strong>{{ getLivraisonRefShort(l) }}</strong></td>
-                <td>{{ l.colisId }}</td>
-                <td><span class="status-pill status-validee">{{ l.statut }}</span></td>
-                <td>
-                  <button class="btn-start-course" (click)="demarrer(l)">
-                    🚀 Démarrer la Course
-                  </button>
-                </td>
-              </tr>
-              <tr *ngIf="waitingLivraisons.length === 0">
-                <td colspan="4" class="text-center text-muted">Aucune autre course en attente pour le moment.</td>
-              </tr>
-            </tbody>
-          </table>
         </div>
       </div>
 
@@ -295,7 +251,58 @@
           <button class="btn-primary">Sauvegarder</button>
         </div>
       </div>
-
     </main>
+
+    <!-- Suivi & Statut Colis Tab -->
+    <div *ngIf="activeTab === 'suivi-colis'" class="dashboard-content tracking-tab">
+      <div class="dashboard-header-modern">
+        <div class="header-welcome">
+          <h1>Suivi & Changement de Statut 📦</h1>
+          <p>Recherchez un colis pour voir son avancement et forcer son statut.</p>
+        </div>
+      </div>
+
+      <div class="page-card tracking-search-card mb-4">
+        <div class="tracking-search">
+          <input type="text" class="search-input" placeholder="Entrez l'ID du colis (ex: CMD-1234)..." [(ngModel)]="searchColisId" (keyup.enter)="rechercherColis()">
+          <button class="btn-primary" (click)="rechercherColis()">
+            <span>🔍</span> Rechercher
+          </button>
+        </div>
+        <div class="search-error mt-2" *ngIf="searchError">
+          <span class="text-danger">⚠️ {{ searchError }}</span>
+        </div>
+      </div>
+
+      <div class="page-card tracking-result-card" *ngIf="foundColis">
+        <div class="result-header mb-4">
+          <h3>Colis Réf: <strong>{{ foundColis.id }}</strong></h3>
+          <p class="dest-info">Destinataire: {{ foundColis.clientNom || foundColis.nomDestinataire || foundColis.adresseArriveeId }}</p>
+        </div>
+
+        <!-- Custom Timeline Stepper -->
+        <div class="timeline-stepper">
+          <div class="step" *ngFor="let step of trackingSteps; let i = index" 
+               [class.active]="i === getColisStepIndex(foundColis.statut)" 
+               [class.completed]="i < getColisStepIndex(foundColis.statut)">
+            <div class="step-circle">{{ i < getColisStepIndex(foundColis.statut) ? '✓' : (i + 1) }}</div>
+            <div class="step-label">{{ step.label }}</div>
+          </div>
+        </div>
+
+        <!-- Action / Forcer Statut -->
+        <div class="force-status-box mt-5">
+          <h4>Changement Manuel de Statut</h4>
+          <p class="text-muted mb-3">Sélectionnez le nouveau statut pour forcer l'avancement ou le retour du colis.</p>
+          <div class="status-action-group">
+            <button class="btn-status" *ngFor="let step of trackingSteps" 
+                    [class.current]="foundColis.statut.toUpperCase() === step.id"
+                    (click)="changerStatutColis(step.id)">
+              {{ step.label }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>

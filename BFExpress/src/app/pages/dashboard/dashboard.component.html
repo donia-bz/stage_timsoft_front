@@ -1,5 +1,5 @@
 <div class="modern-dashboard">
-  
+
   <!-- Modern Sidebar -->
   <aside class="dashboard-sidebar">
     <div class="sidebar-header">
@@ -35,24 +35,24 @@
           <span class="nav-icon">📑</span>
           <span>Mes Commandes</span>
         </a>
-        <a class="nav-link" [class.active]="activeTab === 'suivi'" (click)="setTab('suivi')">
-          <span class="nav-icon">🔍</span>
-          <span>Suivi en direct</span>
+        <a class="nav-link" [class.active]="activeTab === 'echange'" (click)="setTab('echange')" *ngIf="clientName !== 'Admin'">
+          <span class="nav-icon">🔄</span>
+          <span>Échange Colis</span>
         </a>
       </div>
 
       <div class="nav-section">
         <a class="nav-link" [class.active]="activeTab === 'paiements'" (click)="setTab('paiements')">
-          <span class="nav-icon">💳</span>
+          <span class="nav-icon">�</span>
           <span>Mes Paiements</span>
         </a>
         <a class="nav-link" [class.active]="activeTab === 'retours'" (click)="setTab('retours')">
           <span class="nav-icon">⬅️</span>
           <span>Mes Retours</span>
         </a>
-        <a class="nav-link" [class.active]="activeTab === 'evaluations'" (click)="setTab('evaluations')">
+        <a class="nav-link" [class.active]="activeTab === 'evaluation'" (click)="setTab('evaluation')">
           <span class="nav-icon">⭐</span>
-          <span>Évaluations</span>
+          <span>Évaluation</span>
         </a>
       </div>
 
@@ -67,30 +67,11 @@
         </a>
       </div>
     </nav>
-
-    <div class="sidebar-footer">
-      <button class="hamburger-menu" (click)="toggleSidebarMenu()">
-        <span class="hamburger-icon">☰</span>
-      </button>
-      
-      <!-- Dropdown Menu -->
-      <div class="sidebar-dropdown" *ngIf="showSidebarMenu">
-        <a class="dropdown-item" (click)="setTab('notifications'); toggleSidebarMenu()">
-          <span class="dropdown-icon">🔔</span>
-          <span>Notifications</span>
-          <span class="dropdown-badge" *ngIf="unreadNotifications > 0">{{ unreadNotifications }}</span>
-        </a>
-        <a class="dropdown-item logout-item" (click)="logout()">
-          <span class="dropdown-icon">🚪</span>
-          <span>Déconnexion</span>
-        </a>
-      </div>
-    </div>
   </aside>
 
   <!-- Main Content -->
   <main class="dashboard-main">
-    
+
     <!-- Dashboard Tab -->
     <div *ngIf="activeTab === 'dashboard'" class="dashboard-content">
       <div class="dashboard-header">
@@ -260,7 +241,7 @@
               </div>
               <div class="form-group">
                 <label>Gouvernorat *</label>
-                <select formControlName="governorate" (change)="updateAIEstimation()">
+                <select formControlName="governorate">
                   <option value="">Sélectionner</option>
                   <option value="Tunis">Tunis</option>
                   <option value="Ariana">Ariana</option>
@@ -285,19 +266,6 @@
               <div class="form-group full-width">
                 <label>Adresse complète *</label>
                 <textarea formControlName="address" rows="3" placeholder="Rue, numéro, appartement..."></textarea>
-              </div>
-            </div>
-          </div>
-
-          <!-- IA Shipping Estimator Widget -->
-          <div class="ai-estimator-box mb-4">
-            <div class="ai-ic">🤖</div>
-            <div class="ai-details">
-              <h4>Estimation Intelligente par l'IA</h4>
-              <div class="ai-grid">
-                <div><span>Frais d'envoi estimés:</span> <strong>{{ estimatedPrice | number:'1.2-2' }} DT</strong></div>
-                <div><span>Délai estimé de livraison:</span> <strong>{{ estimatedTime }}</strong></div>
-                <div><span>Confiance IA:</span> <span class="badge-confidence">🟢 {{ aiConfidence }}%</span></div>
               </div>
             </div>
           </div>
@@ -331,7 +299,7 @@
               </div>
               <div class="form-group">
                 <label>Type de service</label>
-                <select formControlName="typeService" (change)="updateAIEstimation()">
+                <select formControlName="typeService">
                   <option value="STANDARD">Standard</option>
                   <option value="EXPRESS">Express</option>
                   <option value="PLANIFIE">Planifié</option>
@@ -380,24 +348,30 @@
       <div class="dashboard-header">
         <h1>Manifest</h1>
         <div class="header-actions">
-          <button class="btn-secondary" (click)="clearManifest()">Vider</button>
-          <button class="btn-primary" (click)="validerEtImprimerManifest()" [disabled]="pendingCommandes.length === 0">
+          <button class="btn-secondary" (click)="toggleManifestHistory()">
+            <span>📜</span>
+            <span>{{ showManifestHistory ? 'Manifest en cours' : 'Historique' }}</span>
+          </button>
+          <button class="btn-secondary" (click)="clearManifest()" *ngIf="!showManifestHistory">Vider</button>
+          <button class="btn-primary" (click)="validerEtImprimerManifest()" [disabled]="pendingCommandes.length === 0" *ngIf="!showManifestHistory">
             <span>✅</span>
             <span>Valider et Imprimer Manifest</span>
           </button>
         </div>
       </div>
 
-      <div class="manifest-info">
-        <div class="info-item">
-          <span class="info-label">Commandes en attente:</span>
-          <span class="info-value">{{ pendingCommandes.length }}</span>
+      <!-- Manifest en cours -->
+      <div *ngIf="!showManifestHistory">
+        <div class="manifest-info">
+          <div class="info-item">
+            <span class="info-label">Commandes en attente:</span>
+            <span class="info-value">{{ pendingCommandes.length }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Total estimé:</span>
+            <span class="info-value">{{ calculateManifestTotal() }} DT</span>
+          </div>
         </div>
-        <div class="info-item">
-          <span class="info-label">Total estimé:</span>
-          <span class="info-value">{{ calculateManifestTotal() }} DT</span>
-        </div>
-      </div>
 
       <div class="orders-table">
         <div class="table-header">
@@ -429,6 +403,40 @@
           <div class="empty-state" *ngIf="pendingCommandes.length === 0">
             <p>Aucune commande en attente dans le manifest</p>
             <button class="btn-primary" (click)="setTab('nouvelle-commande')">Ajouter une commande</button>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <!-- Historique des Manifestes Validés -->
+      <div *ngIf="showManifestHistory" class="manifest-history-section">
+        <h3>📜 Historique des Manifestes Validés</h3>
+        <div *ngIf="validatedManifests.length === 0" class="empty-state">
+          <p>Aucun manifeste validé pour le moment</p>
+        </div>
+        <div class="manifests-list" *ngIf="validatedManifests.length > 0">
+          <div class="manifest-card" *ngFor="let manifest of validatedManifests">
+            <div class="manifest-header">
+              <div class="manifest-id">Manifest #{{ manifest.id?.substring(0, 8) }}</div>
+              <span class="manifest-status validated">✅ Validé</span>
+            </div>
+            <div class="manifest-details">
+              <div class="detail-row">
+                <span class="detail-label">Date de validation:</span>
+                <span class="detail-value">{{ manifest.dateCreation | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Nombre de colis:</span>
+                <span class="detail-value">{{ manifest.nombreColis }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Statut:</span>
+                <span class="detail-value">{{ manifest.statut }}</span>
+              </div>
+            </div>
+            <div class="manifest-actions">
+              <button class="btn-secondary" (click)="reprintManifest(manifest)">🖨️ Réimprimer</button>
+            </div>
           </div>
         </div>
       </div>
@@ -470,77 +478,6 @@
           <div class="empty-state" *ngIf="filteredCommandes.length === 0">
             <p>Aucune commande trouvée</p>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Live Tracking GPS Tab -->
-    <div *ngIf="activeTab === 'suivi'" class="dashboard-content">
-      <div class="dashboard-header">
-        <h1>Suivi en direct</h1>
-        <p class="header-subtitle">Rechercher une commande par ID ou numéro de commande</p>
-      </div>
-
-      <div class="page-card mb-4">
-        <div class="tracking-search">
-          <div class="search-input-group">
-            <input type="text" 
-                   class="search-input" 
-                   placeholder="Entrez l'ID ou le numéro de commande..." 
-                   [(ngModel)]="trackingSearchTerm"
-                   (keyup.enter)="searchTracking()">
-            <button class="btn-primary" (click)="searchTracking()">
-              <span>🔍</span>
-              <span>Rechercher</span>
-            </button>
-          </div>
-        </div>
-
-        <div *ngIf="selectedTrackingCmd" class="tracking-result">
-          <div class="tracking-info">
-            <div class="tracking-header">
-              <h3>Commande #{{ selectedTrackingCmd.id }}</h3>
-              <span class="status-badge" [class]="'status-' + selectedTrackingCmd.statut.toLowerCase()">
-                {{ selectedTrackingCmd.statut }}
-              </span>
-            </div>
-            
-            <div class="tracking-details">
-              <div class="detail-row">
-                <span class="detail-label">Destinataire:</span>
-                <span class="detail-value">{{ selectedTrackingCmd.nomDestinataire || selectedTrackingCmd.adresseArriveeId }}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Adresse:</span>
-                <span class="detail-value">{{ selectedTrackingCmd.adresseArriveeId }}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Téléphone:</span>
-                <span class="detail-value">{{ selectedTrackingCmd.telephone || 'N/A' }}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Prix:</span>
-                <span class="detail-value">{{ selectedTrackingCmd.prix || selectedTrackingCmd.montantTotal || 0 }} DT</span>
-              </div>
-            </div>
-
-            <div class="tracking-map">
-              <div class="map-wrapper">
-                <div id="client-map" class="real-leaflet-map"></div>
-              </div>
-              <div class="tracking-status">
-                <div class="status-indicator">
-                  <span class="pulse-dot-green"></span>
-                  <strong>Livraison en cours — Livreur : {{ driverPosition.name }}</strong>
-                </div>
-                <div class="eta-tag">⏰ ETA Arrivée: ~18 Minutes</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="empty-state" *ngIf="!selectedTrackingCmd && trackingSearched">
-          <p>Aucune commande trouvée avec cet ID ou numéro</p>
         </div>
       </div>
     </div>
@@ -628,6 +565,7 @@
     <div *ngIf="activeTab === 'rechercher'" class="dashboard-content">
       <div class="dashboard-header">
         <h1>Recherche Colis</h1>
+        <p>Recherchez un colis et suivez son état en temps réel</p>
       </div>
       <div class="search-card">
         <div class="search-body">
@@ -635,6 +573,81 @@
           <div class="search-row">
             <input type="text" [(ngModel)]="searchTerm" placeholder="Entrez le code ou le numéro" />
             <button class="btn-primary" (click)="onDashboardSearch()">🔍 Rechercher</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Résultat de recherche avec suivi -->
+      <div *ngIf="searchResult" class="tracking-result-card">
+        <div class="tracking-header">
+          <h3>📦 Colis #{{ searchResult.id }}</h3>
+          <span class="status-badge" [ngClass]="'status-' + searchResult.statut?.toLowerCase()">
+            {{ searchResult.statut }}
+          </span>
+        </div>
+
+        <div class="tracking-details">
+          <div class="detail-row">
+            <span class="detail-label">📍 Destination:</span>
+            <span class="detail-value">{{ searchResult.adresseArriveeId }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">📅 Date de création:</span>
+            <span class="detail-value">{{ searchResult.dateCreation | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">💰 Prix:</span>
+            <span class="detail-value">{{ searchResult.prix }} DT</span>
+          </div>
+        </div>
+
+        <!-- Informations Livreur -->
+        <div *ngIf="searchResult.livreurId" class="livreur-info-section">
+          <h4>🚚 Livreur assigné</h4>
+          <div class="livreur-card">
+            <div class="livreur-avatar">
+              <span>{{ getLivreurInitials(searchResult.livreurId) }}</span>
+            </div>
+            <div class="livreur-details">
+              <div class="livreur-name">{{ searchResult.livreurId }}</div>
+              <div class="livreur-status">En livraison</div>
+              <div class="livreur-contact">
+                <button class="btn-contact" (click)="contacterLivreur(searchResult.livreurId)">📞 Contacter</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timeline de suivi -->
+        <div class="tracking-timeline">
+          <h4>📍 Historique de livraison</h4>
+          <div class="timeline-item completed">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-title">Commande créée</div>
+              <div class="timeline-date">{{ searchResult.dateCreation | date:'dd/MM/yyyy HH:mm' }}</div>
+            </div>
+          </div>
+          <div class="timeline-item" [ngClass]="getTimelineStatus('EN_ATTENTE', searchResult.statut)">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-title">En attente d'affectation</div>
+              <div class="timeline-date">En attente</div>
+            </div>
+          </div>
+          <div class="timeline-item" [ngClass]="getTimelineStatus('EN_LIVRAISON', searchResult.statut)">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-title">En cours de livraison</div>
+              <div class="timeline-date">En cours</div>
+            </div>
+          </div>
+          <div class="timeline-item" [ngClass]="getTimelineStatus('LIVRE', searchResult.statut)">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-title">Livré</div>
+              <div class="timeline-date">En attente</div>
+            </div>
           </div>
         </div>
       </div>
@@ -669,20 +682,97 @@
           </div>
         </form>
 
+        <div *ngIf="reclamationSuccessMsg" class="success-message">
+          ✓ {{ reclamationSuccessMsg }}
+        </div>
+
         <div class="reclamations-list" *ngIf="reclamationsList.length > 0">
           <h3>Mes réclamations précédentes</h3>
           <div class="reclamation-item" *ngFor="let rec of reclamationsList">
             <div class="rec-header">
-              <span class="rec-objet">{{ rec.objet }}</span>
+              <span class="rec-objet">{{ rec.objet || rec.type }}</span>
               <span class="rec-date">{{ rec.dateCreation | date:'short' }}</span>
             </div>
             <p class="rec-description">{{ rec.description }}</p>
             <span class="rec-status" [class]="'status-' + rec.statut.toLowerCase()">{{ rec.statut }}</span>
           </div>
         </div>
-        <div class="success-message" *ngIf="reclamationSuccessMsg">
-          {{ reclamationSuccessMsg }}
-        </div>
+      </div>
+    </div>
+
+    <!-- Échange Colis Tab -->
+    <div *ngIf="activeTab === 'echange'" class="dashboard-content">
+      <div class="dashboard-header">
+        <h1>Échange de Colis</h1>
+        <p>Remplacer un colis existant par de nouvelles coordonnées de destination</p>
+      </div>
+      <div class="commande-form-card">
+        <form [formGroup]="echangeForm">
+          <div class="form-section">
+            <h3>📦 Colis à remplacer</h3>
+            <div class="form-group">
+              <label>ID du colis à remplacer *</label>
+              <input type="text" formControlName="ancienColisId" placeholder="Entrez l'ID du colis existant" />
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>📍 Nouvelle destination</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Nom complet *</label>
+                <input type="text" formControlName="nouveauNom" placeholder="Nom complet du nouveau destinataire" />
+              </div>
+              <div class="form-group">
+                <label>Téléphone *</label>
+                <input type="tel" formControlName="nouveauPhone" placeholder="Numéro de téléphone" />
+              </div>
+              <div class="form-group">
+                <label>Gouvernorat *</label>
+                <select formControlName="nouveauGouvernorat">
+                  <option value="">Sélectionner</option>
+                  <option value="Tunis">Tunis</option>
+                  <option value="Ariana">Ariana</option>
+                  <option value="Ben Arous">Ben Arous</option>
+                  <option value="Manouba">Manouba</option>
+                  <option value="Nabeul">Nabeul</option>
+                  <option value="Zaghouan">Zaghouan</option>
+                  <option value="Bizerte">Bizerte</option>
+                  <option value="Sousse">Sousse</option>
+                  <option value="Monastir">Monastir</option>
+                  <option value="Sfax">Sfax</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Ville *</label>
+                <input type="text" formControlName="nouveauVille" placeholder="Ville" />
+              </div>
+              <div class="form-group">
+                <label>Localité *</label>
+                <input type="text" formControlName="nouveauLocalite" placeholder="Localité/Code postal" />
+              </div>
+              <div class="form-group">
+                <label>Adresse complète *</label>
+                <input type="text" formControlName="nouveauAdresse" placeholder="Adresse de livraison" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>� Prix de livraison</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Nouveau prix (DT) *</label>
+                <input type="number" step="0.01" formControlName="nouveauPrix" placeholder="Prix de livraison" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" (click)="resetEchangeForm()">Annuler</button>
+            <button type="submit" class="btn-primary" (click)="validerEchange()">Valider l'échange</button>
+          </div>
+        </form>
       </div>
     </div>
 
@@ -694,7 +784,7 @@
           <p class="header-subtitle">Notre équipe est à votre écoute 24/7</p>
         </div>
       </div>
-      
+
       <div class="service-client-section">
         <div class="team-grid">
           <div class="team-card" *ngFor="let member of teamMembers">

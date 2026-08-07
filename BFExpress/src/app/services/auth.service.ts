@@ -80,4 +80,10 @@ export class AuthService {
   supprimerUtilisateur(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/users/${id}`);
   }
+
+  changerStatut(id: string, statut: string): Observable<UserProfile> {
+    return this.http.patch<UserProfile>(`${this.apiUrl}/users/${id}/statut`, null, {
+      params: { statut }
+    });
+  }
 }

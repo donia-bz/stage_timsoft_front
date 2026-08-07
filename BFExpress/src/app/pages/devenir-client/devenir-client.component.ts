@@ -37,10 +37,7 @@ export class DevenirClientComponent {
       motDePasse: this.motDePasse,
       telephone: this.telephone,
       role: 'CLIENT',
-      statut: 'INSCRIPTION',
-      approuve: false,
-      entreprise: this.entreprise,
-      adresseDefautId: 'DefaultAddr'
+      entreprise: this.entreprise
     };
 
     this.authService.register(payload).subscribe({
