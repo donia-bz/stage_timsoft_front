@@ -61,7 +61,6 @@ export class DashboardClientComponent implements OnInit {
 
   packageForm!: FormGroup;
   reclamationForm!: FormGroup;
-  echangeForm!: FormGroup;
 
   gouvernorats: string[] = [
     'Tunis', 'Ariana', 'Ben Arous', 'Manouba', 'Nabeul', 'Zaghouan',
@@ -110,7 +109,6 @@ export class DashboardClientComponent implements OnInit {
     }
   ];
 
-  // Statuts type First Delivery / Navex
   detailedStatuses = [
     { key: 'EN_ATTENTE', label: 'En attente' },
     { key: 'MANIFESTE', label: 'Sur manifeste' },
@@ -139,41 +137,24 @@ export class DashboardClientComponent implements OnInit {
     const user = this.authService.getCurrentUser();
     if (user) {
       this.clientName = `${user.prenom || ''} ${user.nom || ''}`.trim() || 'Client';
-      this.clientId = user.id; // Utiliser l'ID de l'utilisateur comme clientId
-      console.log('Utilisateur connecté:', user);
-      console.log('Client ID utilisé:', this.clientId);
+      this.clientId = user.id;
       this.loadClientCommandes();
       this.loadReclamations();
       this.loadManifests();
-    } else {
-      console.error('Aucun utilisateur connecté');
     }
-  }
-
-  loadManifests(): void {
-    if (!this.clientId) return;
-    this.apiService.getManifestesByClient(this.clientId).subscribe({
-      next: (res) => {
-        // Filtrer pour ne garder que ceux qui ne sont pas en brouillon si nécessaire
-        this.validatedManifests = res.filter(m => m.statut !== 'BROUILLON') || [];
-      },
-      error: (err) => {
-        console.error('Erreur chargement manifestes:', err);
-      }
-    });
   }
 
   private initForms(): void {
     this.packageForm = this.fb.group({
-      pickupName: ['Client Test', [Validators.required, Validators.minLength(3)]],
-      governorate: ['Tunis', Validators.required],
-      city: ['Tunis', [Validators.required, Validators.minLength(2)]],
-      locality: ['Centre', Validators.required],
-      address: ['123 Avenue Habib Bourguiba, Tunis', [Validators.required, Validators.minLength(10)]],
-      phone1: ['+216 98 123 456', [Validators.required, Validators.pattern(/^[0-9+ ]{8,15}$/)]],
+      pickupName: ['', [Validators.required, Validators.minLength(3)]],
+      governorate: ['', Validators.required],
+      city: ['', [Validators.required, Validators.minLength(2)]],
+      locality: ['', Validators.required],
+      address: ['', [Validators.required, Validators.minLength(10)]],
+      phone1: ['', [Validators.required, Validators.pattern(/^[0-9+ ]{8,15}$/)]],
       phone2: ['', [Validators.pattern(/^[0-9+ ]{8,15}$/)]],
-      designation: ['Colis test', [Validators.required, Validators.minLength(5)]],
-      price: [50, [Validators.min(0)]], // Prix par défaut 50
+      designation: ['', [Validators.required, Validators.minLength(5)]],
+      price: [null, [Validators.required, Validators.min(0)]],
       itemCount: [1, [Validators.required, Validators.min(1)]],
       packageCount: [1, [Validators.required, Validators.min(1)]],
       paymentMode: ['Espèce seulement', Validators.required],
@@ -187,17 +168,6 @@ export class DashboardClientComponent implements OnInit {
       objet: ['', Validators.required],
       codeBarre: ['', [Validators.required, Validators.minLength(5)]],
       description: ['', Validators.maxLength(1000)]
-    });
-
-    this.echangeForm = this.fb.group({
-      ancienColisId: ['', Validators.required],
-      nouveauNom: ['', [Validators.required, Validators.minLength(3)]],
-      nouveauPhone: ['', [Validators.required, Validators.pattern(/^[0-9+ ]{8,15}$/)]],
-      nouveauGouvernorat: ['', Validators.required],
-      nouveauVille: ['', Validators.required],
-      nouveauLocalite: ['', Validators.required],
-      nouveauAdresse: ['', Validators.required],
-      nouveauPrix: [null, [Validators.required, Validators.min(0)]]
     });
   }
 
@@ -221,19 +191,45 @@ export class DashboardClientComponent implements OnInit {
     this.apiService.getCommandesByClient(this.clientId).subscribe({
       next: (res) => {
         this.commandes = res || [];
-        // Seules les commandes EN_ATTENTE peuvent être mises sur manifeste
-        this.pendingCommandes = this.commandes.filter(
-          c => c.statut === 'EN_ATTENTE'
-        );
+        this.pendingCommandes = this.commandes.filter(c => c.statut === 'EN_ATTENTE');
         this.loading = false;
       },
       error: (err) => {
-        console.error('Erreur chargement commandes client:', err);
+        console.error('Erreur chargement commandes:', err);
         this.errorMessage = 'Erreur lors du chargement des commandes';
         this.commandes = [];
         this.pendingCommandes = [];
         this.loading = false;
       }
+    });
+  }
+
+  loadManifests(): void {
+    if (!this.clientId) return;
+
+    this.apiService.getManifestesByClient(this.clientId).subscribe({
+      next: (res) => {
+        this.validatedManifests = (res || []).filter((m: any) => m.statut !== 'BROUILLON');
+      },
+      error: (err) => console.error('Erreur chargement manifestes:', err)
+    });
+  }
+
+  loadReclamations(): void {
+    if (!this.clientId) return;
+
+    this.apiService.getReclamationsByClient(this.clientId).subscribe({
+      next: (reclamations) => {
+        this.reclamationsList = (reclamations || []).map((r: any) => ({
+          id: r.id,
+          objet: r.type || r.objet,
+          codeBarre: r.commandeId || r.codeBarre,
+          description: r.description,
+          dateCreation: r.dateCreation,
+          statut: r.statut
+        }));
+      },
+      error: (err) => console.error('Erreur chargement réclamations:', err)
     });
   }
 
@@ -266,9 +262,9 @@ export class DashboardClientComponent implements OnInit {
 
   getRetourStatusText(): string {
     const rate = this.calculateRetourRate();
-    if (rate < 10) return '✓ Excellent — En dessous de l\'objectif (< 10%)';
-    if (rate < 20) return '⚠ Attention — Proche de la limite';
-    return '❌ Critique — Au-dessus de l\'objectif';
+    if (rate < 10) return 'Excellent — sous l’objectif (< 10%)';
+    if (rate < 20) return 'Attention — proche de la limite';
+    return 'Critique — au-dessus de l’objectif';
   }
 
   filterByStatus(status: string): void {
@@ -276,7 +272,7 @@ export class DashboardClientComponent implements OnInit {
     this.setTab('mes-commandes');
   }
 
-  // ========== BORDEREAU DE RÈGLEMENT ==========
+  // ========== BORDEREAU ==========
   getCommandesReglement(): Commande[] {
     return this.commandes.filter(c =>
       c.statut === 'LIVRE' || c.statut === 'LIVRE_PAYE'
@@ -305,29 +301,15 @@ export class DashboardClientComponent implements OnInit {
     if (!this.clientId) return;
 
     const moisIndex = this.months.indexOf(this.month) + 1;
-    const anneeNum = parseInt(this.year);
+    const anneeNum = parseInt(this.year, 10);
 
     this.loading = true;
     this.apiService.getReglementsByClient(this.clientId, moisIndex, anneeNum).subscribe({
-      next: (paiements: any[]) => {
-        // Utiliser les données backend pour les calculs
-        const totalCOD = paiements.reduce((sum, p) => sum + (p.montant || 0), 0);
-        const totalFrais = paiements.reduce((sum, p) => sum + (p.frais || 0), 0);
-        const totalNet = paiements.reduce((sum, p) => sum + (p.net || 0), 0);
-
-        console.log('Règlements chargés:', {
-          mois: this.month,
-          annee: this.year,
-          totalCOD,
-          totalFrais,
-          totalNet,
-          nombrePaiements: paiements.length
-        });
-
+      next: () => {
         this.loading = false;
       },
       error: (err) => {
-        console.error('Erreur chargement règlements:', err);
+        console.error('Erreur règlements:', err);
         this.errorMessage = 'Erreur lors du chargement des règlements';
         this.loading = false;
       }
@@ -341,7 +323,7 @@ export class DashboardClientComponent implements OnInit {
     );
   }
 
-  // ========== FORMS HELPERS ==========
+  // ========== FORM HELPERS ==========
   isInvalid(controlName: string, form: FormGroup = this.packageForm): boolean {
     const control = form.get(controlName);
     return !!(control && control.invalid && (control.dirty || control.touched));
@@ -349,10 +331,14 @@ export class DashboardClientComponent implements OnInit {
 
   getError(controlName: string, form: FormGroup = this.packageForm): string {
     const control = form.get(controlName);
-    if (!control || !control.errors) return '';
+    if (!control?.errors) return '';
     if (control.errors['required']) return 'Ce champ est obligatoire';
-    if (control.errors['minlength']) return `Minimum ${control.errors['minlength'].requiredLength} caractères`;
-    if (control.errors['maxlength']) return `Maximum ${control.errors['maxlength'].requiredLength} caractères`;
+    if (control.errors['minlength']) {
+      return `Minimum ${control.errors['minlength'].requiredLength} caractères`;
+    }
+    if (control.errors['maxlength']) {
+      return `Maximum ${control.errors['maxlength'].requiredLength} caractères`;
+    }
     if (control.errors['min']) return 'La valeur doit être positive';
     if (control.errors['pattern']) return 'Format invalide';
     return 'Champ invalide';
@@ -377,15 +363,27 @@ export class DashboardClientComponent implements OnInit {
     this.errorMessage = '';
     const formValue = this.packageForm.value;
 
-    // Créer la commande
     const commande: any = {
       clientId: this.clientId,
       typeService: formValue.typeService,
       montantTotal: formValue.price || 0,
-      nomDestinataire: formValue.pickupName,
-      telephoneDestinataire: formValue.phone1,
+      nomDestinataire: formValue.pickupName?.trim(),
+      telephoneDestinataire: formValue.phone1?.trim(),
+      telephone: formValue.phone1?.trim(),
+      telephone2: formValue.phone2?.trim() || null,
+      gouvernorat: formValue.governorate,
+      ville: formValue.city?.trim(),
+      localite: formValue.locality?.trim(),
+      adresseComplete: formValue.address?.trim(),
+      designation: formValue.designation?.trim(),
+      nombreArticles: formValue.itemCount || 1,
+      nombreColis: formValue.packageCount || 1,
+      modePaiement: formValue.paymentMode,
+      ouvertureAvantPaiement: formValue.openBeforePayment === 'Oui',
+      echangePossible: formValue.exchange === 'Oui',
+      remarques: formValue.remarks?.trim() || null,
+      statut: 'EN_ATTENTE',
       colis: [{
-        destinataireId: null,
         clientId: this.clientId,
         poids: 1.0,
         fragile: false,
@@ -393,12 +391,8 @@ export class DashboardClientComponent implements OnInit {
       }]
     };
 
-    console.log('Envoi de la commande:', commande);
-    console.log('Client ID utilisé pour création:', this.clientId);
-
     this.apiService.creerCommande(commande).subscribe({
-      next: (cmd) => {
-        console.log('Commande créée avec succès:', cmd);
+      next: () => {
         this.loading = false;
         this.packageForm.reset({
           itemCount: 1,
@@ -412,9 +406,9 @@ export class DashboardClientComponent implements OnInit {
         this.setTab('manifest');
       },
       error: (err) => {
-        console.error('Erreur création commande:', err);
         this.loading = false;
-        this.errorMessage = err.error?.message || err.message || 'Erreur lors de la création de la commande.';
+        this.errorMessage =
+          err.error?.message || err.message || 'Erreur lors de la création de la commande.';
       }
     });
   }
@@ -422,7 +416,8 @@ export class DashboardClientComponent implements OnInit {
   // ========== MANIFESTE ==========
   calculateManifestTotal(): number {
     return this.pendingCommandes.reduce(
-      (sum, c) => sum + (c.montantTotal || (c as any).prix || 0), 0
+      (sum, c) => sum + (c.montantTotal || (c as any).prix || 0),
+      0
     );
   }
 
@@ -435,32 +430,29 @@ export class DashboardClientComponent implements OnInit {
     this.loading = true;
     this.errorMessage = '';
 
-    // Créer le manifeste avec les colis en attente
-    // On utilise les IDs des commandes, le backend convertira en IDs de colis
     const manifeste = {
       clientId: this.clientId,
       nombreColis: this.pendingCommandes.length,
-      commandeIds: this.pendingCommandes.map(c => c.id).filter(id => id), // Envoyer les IDs de commandes
+      commandeIds: this.pendingCommandes.map(c => c.id).filter(id => !!id),
       statut: 'BROUILLON'
     };
 
     this.apiService.creerManifeste(manifeste).subscribe({
       next: (manifest) => {
-        // Valider le manifeste - le backend mettra automatiquement les colis à A_ENLEVER
         this.apiService.validerManifeste(manifest.id).subscribe({
           next: () => {
             this.loading = false;
             this.loadClientCommandes();
+            this.loadManifests();
             this.errorMessage = '';
-            this.validatedManifests.push(manifest);
           },
-          error: (err) => {
+          error: () => {
             this.loading = false;
             this.errorMessage = 'Erreur lors de la validation du manifeste.';
           }
         });
       },
-      error: (err) => {
+      error: () => {
         this.loading = false;
         this.errorMessage = 'Erreur lors de la création du manifeste.';
       }
@@ -482,10 +474,11 @@ export class DashboardClientComponent implements OnInit {
   // ========== RECHERCHE ==========
   get filteredCommandes(): Commande[] {
     if (!this.searchTerm?.trim()) return this.commandes;
+
     const q = this.searchTerm.toLowerCase().trim();
     return this.commandes.filter(c =>
       (c.id && c.id.toLowerCase().includes(q)) ||
-      ((c as any).nomDestinataire && (c as any).nomDestinataire.toLowerCase().includes(q)) ||
+      ((c as any).nomDestinataire && String((c as any).nomDestinataire).toLowerCase().includes(q)) ||
       (c.adresseArriveeId && c.adresseArriveeId.toLowerCase().includes(q)) ||
       (c.statut && c.statut.toLowerCase().includes(q)) ||
       ((c as any).telephone && String((c as any).telephone).includes(q))
@@ -500,20 +493,23 @@ export class DashboardClientComponent implements OnInit {
 
     this.loading = true;
     this.errorMessage = '';
-    console.log('Recherche en cours pour:', this.searchTerm);
 
     this.apiService.searchCommandes(this.searchTerm).subscribe({
       next: (results) => {
         console.log('Résultats de recherche:', results);
-        this.searchResult = results[0] || null;
+        this.searchResult = results?.[0] || null;
         this.loading = false;
         if (!this.searchResult) {
-          this.errorMessage = 'Aucun résultat trouvé pour: ' + this.searchTerm;
+          this.errorMessage = 'Aucun résultat trouvé pour : ' + this.searchTerm;
         }
       },
       error: (err) => {
-        console.error('Erreur recherche:', err);
-        this.errorMessage = 'Erreur lors de la recherche: ' + (err.message || err.error?.message || 'Erreur inconnue');
+        console.error('Erreur de recherche détaillée:', err);
+        console.error('Status:', err.status);
+        console.error('Message:', err.message);
+        console.error('Error object:', err.error);
+        this.errorMessage =
+          'Erreur lors de la recherche : ' + (err.error?.message || err.message || 'Erreur inconnue');
         this.searchResult = null;
         this.loading = false;
       }
@@ -521,8 +517,8 @@ export class DashboardClientComponent implements OnInit {
   }
 
   getStatusLabel(statut: string): string {
-    const status = this.detailedStatuses.find(s => s.key === statut);
-    return status ? status.label : statut;
+    const found = this.detailedStatuses.find(s => s.key === statut);
+    return found ? found.label : statut;
   }
 
   isStatusReached(targetStatus: string, currentStatus: string): boolean {
@@ -536,15 +532,14 @@ export class DashboardClientComponent implements OnInit {
       'LIVRE',
       'LIVRE_PAYE'
     ];
-
     const currentIndex = statusOrder.indexOf(currentStatus);
     const targetIndex = statusOrder.indexOf(targetStatus);
-
+    if (currentIndex === -1 || targetIndex === -1) return false;
     return currentIndex >= targetIndex;
   }
 
   getStatusClass(statut: string | undefined): string {
-    return `status-${statut?.toLowerCase() || 'en_attente'}`;
+    return `status-${(statut || 'EN_ATTENTE').toLowerCase()}`;
   }
 
   viewOrderDetails(cmd: Commande): void {
@@ -565,59 +560,25 @@ export class DashboardClientComponent implements OnInit {
 
     const reclamation: any = {
       clientId: this.clientId,
-      commandeId: formValue.codeBarre.trim(), // Utiliser codeBarre comme commandeId pour simplifier
+      commandeId: formValue.codeBarre.trim(),
       type: formValue.objet,
       description: formValue.description?.trim() || '',
       statut: 'EN_ATTENTE'
     };
 
     this.apiService.creerReclamation(reclamation).subscribe({
-      next: (rec) => {
+      next: () => {
         this.loading = false;
         this.reclamationSuccessMsg = 'Réclamation envoyée avec succès.';
         this.reclamationForm.reset();
         this.loadReclamations();
-        setTimeout(() => this.reclamationSuccessMsg = '', 5000);
+        setTimeout(() => (this.reclamationSuccessMsg = ''), 5000);
       },
-      error: (err) => {
+      error: () => {
         this.loading = false;
-        this.errorMessage = 'Erreur lors de l\'envoi de la réclamation.';
+        this.errorMessage = 'Erreur lors de l’envoi de la réclamation.';
       }
     });
-  }
-
-  loadReclamations(): void {
-    if (!this.clientId) return;
-
-    this.apiService.getReclamationsByClient(this.clientId).subscribe({
-      next: (reclamations) => {
-        this.reclamationsList = reclamations.map(r => ({
-          id: r.id,
-          objet: r.type,
-          codeBarre: r.commandeId,
-          description: r.description,
-          dateCreation: r.dateCreation,
-          statut: r.statut
-        }));
-      },
-      error: (err) => {
-        console.error('Erreur chargement réclamations:', err);
-      }
-    });
-  }
-
-  // ========== ÉCHANGE ==========
-  validerEchange(): void {
-    if (this.echangeForm.invalid) {
-      this.markFormGroupTouched(this.echangeForm);
-      return;
-    }
-    this.echangeForm.reset();
-    this.setTab('mes-commandes');
-  }
-
-  resetEchangeForm(): void {
-    this.echangeForm.reset();
   }
 
   // ========== SERVICE CLIENT ==========
@@ -632,8 +593,11 @@ export class DashboardClientComponent implements OnInit {
   formatDate(date: Date | string | undefined): string {
     if (!date) return '—';
     return new Date(date).toLocaleDateString('fr-TN', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit'
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   }
 }

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 export interface Adresse {
@@ -248,9 +249,16 @@ export class ApiService {
   }
 
   searchCommandes(query: string): Observable<Commande[]> {
-    return this.http.get<Commande[]>(`${this.commandesUrl}/search`, {
+    console.log('Recherche de commandes avec query:', query);
+    console.log('URL complète:', `${this.commandesUrl}/commandes/search?q=${query}`);
+    return this.http.get<Commande[]>(`${this.commandesUrl}/commandes/search`, {
       params: new HttpParams().set('q', query)
-    });
+    }).pipe(
+      tap(
+        results => console.log('Résultats API reçus:', results),
+        error => console.error('Erreur API:', error)
+      )
+    );
   }
 
   // --- Règlements / Paiements ---
