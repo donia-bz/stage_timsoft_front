@@ -5,9 +5,12 @@ import { environment } from '../../environments/environment';
 
 export interface Adresse {
   id?: string;
-  rue: string;
+  gouvernorat: string;
   ville: string;
-  codePostal: string;
+  localite: string;
+  rue: string;
+  codePostal?: string;
+  telephone?: string;
   latitude?: number;
   longitude?: number;
   adressePrincipale?: boolean;
@@ -244,6 +247,20 @@ export class ApiService {
     return this.http.delete<void>(`${this.commandesUrl}/commandes/${id}`);
   }
 
+  searchCommandes(query: string): Observable<Commande[]> {
+    return this.http.get<Commande[]>(`${this.commandesUrl}/search`, {
+      params: new HttpParams().set('q', query)
+    });
+  }
+
+  // --- Règlements / Paiements ---
+  getReglementsByClient(clientId: string, mois?: number, annee?: number): Observable<any[]> {
+    let params = new HttpParams();
+    if (mois !== undefined) params = params.set('mois', mois.toString());
+    if (annee !== undefined) params = params.set('annee', annee.toString());
+    return this.http.get<any[]>(`${this.commandesUrl}/paiements/client/${clientId}/reglements`, { params });
+  }
+
   // --- Colis ---
   creerColis(colis: Colis): Observable<Colis> {
     return this.http.post<Colis>(`${this.commandesUrl}/colis`, colis);
@@ -259,6 +276,12 @@ export class ApiService {
 
   getColisByClient(clientId: string): Observable<Colis[]> {
     return this.http.get<Colis[]>(`${this.commandesUrl}/colis/client/${clientId}`);
+  }
+
+  searchColis(query: string): Observable<Colis[]> {
+    return this.http.get<Colis[]>(`${this.commandesUrl}/colis/search`, {
+      params: new HttpParams().set('q', query)
+    });
   }
 
   // --- Destinataires ---

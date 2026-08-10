@@ -1,0 +1,731 @@
+<div class="client-dashboard">
+
+  <aside class="dashboard-sidebar">
+    <div class="sidebar-header">
+      <div class="brand">
+        <div class="brand-logo">⚡</div>
+        <span class="brand-text">BFExpress</span>
+      </div>
+      <div class="user-card">
+        <div class="user-avatar">{{ clientName.charAt(0) }}</div>
+        <div class="user-info">
+          <div class="user-name">{{ clientName }}</div>
+          <div class="user-role">Expéditeur</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-label">Principal</div>
+        <a class="nav-item" [class.active]="activeTab === 'dashboard'" (click)="setTab('dashboard')">
+          <span>📊</span> Tableau de bord
+        </a>
+        <a class="nav-item" [class.active]="activeTab === 'nouvelle-commande'" (click)="setTab('nouvelle-commande')">
+          <span>📦</span> Nouvelle Commande
+        </a>
+        <a class="nav-item" [class.active]="activeTab === 'manifest'" (click)="setTab('manifest')">
+          <span>📋</span> Manifeste
+          <span class="badge" *ngIf="pendingCommandes.length > 0">{{ pendingCommandes.length }}</span>
+        </a>
+        <a class="nav-item" [class.active]="activeTab === 'mes-commandes'" (click)="setTab('mes-commandes')">
+          <span>📑</span> Mes Colis
+        </a>
+        <a class="nav-item" [class.active]="activeTab === 'rechercher'" (click)="setTab('rechercher')">
+          <span>🔍</span> Suivi colis
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label">Règlements & Retours</div>
+        <a class="nav-item" [class.active]="activeTab === 'paiements'" (click)="setTab('paiements')">
+          <span>💰</span> Bordereau de règlement
+        </a>
+        <a class="nav-item" [class.active]="activeTab === 'retours'" (click)="setTab('retours')">
+          <span>↩️</span> Retours
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label">Support</div>
+        <a class="nav-item" [class.active]="activeTab === 'reclamations'" (click)="setTab('reclamations')">
+          <span>📝</span> Réclamations
+        </a>
+        <a class="nav-item" [class.active]="activeTab === 'service-client'" (click)="setTab('service-client')">
+          <span>🎧</span> Service Client
+        </a>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-logout" (click)="logout()">🚪 Déconnexion</button>
+    </div>
+  </aside>
+
+  <main class="dashboard-main">
+
+    <!-- DASHBOARD -->
+    <div *ngIf="activeTab === 'dashboard'" class="tab-panel">
+      <div class="page-header">
+        <div>
+          <h1>Bonjour, {{ clientName }} 👋</h1>
+          <p>Espace expéditeur — vue d'ensemble de vos colis</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-primary" (click)="setTab('nouvelle-commande')">➕ Nouvelle Commande</button>
+          <button class="btn btn-secondary" (click)="loadClientCommandes()">🔄 Actualiser</button>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card" (click)="filterByStatus('EN_ATTENTE')">
+          <div class="stat-icon warning">⏳</div>
+          <div>
+            <div class="stat-value">{{ getStatusCount('EN_ATTENTE') }}</div>
+            <div class="stat-label">En attente</div>
+          </div>
+        </div>
+        <div class="stat-card" (click)="filterByStatus('EN_LIVRAISON')">
+          <div class="stat-icon info">🚚</div>
+          <div>
+            <div class="stat-value">{{ getStatusCount('EN_LIVRAISON') }}</div>
+            <div class="stat-label">En livraison</div>
+          </div>
+        </div>
+        <div class="stat-card" (click)="filterByStatus('LIVRE')">
+          <div class="stat-icon success">✅</div>
+          <div>
+            <div class="stat-value">{{ getStatusCount('LIVRE') + getStatusCount('LIVRE_PAYE') }}</div>
+            <div class="stat-label">Livrés</div>
+          </div>
+        </div>
+        <div class="stat-card" (click)="setTab('paiements')">
+          <div class="stat-icon primary">💰</div>
+          <div>
+            <div class="stat-value">{{ getMontantARegler() | number:'1.0-0' }} DT</div>
+            <div class="stat-label">À régler</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Statistiques détaillées</h3>
+        <div class="detailed-stats">
+          <div class="detail-item" *ngFor="let s of detailedStatuses" (click)="filterByStatus(s.key)">
+            <span class="detail-label">{{ s.label }}</span>
+            <span class="detail-value">{{ getStatusCount(s.key) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card return-rate">
+        <div class="return-header">
+          <div>
+            <h3>Taux de retour</h3>
+            <p>Objectif : &lt; 10%</p>
+          </div>
+          <div class="return-value">{{ calculateRetourRate() }}%</div>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="calculateRetourRate()"></div>
+        </div>
+        <div class="return-status" [ngClass]="getRetourStatusClass()">
+          {{ getRetourStatusText() }}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Colis récents</h3>
+          <button class="btn-link" (click)="setTab('mes-commandes')">Voir tout →</button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Référence</th>
+                <th>Date</th>
+                <th>Destinataire</th>
+                <th>Montant COD</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let order of commandes.slice(0, 5)">
+                <td><strong>{{ order.id || 'N/A' }}</strong></td>
+                <td>{{ order.dateCreation | date:'dd/MM/yy HH:mm' }}</td>
+                <td>{{ order.nomDestinataire || order.adresseArriveeId || '—' }}</td>
+                <td>{{ order.montantTotal || 0 }} DT</td>
+                <td><span class="status-pill" [ngClass]="getStatusClass(order.statut)">{{ order.statut }}</span></td>
+              </tr>
+              <tr *ngIf="commandes.length === 0">
+                <td colspan="5" class="empty">Aucun colis pour le moment</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOUVELLE COMMANDE -->
+    <div *ngIf="activeTab === 'nouvelle-commande'" class="tab-panel">
+      <div class="page-header">
+        <div>
+          <h1>Nouvelle Commande</h1>
+          <p>Créer un colis à faire enlever et livrer</p>
+        </div>
+      </div>
+      <div class="card">
+        <form [formGroup]="packageForm" (ngSubmit)="submitPickup()">
+          <div class="form-section">
+            <h3>📍 Destinataire</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Nom complet *</label>
+                <input formControlName="pickupName" placeholder="Nom du destinataire" />
+                <div class="error" *ngIf="isInvalid('pickupName')">{{ getError('pickupName') }}</div>
+              </div>
+              <div class="form-group">
+                <label>Téléphone *</label>
+                <input formControlName="phone1" placeholder="+216 XX XXX XXX" />
+                <div class="error" *ngIf="isInvalid('phone1')">{{ getError('phone1') }}</div>
+              </div>
+              <div class="form-group">
+                <label>Téléphone 2</label>
+                <input formControlName="phone2" placeholder="Optionnel" />
+              </div>
+              <div class="form-group">
+                <label>Gouvernorat *</label>
+                <select formControlName="governorate">
+                  <option value="">Sélectionner</option>
+                  <option *ngFor="let g of gouvernorats" [value]="g">{{ g }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Ville *</label>
+                <input formControlName="city" placeholder="Ville" />
+              </div>
+              <div class="form-group">
+                <label>Localité *</label>
+                <input formControlName="locality" placeholder="Localité / CP" />
+              </div>
+              <div class="form-group full">
+                <label>Adresse complète *</label>
+                <textarea formControlName="address" rows="2" placeholder="Rue, numéro, appartement..."></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="form-section">
+            <h3>📦 Détails du colis</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Désignation *</label>
+                <input formControlName="designation" placeholder="Description du contenu" />
+              </div>
+              <div class="form-group">
+                <label>Montant COD (DT) *</label>
+                <input type="number" formControlName="price" step="0.01" placeholder="0.00" />
+              </div>
+              <div class="form-group">
+                <label>Nb articles</label>
+                <input type="number" formControlName="itemCount" min="1" />
+              </div>
+              <div class="form-group">
+                <label>Nb colis</label>
+                <input type="number" formControlName="packageCount" min="1" />
+              </div>
+              <div class="form-group">
+                <label>Mode de paiement</label>
+                <select formControlName="paymentMode">
+                  <option value="Espèce seulement">Espèce (COD)</option>
+                  <option value="Carte bancaire">Carte bancaire</option>
+                  <option value="Chèque">Chèque</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Type de service</label>
+                <select formControlName="typeService">
+                  <option value="STANDARD">Standard</option>
+                  <option value="EXPRESS">Express</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Ouverture avant paiement</label>
+                <select formControlName="openBeforePayment">
+                  <option value="Non">Non</option>
+                  <option value="Oui">Oui</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Échange possible</label>
+                <select formControlName="exchange">
+                  <option value="Non">Non</option>
+                  <option value="Oui">Oui</option>
+                </select>
+              </div>
+              <div class="form-group full">
+                <label>Remarques / instructions</label>
+                <textarea formControlName="remarks" rows="2"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="packageForm.reset()">Annuler</button>
+            <button type="submit" class="btn btn-primary" [disabled]="loading || packageForm.invalid">
+              {{ loading ? 'Création...' : '📦 Créer la commande' }}
+            </button>
+          </div>
+          <div class="alert error" *ngIf="errorMessage">⚠️ {{ errorMessage }}</div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MANIFESTE -->
+    <div *ngIf="activeTab === 'manifest'" class="tab-panel">
+      <div class="page-header">
+        <div>
+          <h1>Manifeste</h1>
+          <p>Validez vos colis pour enlèvement</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-secondary" (click)="showManifestHistory = !showManifestHistory">
+            {{ showManifestHistory ? 'Manifest en cours' : 'Historique' }}
+          </button>
+          <button class="btn btn-primary" (click)="validerEtImprimerManifest()"
+                  [disabled]="pendingCommandes.length === 0" *ngIf="!showManifestHistory">
+            ✅ Valider & Imprimer
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="!showManifestHistory">
+        <div class="info-cards">
+          <div class="info-card">
+            <div class="info-label">Colis en attente</div>
+            <div class="info-value">{{ pendingCommandes.length }}</div>
+          </div>
+          <div class="info-card">
+            <div class="info-label">Total COD estimé</div>
+            <div class="info-value">{{ calculateManifestTotal() }} DT</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Destinataire</th>
+                  <th>Téléphone</th>
+                  <th>Montant COD</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let cmd of pendingCommandes">
+                  <td>{{ cmd.codeBarre || cmd.id }}</td>
+                  <td>{{ cmd.nomDestinataire || '—' }}</td>
+                  <td>{{ cmd.telephone || '—' }}</td>
+                  <td>{{ cmd.montantTotal || 0 }} DT</td>
+                  <td>
+                    <button class="btn-icon" (click)="imprimerEtiquette(cmd)">🏷️</button>
+                    <button class="btn-icon" (click)="removeFromManifest(cmd)">🗑️</button>
+                  </td>
+                </tr>
+                <tr *ngIf="pendingCommandes.length === 0">
+                  <td colspan="5" class="empty">
+                    Aucun colis en attente.
+                    <button class="btn-link" (click)="setTab('nouvelle-commande')">Créer une commande</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="showManifestHistory" class="card">
+        <h3>Historique des manifestes</h3>
+        <div *ngIf="validatedManifests.length === 0" class="empty">Aucun manifeste validé</div>
+        <div class="manifest-list" *ngIf="validatedManifests.length > 0">
+          <div class="manifest-item" *ngFor="let m of validatedManifests">
+            <div>
+              <strong>Manifest #{{ m.id?.substring(0, 8) }}</strong>
+              <div class="muted">{{ m.dateCreation | date:'dd/MM/yyyy HH:mm' }} · {{ m.nombreColis }} colis</div>
+            </div>
+            <button class="btn btn-secondary" (click)="reprintManifest(m)">🖨️ Réimprimer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MES COLIS -->
+    <div *ngIf="activeTab === 'mes-commandes'" class="tab-panel">
+      <div class="page-header">
+        <div><h1>Mes Colis</h1></div>
+        <div class="search-box">
+          <input [(ngModel)]="searchTerm" placeholder="Référence, destinataire, statut..." />
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Référence</th>
+                <th>Destinataire</th>
+                <th>Statut</th>
+                <th>Date</th>
+                <th>COD</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let cmd of filteredCommandes">
+                <td><strong>{{ cmd.id }}</strong></td>
+                <td>{{ cmd.nomDestinataire || cmd.adresseArriveeId || '—' }}</td>
+                <td><span class="status-pill" [ngClass]="getStatusClass(cmd.statut)">{{ cmd.statut }}</span></td>
+                <td>{{ cmd.dateCreation | date:'dd/MM/yy' }}</td>
+                <td>{{ cmd.montantTotal || 0 }} DT</td>
+                <td>
+                  <button class="btn-icon" (click)="imprimerEtiquette(cmd)">🏷️</button>
+                  <button class="btn-icon" (click)="viewOrderDetails(cmd)">👁️</button>
+                </td>
+              </tr>
+              <tr *ngIf="filteredCommandes.length === 0">
+                <td colspan="6" class="empty">Aucun colis trouvé</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUIVI -->
+    <div *ngIf="activeTab === 'rechercher'" class="tab-panel">
+      <div class="page-header">
+        <div>
+          <h1>Suivi colis</h1>
+          <p>Code à barres ou numéro de téléphone</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="search-row">
+          <input [(ngModel)]="searchTerm" placeholder="Code à barres ou téléphone" />
+          <button class="btn btn-primary" (click)="onDashboardSearch()">🔍 Rechercher</button>
+        </div>
+      </div>
+      <div class="card" *ngIf="searchResult">
+        <div class="tracking-header">
+          <h3>📦 Suivi de commande #{{ searchResult.id?.substring(0, 8) || 'N/A' }}</h3>
+          <span class="status-pill" [ngClass]="getStatusClass(searchResult.statut)">{{ getStatusLabel(searchResult.statut) }}</span>
+        </div>
+        <div class="tracking-details">
+          <div class="detail-row">
+            <span class="detail-label">📅 Date de création :</span>
+            <span class="detail-value">{{ searchResult.dateCreation | date:'dd/MM/yyyy à HH:mm' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">💰 Montant COD :</span>
+            <span class="detail-value">{{ searchResult.montantTotal || 0 }} DT</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">🚚 Type de service :</span>
+            <span class="detail-value">{{ searchResult.typeService || 'STANDARD' }}</span>
+          </div>
+        </div>
+        <div class="tracking-timeline">
+          <h4>📍 Timeline de suivi</h4>
+          <div class="timeline-steps">
+            <div class="timeline-step completed">
+              <div class="step-icon">✅</div>
+              <div class="step-content">
+                <div class="step-title">Commande créée</div>
+                <div class="step-date">{{ searchResult.dateCreation | date:'dd/MM/yyyy HH:mm' }}</div>
+              </div>
+            </div>
+            <div class="timeline-step" [class.completed]="isStatusReached('MANIFESTE', searchResult.statut)" [class.active]="searchResult.statut === 'MANIFESTE'">
+              <div class="step-icon">{{ isStatusReached('MANIFESTE', searchResult.statut) ? '✅' : '⏳' }}</div>
+              <div class="step-content">
+                <div class="step-title">Sur manifeste</div>
+                <div class="step-date">{{ isStatusReached('MANIFESTE', searchResult.statut) ? 'Ajouté au manifeste' : 'En attente' }}</div>
+              </div>
+            </div>
+            <div class="timeline-step" [class.completed]="isStatusReached('A_ENLEVER', searchResult.statut)" [class.active]="searchResult.statut === 'A_ENLEVER'">
+              <div class="step-icon">{{ isStatusReached('A_ENLEVER', searchResult.statut) ? '✅' : '⏳' }}</div>
+              <div class="step-content">
+                <div class="step-title">À enlever</div>
+                <div class="step-date">{{ isStatusReached('A_ENLEVER', searchResult.statut) ? 'Prêt pour enlèvement' : 'En attente' }}</div>
+              </div>
+            </div>
+            <div class="timeline-step" [class.completed]="isStatusReached('ENLEVE', searchResult.statut)" [class.active]="searchResult.statut === 'ENLEVE'">
+              <div class="step-icon">{{ isStatusReached('ENLEVE', searchResult.statut) ? '✅' : '⏳' }}</div>
+              <div class="step-content">
+                <div class="step-title">Enlevé</div>
+                <div class="step-date">{{ isStatusReached('ENLEVE', searchResult.statut) ? 'Colis récupéré' : 'En attente' }}</div>
+              </div>
+            </div>
+            <div class="timeline-step" [class.completed]="isStatusReached('AU_DEPOT', searchResult.statut)" [class.active]="searchResult.statut === 'AU_DEPOT'">
+              <div class="step-icon">{{ isStatusReached('AU_DEPOT', searchResult.statut) ? '✅' : '⏳' }}</div>
+              <div class="step-content">
+                <div class="step-title">Au dépôt</div>
+                <div class="step-date">{{ isStatusReached('AU_DEPOT', searchResult.statut) ? 'Stocké au dépôt' : 'En attente' }}</div>
+              </div>
+            </div>
+            <div class="timeline-step" [class.completed]="isStatusReached('EN_LIVRAISON', searchResult.statut)" [class.active]="searchResult.statut === 'EN_LIVRAISON'">
+              <div class="step-icon">{{ isStatusReached('EN_LIVRAISON', searchResult.statut) ? '✅' : '⏳' }}</div>
+              <div class="step-content">
+                <div class="step-title">En livraison</div>
+                <div class="step-date">{{ isStatusReached('EN_LIVRAISON', searchResult.statut) ? 'En cours de livraison' : 'En attente' }}</div>
+              </div>
+            </div>
+            <div class="timeline-step" [class.completed]="isStatusReached('LIVRE', searchResult.statut) || isStatusReached('LIVRE_PAYE', searchResult.statut)" [class.active]="searchResult.statut === 'LIVRE' || searchResult.statut === 'LIVRE_PAYE'">
+              <div class="step-icon">{{ isStatusReached('LIVRE', searchResult.statut) || isStatusReached('LIVRE_PAYE', searchResult.statut) ? '✅' : '⏳' }}</div>
+              <div class="step-content">
+                <div class="step-title">Livré</div>
+                <div class="step-date">{{ isStatusReached('LIVRE', searchResult.statut) || isStatusReached('LIVRE_PAYE', searchResult.statut) ? 'Livré avec succès' : 'En attente' }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BORDEREAU DE RÈGLEMENT -->
+    <div *ngIf="activeTab === 'paiements'" class="tab-panel">
+      <div class="page-header">
+        <div>
+          <h1>Bordereau de règlement</h1>
+          <p>Cash collecté chez les destinataires — net à vous reverser</p>
+        </div>
+      </div>
+      <div class="info-cards">
+        <div class="info-card">
+          <div class="info-label">Total collecté</div>
+          <div class="info-value">{{ getMontantCollecte() | number:'1.2-2' }} DT</div>
+        </div>
+        <div class="info-card">
+          <div class="info-label">Frais de livraison</div>
+          <div class="info-value">{{ getFraisLivraison() | number:'1.2-2' }} DT</div>
+        </div>
+        <div class="info-card">
+          <div class="info-label">Net à vous régler</div>
+          <div class="info-value" style="color:#059669">{{ getNetARegler() | number:'1.2-2' }} DT</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="form-grid" style="margin-bottom:1.25rem">
+          <div class="form-group">
+            <label>Mois</label>
+            <select [(ngModel)]="month">
+              <option *ngFor="let m of months" [value]="m">{{ m }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Année</label>
+            <select [(ngModel)]="year">
+              <option *ngFor="let y of years" [value]="y">{{ y }}</option>
+            </select>
+          </div>
+          <div class="form-group" style="display:flex;align-items:flex-end">
+            <button class="btn btn-primary" (click)="validatePayments()">Filtrer</button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Référence</th>
+                <th>Date</th>
+                <th>Destinataire</th>
+                <th>COD</th>
+                <th>Frais</th>
+                <th>Net</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let cmd of getCommandesReglement()">
+                <td><strong>{{ cmd.id }}</strong></td>
+                <td>{{ cmd.dateCreation | date:'dd/MM/yyyy' }}</td>
+                <td>{{ cmd.nomDestinataire || '—' }}</td>
+                <td>{{ cmd.montantTotal || 0 }} DT</td>
+                <td>{{ getFraisForCommande(cmd) }} DT</td>
+                <td>{{ (cmd.montantTotal || 0) - getFraisForCommande(cmd) }} DT</td>
+                <td>
+                  <span class="status-pill status-livree">
+                    {{ cmd.statut === 'LIVRE_PAYE' ? 'Encaissé' : 'Livré' }}
+                  </span>
+                </td>
+              </tr>
+              <tr *ngIf="getCommandesReglement().length === 0">
+                <td colspan="7" class="empty">Aucun colis livré sur cette période</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RETOURS -->
+    <div *ngIf="activeTab === 'retours'" class="tab-panel">
+      <div class="page-header">
+        <div>
+          <h1>Retours</h1>
+          <p>Colis en échec de livraison ou retournés</p>
+        </div>
+      </div>
+      <div class="info-cards">
+        <div class="info-card">
+          <div class="info-label">Taux de retour</div>
+          <div class="info-value">{{ calculateRetourRate() }}%</div>
+        </div>
+        <div class="info-card">
+          <div class="info-label">Nb retours</div>
+          <div class="info-value">{{ getRetourCommandes().length }}</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Référence</th>
+                <th>Destinataire</th>
+                <th>Montant</th>
+                <th>Statut</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let cmd of getRetourCommandes()">
+                <td><strong>{{ cmd.id }}</strong></td>
+                <td>{{ cmd.nomDestinataire || '—' }}</td>
+                <td>{{ cmd.montantTotal || 0 }} DT</td>
+                <td><span class="status-pill status-retour">{{ cmd.statut }}</span></td>
+                <td>{{ cmd.dateCreation | date:'dd/MM/yyyy' }}</td>
+              </tr>
+              <tr *ngIf="getRetourCommandes().length === 0">
+                <td colspan="5" class="empty">Aucun retour enregistré</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RÉCLAMATIONS -->
+    <div *ngIf="activeTab === 'reclamations'" class="tab-panel">
+      <div class="page-header"><h1>Réclamations</h1></div>
+      <div class="card">
+        <h3>Nouvelle réclamation</h3>
+        <form [formGroup]="reclamationForm" (ngSubmit)="ajouterReclamation()">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Objet *</label>
+              <select formControlName="objet">
+                <option value="">Sélectionner</option>
+                <option *ngFor="let o of objetOptions" [value]="o">{{ o }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Code à barres / Réf. colis *</label>
+              <input formControlName="codeBarre" placeholder="Ex: CMD-1234" />
+            </div>
+            <div class="form-group full">
+              <label>Description</label>
+              <textarea formControlName="description" rows="3"></textarea>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">Soumettre</button>
+        </form>
+        <div class="alert success" *ngIf="reclamationSuccessMsg">✓ {{ reclamationSuccessMsg }}</div>
+      </div>
+      <div class="card" *ngIf="reclamationsList.length > 0">
+        <h3>Réclamations précédentes</h3>
+        <div class="claim-item" *ngFor="let rec of reclamationsList">
+          <div class="claim-top">
+            <strong>{{ rec.objet }}</strong>
+            <span class="status-pill">{{ rec.statut }}</span>
+          </div>
+          <div class="muted">{{ rec.codeBarre }} · {{ rec.dateCreation | date:'dd/MM/yyyy' }}</div>
+          <p>{{ rec.description }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SERVICE CLIENT -->
+    <div *ngIf="activeTab === 'service-client'" class="tab-panel">
+      <div class="page-header">
+        <div>
+          <h1>Service Client</h1>
+          <p>Notre équipe est à votre écoute</p>
+        </div>
+      </div>
+      <div class="service-client-section">
+        <div class="team-grid">
+          <div class="team-card" *ngFor="let member of teamMembers">
+            <div class="member-photo">
+              <div class="member-avatar">{{ member.initials }}</div>
+              <div class="member-status online"></div>
+            </div>
+            <div class="member-details">
+              <h3>{{ member.nom }}</h3>
+              <p class="member-role">{{ member.poste }}</p>
+              <div class="member-badges">
+                <span class="badge" *ngIf="member.rating">⭐ {{ member.rating }}</span>
+                <span class="badge">📞 {{ member.tel }}</span>
+              </div>
+              <p class="member-bio" *ngIf="member.bio">{{ member.bio }}</p>
+              <div class="member-actions">
+                <button type="button" class="btn btn-primary" (click)="contactMember(member)">💬 Contacter</button>
+                <button type="button" class="btn btn-secondary" (click)="callMember(member)">📞 Appeler</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="contact-options">
+          <div class="contact-card">
+            <div class="contact-icon">📞</div>
+            <h3>Contactez-nous</h3>
+            <div class="contact-details">
+              <div class="contact-item">
+                <span class="contact-label">Téléphone</span>
+                <span class="contact-value">+216 71 123 456</span>
+                <span class="contact-badge">24/7</span>
+              </div>
+              <div class="contact-item">
+                <span class="contact-label">Email</span>
+                <span class="contact-value">support@bfexpress.tn</span>
+                <span class="contact-badge">Réponse &lt; 2h</span>
+              </div>
+            </div>
+          </div>
+          <div class="contact-card hours-card">
+            <div class="contact-icon">🕐</div>
+            <h3>Horaires</h3>
+            <div class="hours-schedule">
+              <div class="hours-item">
+                <span class="hours-day">Lundi – Vendredi</span>
+                <span class="hours-time">8h00 – 18h00</span>
+              </div>
+              <div class="hours-item">
+                <span class="hours-day">Samedi</span>
+                <span class="hours-time">9h00 – 13h00</span>
+              </div>
+              <div class="hours-item">
+                <span class="hours-day">Dimanche</span>
+                <span class="hours-time closed">Fermé</span>
+              </div>
+              <div class="hours-urgent">
+                <span class="urgent-icon">🚨</span>
+                <span class="urgent-text">Urgences 24h/24 pour problèmes critiques</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>

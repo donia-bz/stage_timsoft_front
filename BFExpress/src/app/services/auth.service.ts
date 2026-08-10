@@ -86,4 +86,8 @@ export class AuthService {
       params: { statut }
     });
   }
+
+  getProfile(id: string): Observable<UserProfile> {
+    return this.http.get<UserProfile>(`${this.apiUrl}/users/${id}`);
+  }
 }

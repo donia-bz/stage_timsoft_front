@@ -20,7 +20,6 @@ import { AjoutColisComponent } from './pages/ajout-colis/ajout-colis.component';
 import { PaiementsComponent } from './pages/paiements/paiements.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
-import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { DashboardAdminComponent } from './pages/dashboard-admin/dashboard-admin.component';
 import { DashboardLivreurComponent } from './pages/dashboard-livreur/dashboard-livreur.component';
 import { AuthGuard } from './auth.guard';
@@ -40,7 +39,7 @@ const routes: Routes = [
   { path: 'dashboard-livreur', loadComponent: () => import('./pages/dashboard-livreur/dashboard-livreur.component').then(m => m.DashboardLivreurComponent), canActivate: [AuthLivreurGuard] },
   { path: 'dashboard-admin', loadComponent: () => import('./pages/dashboard-admin/dashboard-admin.component').then(m => m.DashboardAdminComponent), canActivate: [AuthAdminGuard] },
   { path: 'login', component: LoginComponent },
-  { path: 'dashboard', component: DashboardComponent, canActivate: [AuthGuard] },
+  { path: 'dashboard', loadComponent: () => import('./pages/dashboard/dashboard-client.component').then(m => m.DashboardClientComponent), canActivate: [AuthGuard] },
   { path: 'devenir-client', component: DevenirClientComponent },
   { path: 'devenir-livreur', component: DevenirLivreurComponent },
   { path: '**', redirectTo: '' }
@@ -62,8 +61,7 @@ const routes: Routes = [
     RechercheColisComponent,
     ReclamationsComponent,
     AjoutColisComponent,
-    PaiementsComponent,
-    DashboardComponent
+    PaiementsComponent
   ],
   imports: [BrowserModule, CommonModule, FormsModule, ReactiveFormsModule, HttpClientModule, RouterModule.forRoot(routes)],
   providers: [

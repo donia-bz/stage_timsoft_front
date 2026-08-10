@@ -34,46 +34,27 @@ export class LoginComponent {
     this.loading = true;
     this.errorMessage = '';
 
-    // Mode développement : redirection directe selon l'email
-    if (this.email.includes('admin')) {
-      this.loading = false;
-      localStorage.setItem('currentUser', JSON.stringify({
-        id: 'admin-dev',
-        nom: 'Admin',
-        prenom: 'Dev',
-        email: this.email,
-        role: 'ADMIN',
-        token: 'dev-token'
-      }));
-      this.router.navigate(['/dashboard-admin']);
-      return;
-    }
-
-    if (this.email.includes('livreur')) {
-      this.loading = false;
-      localStorage.setItem('currentUser', JSON.stringify({
-        id: 'livreur-dev',
-        nom: 'Livreur',
-        prenom: 'Dev',
-        email: this.email,
-        role: 'LIVREUR',
-        token: 'dev-token'
-      }));
-      this.router.navigate(['/dashboard-livreur']);
-      return;
-    }
-
-    // Mode développement : accepter n'importe quel autre email comme client
-    this.loading = false;
-    localStorage.setItem('currentUser', JSON.stringify({
-      id: 'client-dev-' + Date.now(),
-      nom: 'Client',
-      prenom: 'Dev',
-      email: this.email,
-      role: 'CLIENT',
-      token: 'dev-token'
-    }));
-    this.router.navigate(['/dashboard']);
+    this.authService.login(this.email, this.motDePasse).subscribe({
+      next: (res) => {
+        this.loading = false;
+        // La méthode login de AuthService stocke déjà l'utilisateur dans le localStorage
+        
+        // Redirection selon le rôle
+        if (res.role === 'ADMIN') {
+          this.router.navigate(['/dashboard-admin']);
+        } else if (res.role === 'LIVREUR') {
+          this.router.navigate(['/dashboard-livreur']);
+        } else {
+          this.router.navigate(['/dashboard']);
+        }
+      },
+      error: (err) => {
+        this.loading = false;
+        console.error('Erreur de connexion:', err);
+        // Si le backend n'est pas encore prêt, on peut fallback sur un message d'erreur clair
+        this.errorMessage = err.error?.message || 'Identifiants incorrects ou serveur injoignable.';
+      }
+    });
   }
 
   useCurrentLocation(): void {
