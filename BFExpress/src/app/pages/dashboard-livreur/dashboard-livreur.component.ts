@@ -1,10 +1,41 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService, Livraison, Livreur, Commande } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
-import { Router } from '@angular/router';
+
+interface ToastMessage {
+  id: number;
+  message: string;
+  type: 'success' | 'error' | 'info';
+}
+
+interface DeliveryStats {
+  toPickup: number;
+  inProgress: number;
+  deliveredToday: number;
+  failedToday: number;
+  rating: number;
+}
+
+interface Earnings {
+  today: number;
+  week: number;
+  month: number;
+}
+
+type DriverTab =
+  | 'dashboard'
+  | 'courses'
+  | 'map'
+  | 'enlevements'
+  | 'livraison'
+  | 'echecs'
+  | 'suivi'
+  | 'gains'
+  | 'vehicule'
+  | 'parametres';
 
 @Component({
   selector: 'app-dashboard-livreur',
@@ -13,84 +44,77 @@ import { Router } from '@angular/router';
   templateUrl: './dashboard-livreur.component.html',
   styleUrls: ['./dashboard-livreur.component.scss']
 })
-export class DashboardLivreurComponent implements OnInit {
-  // driver extras
-  depotInfo: any = null;
-  vehicleHistory: any[] = [];
-  assignedVehicle: any = null;
-  // new assignments notified by IA
-  newAssignments: Livraison[] = [];
-  // intervals
-  private gpsInterval: any = null;
-  private pollInterval: any = null;
+export class DashboardLivreurComponent implements OnInit, OnDestroy {
+
+  activeTab: DriverTab = 'dashboard';
+
   driverName = 'Livreur';
   driverId = '';
   driverInfo: Livreur | null = null;
   driverPhoto = '';
+  driverStatus: 'DISPONIBLE' | 'EN_COURSE' | 'HORS_LIGNE' = 'DISPONIBLE';
+
   livraisons: Livraison[] = [];
-  commandesMap: { [colisId: string]: Commande } = {};
-  activeTab: 'dashboard' | 'historique' | 'vehicule' | 'revenus' | 'parametres' | 'suivi-colis' = 'dashboard';
-  deliveryHistory: any[] = [];
-  notifications: any[] = [];
+  commandesMap: { [commandeId: string]: Commande } = {};
+  colisMap: { [colisId: string]: any } = {};
+  newAssignments: Livraison[] = [];
+  currentDelivery: Livraison | null = null;
 
-  stats = [
-    { title: 'Courses du jour', value: 16, color: 'status-blue' },
-    { title: 'À récupérer', value: 5, color: 'status-yellow' },
-    { title: 'Livrés', value: 34, color: 'status-teal' },
-    { title: 'Retours', value: 3, color: 'status-red' }
-  ];
+  loading = false;
+  searchColisId = '';
+  foundColis: Commande | null = null;
+  searchError = '';
 
-  successRate = 95;
+  earnings: Earnings = { today: 0, week: 0, month: 0 };
 
-  currentDelivery?: Livraison;
+  vehicleInfo: any = {
+    marque: '',
+    modele: '',
+    immatriculation: '',
+    type: 'Voiture'
+  };
 
-  get currentDeliveryCommande(): Commande | undefined {
-    return this.currentDelivery ? this.commandesMap[this.currentDelivery.colisId] : undefined;
-  }
+  notificationsEnabled = true;
 
-  get isDeliveryInProgress(): boolean {
-    return this.livraisons.some(item => item.statut === 'en_cours');
-  }
-
-  get waitingLivraisons(): Livraison[] {
-    return this.livraisons.filter(item => item.statut === 'affectee');
-  }
-
-  get deliveredLivraisons(): Livraison[] {
-    return this.livraisons.filter(item => item.statut === 'livree' || item.statut === 'LIVREE');
-  }
-
-  get recentFeedbacks(): any[] {
-    return this.deliveryHistory.filter(h => h.note && h.note > 0).slice(0, 4);
-  }
-
-  quickActions = [
-    { label: 'Nouvelle collecte', route: '/ajout-colis' },
-    { label: 'Suivi colis', route: '/recherche-colis' },
-    { label: 'Signaler incident', route: '/reclamations' }
-  ];
-
-  schedule = [
-    { time: '08:30', task: 'Prise en charge colis N°3179', status: 'En cours' },
-    { time: '10:00', task: 'Livraison colis N°4062', status: 'Prévu' },
-    { time: '11:45', task: 'Retour dépôt', status: 'Prévu' }
-  ];
+  toasts: ToastMessage[] = [];
+  private toastIdCounter = 0;
 
   latitude = 36.8065;
   longitude = 10.1815;
+  private gpsInterval: any = null;
+  private pollInterval: any = null;
   private driverMap: any = null;
 
-  // Variables pour Suivi Colis
-  searchColisId: string = '';
-  foundColis: Commande | null = null;
-  searchError: string = '';
   trackingSteps = [
-    { id: 'EN_ATTENTE', label: 'En attente' },
-    { id: 'ENLEVE', label: 'Enlevé' },
-    { id: 'AU_DEPOT', label: 'Au Dépôt' },
-    { id: 'EN_COURS', label: 'En Livraison' },
-    { id: 'LIVREE', label: 'Livré' }
+    { key: 'EN_ATTENTE', label: 'En attente' },
+    { key: 'MANIFESTE', label: 'Sur manifeste' },
+    { key: 'A_ENLEVER', label: 'À enlever' },
+    { key: 'ENLEVE', label: 'Enlevé' },
+    { key: 'AU_DEPOT', label: 'Au dépôt' },
+    { key: 'EN_LIVRAISON', label: 'En livraison' },
+    { key: 'LIVRE', label: 'Livré' },
+    { key: 'LIVRE_PAYE', label: 'Livré & payé' },
+    { key: 'ECHEC_LIVRAISON', label: 'Échec livraison' },
+    { key: 'RETOUR_DEPOT', label: 'Retour dépôt' },
+    { key: 'RETOUR_EXPEDITEUR', label: 'Retour expéditeur' },
+    { key: 'ANNULEE', label: 'Annulée' }
   ];
+
+  failureReasons = [
+    'ABSENT',
+    'REFUS',
+    'ADRESSE_ERRONEE',
+    'DESTINATAIRE_INJOIGNABLE',
+    'COLIS_ENDOMMAGE',
+    'AUTRE'
+  ];
+
+  showFailureModal = false;
+  selectedDelivery: Livraison | null = null;
+  selectedFailureReason = '';
+  failureDescription = '';
+
+  courseFilter: 'all' | 'to_pickup' | 'in_progress' | 'completed_today' = 'all';
 
   constructor(
     private apiService: ApiService,
@@ -100,331 +124,710 @@ export class DashboardLivreurComponent implements OnInit {
 
   ngOnInit(): void {
     const user = this.authService.getCurrentUser();
-    if (user) {
-      this.driverName = `${user.prenom} ${user.nom}`;
-      this.driverId = user.id;
-      this.loadDriverData();
-      // poll for new assignments every 12s
-      this.pollInterval = setInterval(() => this.checkForNewAssignments(), 12000);
-      this.initMapDriver();
-      // Load new features
-      this.driverPhoto = localStorage.getItem('driverPhoto') || '';
-      this.loadDeliveryHistory();
-      this.loadNotifications();
+    if (!user) {
+      this.router.navigate(['/login']);
+      return;
     }
-  }
 
-  initMapDriver(): void {
-    setTimeout(() => {
-      const container = document.getElementById('driver-map');
-      if (!container || (window as any).L === undefined) return;
-      if (this.driverMap) {
-        this.driverMap.remove();
-        this.driverMap = null;
-      }
-      const L = (window as any).L;
-      this.driverMap = L.map('driver-map').setView([this.latitude, this.longitude], 13);
+    this.driverName = `${user.prenom || ''} ${user.nom || ''}`.trim() || 'Livreur';
+    this.driverId = user.id;
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap'
-      }).addTo(this.driverMap);
-
-      L.marker([this.latitude, this.longitude]).addTo(this.driverMap)
-        .bindPopup(`<b>Position GPS Actuelle</b><br>${this.driverName}`)
-        .openPopup();
-    }, 300);
+    this.driverPhoto = localStorage.getItem('driverPhoto') || '';
+    this.notificationsEnabled = localStorage.getItem('notificationsEnabled') !== 'false';
+    this.loadVehicleInfo();
+    this.loadDriverData();
+    this.startPolling();
   }
 
   ngOnDestroy(): void {
     if (this.gpsInterval) clearInterval(this.gpsInterval);
     if (this.pollInterval) clearInterval(this.pollInterval);
-  }
-
-  uploadDriverPhoto(event: any): void {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.driverPhoto = e.target.result;
-        localStorage.setItem('driverPhoto', e.target.result);
-      };
-      reader.readAsDataURL(file);
+    if (this.driverMap) {
+      try { this.driverMap.remove(); } catch {}
+      this.driverMap = null;
     }
   }
 
-  loadDeliveryHistory(): void {
-    // Simulated delivery history
-    this.deliveryHistory = [
-      { id: 'DEL001', date: '2024-08-07', client: 'Client A', statut: 'LIVREE', note: 5 },
-      { id: 'DEL002', date: '2024-08-07', client: 'Client B', statut: 'LIVREE', note: 4 },
-      { id: 'DEL003', date: '2024-08-06', client: 'Client C', statut: 'LIVREE', note: 5 },
-      { id: 'DEL004', date: '2024-08-06', client: 'Client D', statut: 'RETARD', note: 3 },
-      { id: 'DEL005', date: '2024-08-05', client: 'Client E', statut: 'LIVREE', note: 5 }
-    ];
+  // ========== NAVIGATION ==========
+  setTab(tab: DriverTab): void {
+    this.activeTab = tab;
+    if (tab === 'map') {
+      setTimeout(() => this.initMap(), 150);
+    }
   }
 
-  loadNotifications(): void {
-    // Simulated notifications
-    this.notifications = [
-      { id: 1, type: 'NEW_ORDER', message: 'Nouvelle commande affectée', time: 'Il y a 5 min', read: false },
-      { id: 2, type: 'REMINDER', message: 'Maintenance véhicule prévue', time: 'Il y a 1h', read: false },
-      { id: 3, type: 'INFO', message: 'Statut du jour mis à jour', time: 'Il y a 2h', read: true }
-    ];
-  }
-
-  // Helper methods for template bindings
-  getUnreadNotificationCount(): number {
-    return this.notifications.filter(n => !n.read).length;
-  }
-
-  isNotificationUnread(notif: any): boolean {
-    return !notif.read;
-  }
-
-  getNotificationIcon(notif: any): string {
-    if (notif.type === 'NEW_ORDER') return '📦';
-    if (notif.type === 'REMINDER') return '⏰';
-    if (notif.type === 'INFO') return 'ℹ️';
-    return '📢';
-  }
-
-  getDeliveryRefShort(delivery: any): string {
-    if (!delivery || !delivery.id) return 'N/A';
-    return '#' + delivery.id.substring(delivery.id.length - 6);
-  }
-
-  getDeliveryStatutClass(statut: string): string {
-    return statut.toLowerCase();
-  }
-
-  getLivraisonRefShort(livraison: any): string {
-    if (!livraison || !livraison.id) return 'N/A';
-    return '#' + livraison.id.substring(livraison.id.length - 6);
-  }
-
-  getDeliveryDestination(): string {
-    return this.currentDeliveryCommande?.adresseArrivee?.ville || 'Adresse Destinataire';
-  }
-
-  getDeliveryClient(): string {
-    return this.currentDeliveryCommande?.clientNom || 'Client BFExpress';
-  }
-
-  getStatsValue(): number {
-    return this.stats[0]?.value || 0;
-  }
-
-  getDriverNote(): string {
-    return String(this.driverInfo?.noteMoyenne || '4.9');
-  }
-
-  getDeliveryId(delivery: any): string {
-    return delivery.id || 'N/A';
-  }
-
-  getDeliveryDate(delivery: any): string {
-    return delivery.date || '';
-  }
-
-  getDeliveryClientName(delivery: any): string {
-    return delivery.client || '';
-  }
-
-  getDeliveryStatut(delivery: any): string {
-    return delivery.statut || '';
-  }
-
-  getDeliveryNote(delivery: any): number {
-    return delivery.note || 0;
-  }
-
-  isTabHistorique(): boolean {
-    return this.activeTab === 'historique';
-  }
-
-  isTabRevenus(): boolean {
-    return this.activeTab === 'revenus';
-  }
-
-  isTabParametres(): boolean {
-    return this.activeTab === 'parametres';
-  }
-
-  isDriverAvailable(): boolean {
-    return this.driverInfo?.statut === 'DISPONIBLE' || this.driverInfo?.statut === 'EN_COURSE';
-  }
-
-  isDriverOffline(): boolean {
-    return this.driverInfo?.statut === 'HORS_LIGNE';
-  }
-
-  isDriverStatusAvailable(): boolean {
-    return this.driverInfo?.statut === 'DISPONIBLE';
-  }
-
-  isDriverStatusBusy(): boolean {
-    return this.driverInfo?.statut === 'EN_COURSE';
-  }
-
-  isDriverStatusOffline(): boolean {
-    return this.driverInfo?.statut === 'HORS_LIGNE';
-  }
-
+  // ========== DATA ==========
   loadDriverData(): void {
     if (!this.driverId) return;
+    this.loading = true;
 
-    // Load driver profile
     this.apiService.getLivreurById(this.driverId).subscribe({
-      next: (res) => {
-        this.driverInfo = res;
-        this.latitude = res.latitudeActuelle || 36.8065;
-        this.longitude = res.longitudeActuelle || 10.1815;
+      next: (driver) => {
+        this.driverInfo = driver;
+        if (driver?.statut === 'DISPONIBLE' || driver?.statut === 'EN_COURSE' || driver?.statut === 'HORS_LIGNE') {
+          this.driverStatus = driver.statut as any;
+        }
+        if (driver?.latitudeActuelle) this.latitude = driver.latitudeActuelle;
+        if (driver?.longitudeActuelle) this.longitude = driver.longitudeActuelle;
+        this.loadLivraisons();
       },
-      error: (err) => console.error('Error fetching driver profile:', err)
-    });
-
-    // Load assigned deliveries
-    this.apiService.getLivraisonsByLivreur(this.driverId).subscribe({
-      next: (res) => {
-        this.livraisons = res;
-        this.currentDelivery = this.livraisons.find(l => l.statut === 'en_cours');
-        // detect assignments awaiting acceptance
-        this.newAssignments = this.livraisons.filter(l => l.statut === 'affectee');
-        // compute driver stats
-        this.computeDriverStats();
-        // start GPS streaming if a delivery is in progress
-        if (this.currentDelivery) this.startGPSStream();
-        // Fetch command details for each delivery
-        this.livraisons.forEach(l => {
-          if (l.colisId && !this.commandesMap[l.colisId]) {
-            this.apiService.getCommandeById(l.colisId).subscribe({
-              next: (cmd) => this.commandesMap[l.colisId] = cmd,
-              error: (e) => console.error(e)
-            });
-          }
-        });
-      },
-      error: (err) => console.error('Error fetching driver deliveries:', err)
-    });
-  }
-
-  toggleStatut(newStatut: string): void {
-    if (!this.driverId) return;
-    this.apiService.updateLivreurStatut(this.driverId, newStatut).subscribe({
-      next: (res) => {
-        if (this.driverInfo) this.driverInfo.statut = res.statut;
-        alert(`Votre statut est maintenant : ${newStatut}`);
-      },
-      error: (err) => alert('Erreur lors du changement de statut')
-    });
-  }
-
-  updateGPS(): void {
-    if (!this.driverId) return;
-    this.apiService.updateLivreurPosition(this.driverId, this.latitude, this.longitude).subscribe({
-      next: (res) => {
-        // silent success in streaming mode
-        console.debug(`GPS updated: (${this.latitude}, ${this.longitude})`);
-      },
-      error: (err) => alert('Erreur lors de la mise à jour GPS')
-    });
-  }
-
-  startGPSStream() {
-    if (this.gpsInterval) return;
-    // send GPS every 10 seconds while in delivery
-    this.gpsInterval = setInterval(() => {
-      if (this.currentDelivery && this.currentDelivery.statut === 'en_cours') {
-        this.updateGPS();
-      } else {
-        clearInterval(this.gpsInterval);
-        this.gpsInterval = null;
+      error: (err) => {
+        console.error('Error loading driver:', err);
+        this.loading = false;
+        this.showToast('Erreur chargement profil livreur', 'error');
+        this.loadLivraisons();
       }
+    });
+  }
+
+  loadLivraisons(): void {
+    if (!this.driverId) return;
+
+    this.apiService.getLivraisonsByLivreur(this.driverId).subscribe({
+      next: (livraisons) => {
+        this.livraisons = livraisons || [];
+        this.loadCommandesDetails();
+        this.updateCurrentDelivery();
+        this.calculateEarnings();
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error loading deliveries:', err);
+        this.livraisons = [];
+        this.loading = false;
+      }
+    });
+  }
+
+  loadCommandesDetails(): void {
+    const colisIds = this.livraisons
+      .map(l => l.colisId)
+      .filter((id): id is string => !!id && !this.colisMap[id]);
+
+    if (colisIds.length === 0) return;
+
+    colisIds.forEach(id => {
+      this.apiService.getColisById(id).subscribe({
+        next: (colis) => {
+          this.colisMap[id] = colis;
+          this.updateCurrentDelivery();
+          this.calculateEarnings();
+        },
+        error: (err) => {
+          console.error('Error loading colis', id, err);
+          this.colisMap[id] = {
+            id: id,
+            statut: 'EN_ATTENTE',
+            poids: 0
+          };
+        }
+      });
+    });
+  }
+
+  private getLinkedCommandeId(livraison: Livraison): string {
+    return livraison.colisId || livraison.commandeId || '';
+  }
+
+  getColis(colisId: string): any {
+    return this.colisMap[colisId];
+  }
+
+  getColisStatut(colisId: string): string {
+    return this.colisMap[colisId]?.statut || 'EN_ATTENTE';
+  }
+
+  updateCurrentDelivery(): void {
+    this.currentDelivery =
+      this.livraisons.find(l => {
+        const statut = this.getColisStatut(l.colisId);
+        return statut === 'EN_LIVRAISON' || l.statut === 'en_cours' || l.statut === 'EN_COURS';
+      }) || null;
+
+    if (this.currentDelivery) {
+      this.startGPS();
+    } else {
+      this.stopGPS();
+    }
+  }
+
+  // ========== POLLING ==========
+  startPolling(): void {
+    this.pollInterval = setInterval(() => this.checkForNewAssignments(), 12000);
+  }
+
+  checkForNewAssignments(): void {
+    if (!this.driverId) return;
+
+    this.apiService.getLivraisonsByLivreur(this.driverId).subscribe({
+      next: (livraisons) => {
+        const incoming = livraisons || [];
+        const oldIds = new Set(this.livraisons.map(l => l.id));
+        const newly = incoming.filter(l => l.id && !oldIds.has(l.id));
+
+        if (newly.length > 0) {
+          this.newAssignments = newly;
+          this.showToast(`${newly.length} nouvelle(s) course(s) affectée(s)`, 'info');
+        }
+
+        this.livraisons = incoming;
+        this.loadCommandesDetails();
+        this.updateCurrentDelivery();
+        this.calculateEarnings();
+      },
+      error: (err) => console.error('Polling error:', err)
+    });
+  }
+
+  // ========== GPS ==========
+  startGPS(): void {
+    if (this.gpsInterval) return;
+
+    this.gpsInterval = setInterval(() => {
+      if (!navigator.geolocation) return;
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          this.latitude = position.coords.latitude;
+          this.longitude = position.coords.longitude;
+          this.updateDriverPosition();
+          if (this.activeTab === 'map') {
+            this.updateMapMarker();
+          }
+        },
+        (error) => console.error('GPS error:', error),
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
     }, 10000);
   }
 
-  checkForNewAssignments() {
+  stopGPS(): void {
+    if (this.gpsInterval) {
+      clearInterval(this.gpsInterval);
+      this.gpsInterval = null;
+    }
+  }
+
+  updateDriverPosition(): void {
     if (!this.driverId) return;
-    this.apiService.getLivraisonsByLivreur(this.driverId).subscribe({
+    this.apiService.updateLivreurPosition(this.driverId, this.latitude, this.longitude).subscribe({
+      error: (err) => console.error('Error updating position:', err)
+    });
+  }
+
+  // ========== MAP ==========
+  initMap(): void {
+    const container = document.getElementById('driver-map');
+    if (!container || (window as any).L === undefined) return;
+
+    const L = (window as any).L;
+
+    if (this.driverMap) {
+      try { this.driverMap.remove(); } catch {}
+      this.driverMap = null;
+    }
+
+    this.driverMap = L.map('driver-map').setView([this.latitude, this.longitude], 12);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(this.driverMap);
+
+    this.addDriverMarker();
+    this.addDestinationMarkers();
+
+    setTimeout(() => {
+      try { this.driverMap?.invalidateSize(); } catch {}
+    }, 200);
+  }
+
+  addDriverMarker(): void {
+    if (!this.driverMap) return;
+    const L = (window as any).L;
+
+    L.marker([this.latitude, this.longitude], {
+      icon: L.divIcon({
+        className: 'driver-marker',
+        html: '<div style="font-size:22px">🚚</div>',
+        iconSize: [30, 30]
+      })
+    })
+      .addTo(this.driverMap)
+      .bindPopup(`<b>${this.driverName}</b><br>Position actuelle`);
+  }
+
+  addDestinationMarkers(): void {
+    if (!this.driverMap) return;
+    const L = (window as any).L;
+
+    this.getInProgressList().concat(this.getToPickupList()).forEach((livraison, index) => {
+      const commande = this.getCommande(this.getLinkedCommandeId(livraison));
+      const lat = this.latitude + (index + 1) * 0.01 * (index % 2 === 0 ? 1 : -1);
+      const lng = this.longitude + (index + 1) * 0.008;
+
+      L.marker([lat, lng], {
+        icon: L.divIcon({
+          className: 'destination-marker',
+          html: '<div style="font-size:18px">📦</div>',
+          iconSize: [28, 28]
+        })
+      })
+        .addTo(this.driverMap)
+        .bindPopup(
+          `<b>${this.getCommandeDestinataire(commande)}</b><br>${this.getCommandeDestination(commande)}`
+        );
+    });
+  }
+
+  updateMapMarker(): void {
+    if (!this.driverMap) return;
+    this.driverMap.setView([this.latitude, this.longitude], this.driverMap.getZoom() || 12);
+  }
+
+  // ========== STATUS ==========
+  toggleStatut(newStatus: string): void {
+    if (!this.driverId) return;
+
+    this.apiService.updateLivreurStatut(this.driverId, newStatus).subscribe({
       next: (res) => {
-        const awaiting = res.filter(l => l.statut === 'affectee');
-        // new items not present in previous list
-        const idsNow = awaiting.map(a => a.id);
-        const idsOld = this.newAssignments.map(a => a.id);
-        const newly = awaiting.filter(a => !idsOld.includes(a.id));
-        if (newly.length) {
-          this.newAssignments = awaiting;
-          // simple browser notification (in-app)
-          newly.forEach(n => alert(`Nouvelle affectation: livraison ${n.id}. Ouvrez la file d'attente pour accepter.`));
+        this.driverStatus = (res?.statut || newStatus) as any;
+        if (this.driverInfo) this.driverInfo.statut = this.driverStatus;
+        this.showToast(`Statut : ${newStatus}`, 'success');
+      },
+      error: () => {
+        this.driverStatus = newStatus as any;
+        if (this.driverInfo) this.driverInfo.statut = this.driverStatus;
+        this.showToast(`Statut local : ${newStatus}`, 'info');
+      }
+    });
+  }
+
+  // ========== ACTIONS METIER ==========
+  validerEnlevement(livraison: Livraison): void {
+    const colisId = livraison.colisId;
+    if (!colisId) {
+      this.showToast('Colis introuvable', 'error');
+      return;
+    }
+
+    this.loading = true;
+    this.apiService.updateColisStatut(colisId, 'ENLEVE').subscribe({
+      next: () => {
+        if (this.colisMap[colisId]) {
+          this.colisMap[colisId].statut = 'ENLEVE';
+        }
+        this.toggleStatut('EN_COURSE');
+        this.showToast('Enlèvement validé — colis récupéré', 'success');
+        this.loading = false;
+        this.loadLivraisons();
+      },
+      error: (err) => {
+        console.error('Erreur validation enlèvement:', err);
+        this.loading = false;
+        this.showToast('Erreur validation (vérifiez le backend)', 'error');
+      }
+    });
+  }
+
+  terminerLivraison(livraison: Livraison): void {
+    const colisId = livraison.colisId;
+    if (!colisId) {
+      this.showToast('Colis introuvable', 'error');
+      return;
+    }
+
+    const commande = this.commandesMap[livraison.commandeId || ''];
+    const montant = commande?.montantTotal || 0;
+    const finalStatus = montant > 0 ? 'LIVRE_PAYE' : 'LIVRE';
+
+    if (!confirm(`Confirmer la livraison en statut ${finalStatus} ?`)) return;
+
+    this.loading = true;
+
+    const finish = () => {
+      this.apiService.updateColisStatut(colisId, finalStatus).subscribe({
+        next: () => {
+          if (this.colisMap[colisId]) {
+            this.colisMap[colisId].statut = finalStatus;
+          }
+          this.showToast('Livraison terminée', 'success');
+          this.loading = false;
+          this.toggleStatut('DISPONIBLE');
+          this.loadLivraisons();
+        },
+        error: () => {
+          this.loading = false;
+          this.showToast('Erreur clôture livraison', 'error');
+        }
+      });
+    };
+
+    finish();
+  }
+
+  showFailureModalFor(livraison: Livraison): void {
+    this.selectedDelivery = livraison;
+    this.selectedFailureReason = '';
+    this.failureDescription = '';
+    this.showFailureModal = true;
+  }
+
+  annulerEchec(): void {
+    this.showFailureModal = false;
+    this.selectedDelivery = null;
+    this.selectedFailureReason = '';
+    this.failureDescription = '';
+  }
+
+  confirmerEchec(): void {
+    if (!this.selectedDelivery || !this.selectedFailureReason) {
+      this.showToast('Motif obligatoire', 'error');
+      return;
+    }
+
+    const colisId = this.selectedDelivery.colisId;
+    if (!colisId) {
+      this.showToast('Colis introuvable', 'error');
+      return;
+    }
+
+    this.loading = true;
+    this.apiService.updateColisStatut(colisId, 'ECHEC_LIVRAISON').subscribe({
+      next: () => {
+        if (this.colisMap[colisId]) {
+          this.colisMap[colisId].statut = 'ECHEC_LIVRAISON';
+        }
+        this.showFailureModal = false;
+        this.showToast(`Échec enregistré (${this.selectedFailureReason})`, 'success');
+        this.loading = false;
+        this.toggleStatut('DISPONIBLE');
+        this.loadLivraisons();
+      },
+      error: () => {
+        this.loading = false;
+        this.showToast('Erreur enregistrement échec', 'error');
+      }
+    });
+  }
+
+  demarrerLivraison(livraison: Livraison): void {
+    const colisId = livraison.colisId;
+    if (!colisId) {
+      this.showToast('Colis introuvable', 'error');
+      return;
+    }
+
+    this.loading = true;
+    this.apiService.updateColisStatut(colisId, 'EN_LIVRAISON').subscribe({
+      next: () => {
+        if (this.colisMap[colisId]) {
+          this.colisMap[colisId].statut = 'EN_LIVRAISON';
+        }
+        this.showToast('Livraison démarrée', 'success');
+        this.loading = false;
+        this.loadLivraisons();
+      },
+      error: (err) => {
+        console.error('Erreur démarrage livraison:', err);
+        this.loading = false;
+        this.showToast('Erreur lors du démarrage', 'error');
+      }
+    });
+  }
+
+  changeCommandeStatus(livraison: Livraison, newStatus: string): void {
+    const commandeId = this.getLinkedCommandeId(livraison);
+    if (!commandeId) {
+      this.showToast('Commande introuvable (ID manquant)', 'error');
+      return;
+    }
+
+    console.log('Changement statut:', { commandeId, currentStatus: this.getCommandeStatut(commandeId), newStatus });
+
+    this.loading = true;
+    this.apiService.updateCommandeStatut(commandeId, newStatus).subscribe({
+      next: () => {
+        console.log('Statut changé avec succès:', newStatus);
+        if (this.commandesMap[commandeId]) {
+          this.commandesMap[commandeId].statut = newStatus;
+        }
+        this.showToast(`Statut changé: ${this.getStatutLabel(newStatus)}`, 'success');
+        this.loading = false;
+        this.loadLivraisons();
+      },
+      error: (err) => {
+        console.error('Erreur changement statut:', err);
+        this.loading = false;
+        const errorMsg = err?.error?.message || err?.message || 'Erreur backend';
+        this.showToast(`Erreur: ${errorMsg}`, 'error');
+      }
+    });
+  }
+
+  canChangeToStatus(livraison: Livraison, status: string): boolean {
+    const currentStatus = this.getCommandeStatut(this.getLinkedCommandeId(livraison));
+    
+    // Si même statut, pas de changement
+    if (currentStatus === status) return false;
+    
+    // Autoriser toutes les transitions pour les boutons d'action (les boutons sont déjà conditionnés dans le HTML)
+    // La validation stricte n'est pas nécessaire car les boutons ne s'affichent que pour les transitions valides
+    return true;
+  }
+
+  getStepIcon(status: string): string {
+    const icons: { [key: string]: string } = {
+      'EN_ATTENTE': '⏳',
+      'MANIFESTE': '📋',
+      'A_ENLEVER': '📥',
+      'ENLEVE': '✅',
+      'AU_DEPOT': '🏢',
+      'EN_LIVRAISON': '🚚',
+      'LIVRE': '📦',
+      'LIVRE_PAYE': '💰',
+      'ECHEC_LIVRAISON': '❌',
+      'RETOUR_DEPOT': '🔄',
+      'RETOUR_EXPEDITEUR': '↩️',
+      'ANNULEE': '🚫'
+    };
+    return icons[status] || '📍';
+  }
+
+  // Expose getLinkedCommandeId to template
+  getLinkedCommandeIdPublic(livraison: Livraison): string {
+    return this.getLinkedCommandeId(livraison);
+  }
+
+  // ========== LISTES / FILTRES ==========
+  get filteredLivraisons(): Livraison[] {
+    switch (this.courseFilter) {
+      case 'to_pickup':
+        return this.getToPickupList();
+      case 'in_progress':
+        return this.getInProgressList();
+      case 'completed_today':
+        return this.livraisons.filter(l =>
+          ['LIVRE', 'LIVRE_PAYE'].includes(this.getCommandeStatut(this.getLinkedCommandeId(l)))
+        );
+      default:
+        return this.livraisons;
+    }
+  }
+
+  applyFilter(): void {
+    // Triggered by filter change - computed property handles logic
+  }
+
+  getToPickupList(): Livraison[] {
+    return this.livraisons.filter(l =>
+      this.getCommandeStatut(this.getLinkedCommandeId(l)) === 'A_ENLEVER'
+    );
+  }
+
+  getInProgressList(): Livraison[] {
+    return this.livraisons.filter(l =>
+      this.getCommandeStatut(this.getLinkedCommandeId(l)) === 'EN_LIVRAISON'
+    );
+  }
+
+  getFailedList(): Livraison[] {
+    return this.livraisons.filter(l =>
+      ['ECHEC_LIVRAISON', 'RETOUR_DEPOT', 'RETOUR_EXPEDITEUR'].includes(
+        this.getCommandeStatut(this.getLinkedCommandeId(l))
+      )
+    );
+  }
+
+  getQueuePreview(): Livraison[] {
+    return this.filteredLivraisons.slice(0, 5);
+  }
+
+  getToPickupCount(): number {
+    return this.getToPickupList().length;
+  }
+
+  getInProgressCount(): number {
+    return this.getInProgressList().length;
+  }
+
+  // ========== HELPERS COMMANDE ==========
+  getCommande(commandeId: string | undefined): Commande | undefined {
+    if (!commandeId) return undefined;
+    return this.commandesMap[commandeId];
+  }
+
+  getCommandeStatut(commandeId: string | undefined): string {
+    if (!commandeId) return 'EN_ATTENTE';
+    return this.commandesMap[commandeId]?.statut || 'EN_ATTENTE';
+  }
+
+  getCommandeDestinataire(commande?: Commande | null): string {
+    if (!commande) return '—';
+    return (commande as any).nomDestinataire || (commande as any).clientNom || '—';
+  }
+
+  getCommandeDestination(commande?: Commande | null): string {
+    if (!commande) return '—';
+    return commande.adresseArrivee?.ville || (commande as any).ville || '—';
+  }
+
+  getCommandePhone(commande?: Commande | null): string {
+    if (!commande) return '—';
+    return (commande as any).telephoneDestinataire || (commande as any).telephone || '—';
+  }
+
+  getCommandeTotal(commande?: Commande | null): number {
+    return commande?.montantTotal || 0;
+  }
+
+  getLivraisonRefShort(livraison: Livraison): string {
+    const id = livraison?.id || this.getLinkedCommandeId(livraison) || '';
+    if (!id) return 'N/A';
+    return '#' + id.substring(Math.max(0, id.length - 6));
+  }
+
+  getStatutClass(statut: string): string {
+    const map: Record<string, string> = {
+      EN_ATTENTE: 'status-pending',
+      MANIFESTE: 'status-pending',
+      A_ENLEVER: 'status-warning',
+      ENLEVE: 'status-info',
+      AU_DEPOT: 'status-info',
+      EN_LIVRAISON: 'status-in-progress',
+      LIVRE: 'status-success',
+      LIVRE_PAYE: 'status-success',
+      ECHEC_LIVRAISON: 'status-danger',
+      RETOUR_DEPOT: 'status-warning',
+      RETOUR_EXPEDITEUR: 'status-warning',
+      ANNULEE: 'status-muted'
+    };
+    return map[statut] || 'status-default';
+  }
+
+  getStatutLabel(statut: string): string {
+    const step = this.trackingSteps.find(s => s.key === statut);
+    return step ? step.label : (statut || '—');
+  }
+
+  getDeliveryStats(): DeliveryStats {
+    return {
+      toPickup: this.getToPickupCount(),
+      inProgress: this.getInProgressCount(),
+      deliveredToday: this.livraisons.filter(l =>
+        ['LIVRE', 'LIVRE_PAYE'].includes(this.getCommandeStatut(this.getLinkedCommandeId(l)))
+      ).length,
+      failedToday: this.getFailedList().length,
+      rating: this.driverInfo?.noteMoyenne || 4.5
+    };
+  }
+
+  calculateEarnings(): void {
+    const delivered = this.livraisons.filter(l =>
+      ['LIVRE', 'LIVRE_PAYE'].includes(this.getCommandeStatut(this.getLinkedCommandeId(l)))
+    ).length;
+
+    // Estimation locale — à remplacer par API paiements livreur si dispo
+    const rate = 2;
+    this.earnings = {
+      today: delivered * rate,
+      week: delivered * rate * 5,
+      month: delivered * rate * 20
+    };
+  }
+
+  // ========== SUIVI ==========
+  searchColis(): void {
+    if (!this.searchColisId.trim()) {
+      this.searchError = 'Veuillez entrer un ID de colis';
+      return;
+    }
+
+    this.loading = true;
+    this.searchError = '';
+    this.foundColis = null;
+
+    this.apiService.getCommandeById(this.searchColisId.trim()).subscribe({
+      next: (cmd) => {
+        this.foundColis = cmd;
+        this.loading = false;
+      },
+      error: () => {
+        // fallback éventuel search
+        const anyApi = this.apiService as any;
+        if (typeof anyApi.searchCommandes === 'function') {
+          anyApi.searchCommandes(this.searchColisId.trim()).subscribe({
+            next: (results: Commande[]) => {
+              this.loading = false;
+              if (results?.length) this.foundColis = results[0];
+              else this.searchError = 'Colis non trouvé';
+            },
+            error: () => {
+              this.loading = false;
+              this.searchError = 'Colis non trouvé';
+            }
+          });
+        } else {
+          this.loading = false;
+          this.searchError = 'Colis non trouvé';
         }
       }
     });
   }
 
-  demarrer(livraison: Livraison): void {
-    this.apiService.demarrerLivraison(livraison.id).subscribe({
-      next: (updatedLiv) => {
-        livraison.statut = 'en_cours';
-        // Also update order status
-        this.apiService.updateCommandeStatut(livraison.colisId, 'EN_LIVRAISON').subscribe({
-          next: () => {
-            alert('Course démarrée ! La commande est maintenant en cours de livraison.');
-            this.loadDriverData();
-            this.startGPSStream();
-          }
-        });
-      },
-      error: (err) => alert('Erreur au démarrage : ' + err.message)
-    });
+  getStepIndex(status: string): number {
+    return this.trackingSteps.findIndex(s => s.key === status);
   }
 
-  // Accept an assignment (starts the course immediately)
-  acceptAssignment(livraison: Livraison) {
-    if (!confirm('Accepter cette course ?')) return;
-    this.demarrer(livraison);
+  isStepCompleted(stepKey: string, currentStatus: string): boolean {
+    const a = this.getStepIndex(stepKey);
+    const b = this.getStepIndex(currentStatus);
+    return a >= 0 && b >= 0 && a < b;
   }
 
-  // Compute per-driver statistics
-  computeDriverStats() {
-    if (!this.driverId) return;
-    this.apiService.getLivraisonsByLivreur(this.driverId).subscribe({
-      next: (livs) => {
-        const total = livs.length;
-        const done = livs.filter(l => l.statut === 'livree').length;
-        const failed = livs.filter(l => l.statut === 'echoue' || l.statut === 'ECHOUEE').length;
-        const successRate = total ? Math.round((done / total) * 100) : 100;
-        // average rating comes from driver profile
-        const avgNote = this.driverInfo?.noteMoyenne || 5.0;
-        // update KPIs
-        this.stats[0].value = total;
-        this.stats[1].value = avgNote;
-        // extend stats display
-        this.stats[2].value = Math.round((done || 0) * 1); // placeholder distance
-        // optional expose successRate
-        (this as any).successRate = successRate;
-      }
-    });
+  isStepActive(stepKey: string, currentStatus: string): boolean {
+    return stepKey === currentStatus;
   }
 
-  terminer(livraison: Livraison): void {
-    this.apiService.terminerLivraison(livraison.id).subscribe({
-      next: (updatedLiv) => {
-        livraison.statut = 'livree';
-        // Update order status to LIVREE
-        this.apiService.updateCommandeStatut(livraison.colisId, 'LIVREE').subscribe({
-          next: () => {
-            // Reset driver status to disponible
-            this.apiService.updateLivreurStatut(this.driverId, 'DISPONIBLE').subscribe({
-              next: () => {
-                alert('Livraison terminée avec succès ! Félicitations.');
-                this.loadDriverData();
-              }
-            });
-          }
-        });
-      },
-      error: (err) => alert('Erreur lors de la clôture de la livraison : ' + err.message)
-    });
+  getColisShortId(colis: any): string {
+    return colis?.id ? String(colis.id).substring(0, 8) : 'N/A';
+  }
+
+  // ========== VEHICULE / SETTINGS ==========
+  loadVehicleInfo(): void {
+    try {
+      const stored = localStorage.getItem('driverVehicle');
+      this.vehicleInfo = stored
+        ? JSON.parse(stored)
+        : { marque: '', modele: '', immatriculation: '', type: 'Voiture' };
+    } catch {
+      this.vehicleInfo = { marque: '', modele: '', immatriculation: '', type: 'Voiture' };
+    }
+  }
+
+  saveVehicleInfo(): void {
+    localStorage.setItem('driverVehicle', JSON.stringify(this.vehicleInfo));
+    this.showToast('Véhicule enregistré', 'success');
+  }
+
+  uploadDriverPhoto(event: any): void {
+    const file = event?.target?.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      this.driverPhoto = e.target.result;
+      localStorage.setItem('driverPhoto', this.driverPhoto);
+      this.showToast('Photo mise à jour', 'success');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  toggleNotifications(): void {
+    localStorage.setItem('notificationsEnabled', String(this.notificationsEnabled));
+    this.showToast(
+      this.notificationsEnabled ? 'Notifications activées' : 'Notifications désactivées',
+      'info'
+    );
   }
 
   logout(): void {
@@ -432,51 +835,47 @@ export class DashboardLivreurComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 
-  reportIssue(livraison: Livraison): void {
-    // Navigate to claims page with pre-filled data
-    this.router.navigate(['/reclamations'], {
-      queryParams: { livraisonId: livraison.id }
-    });
+  // ========== TOASTS ==========
+  showToast(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
+    const id = this.toastIdCounter++;
+    this.toasts.push({ id, message, type });
+    setTimeout(() => this.removeToast(id), 4000);
   }
 
-  // --- Suivi Colis Methods ---
-  
-  rechercherColis(): void {
-    if (!this.searchColisId.trim()) return;
-    this.searchError = '';
-    this.foundColis = null;
-    this.apiService.getCommandeById(this.searchColisId).subscribe({
-      next: (colis) => {
-        this.foundColis = colis;
-      },
-      error: () => {
-        this.searchError = "Aucun colis trouvé avec cet identifiant.";
-      }
-    });
+  removeToast(id: number): void {
+    this.toasts = this.toasts.filter(t => t.id !== id);
   }
 
-  changerStatutColis(newStatut: string): void {
-    if (!this.foundColis || !this.foundColis.id) return;
-    const statusFormatted = newStatut.toUpperCase();
-    
-    if (!confirm(`Voulez-vous vraiment changer le statut en ${statusFormatted} ?`)) return;
-
-    this.apiService.updateCommandeStatut(this.foundColis.id, statusFormatted).subscribe({
-      next: () => {
-        if (this.foundColis) this.foundColis.statut = statusFormatted;
-        alert(`Succès : Le statut a été mis à jour en ${statusFormatted}`);
-        this.loadDriverData(); // Refresh current driver data just in case
-      },
-      error: (err) => {
-        alert('Erreur lors du changement de statut');
-      }
-    });
+  // ========== PROFILE HELPERS ==========
+  hasDriverPhoto(): boolean {
+    return !!this.driverPhoto;
   }
 
-  getColisStepIndex(statut: string): number {
-    if (!statut) return -1;
-    const s = statut.toUpperCase();
-    if (s === 'EN_LIVRAISON') return 3; // Alias for EN_COURS
-    return this.trackingSteps.findIndex(step => step.id === s);
+  getDriverNameDisplay(): string {
+    return this.driverName || 'Livreur';
+  }
+
+  getDriverRating(): string {
+    return String(this.driverInfo?.noteMoyenne ?? 4.5);
+  }
+
+  getDriverEmail(): string {
+    return this.driverInfo?.email || '—';
+  }
+
+  getDriverPhone(): string {
+    return this.driverInfo?.telephone || '—';
+  }
+
+  getDriverGovernorate(): string {
+    return this.driverInfo?.gouvernorat || '—';
+  }
+
+  isDriverOnline(): boolean {
+    return this.driverStatus === 'DISPONIBLE' || this.driverStatus === 'EN_COURSE';
+  }
+
+  isDriverOffline(): boolean {
+    return this.driverStatus === 'HORS_LIGNE';
   }
 }

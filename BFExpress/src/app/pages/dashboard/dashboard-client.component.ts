@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
@@ -32,7 +32,7 @@ export interface TeamMember {
   templateUrl: './dashboard-client.component.html',
   styleUrls: ['./dashboard-client.component.scss']
 })
-export class DashboardClientComponent implements OnInit {
+export class DashboardClientComponent implements OnInit, OnDestroy {
 
   activeTab = 'dashboard';
   clientName = 'Client';
@@ -42,6 +42,7 @@ export class DashboardClientComponent implements OnInit {
   pendingCommandes: Commande[] = [];
   validatedManifests: any[] = [];
   reclamationsList: Reclamation[] = [];
+  colisList: any[] = []; // Ajouté pour stocker les colis
 
   searchTerm = '';
   searchResult: Commande | null = null;
@@ -49,7 +50,10 @@ export class DashboardClientComponent implements OnInit {
 
   loading = false;
   errorMessage = '';
+  successMessage = '';
   reclamationSuccessMsg = '';
+
+  private refreshInterval: any = null;
 
   month = 'Août';
   year = '2026';
@@ -141,7 +145,24 @@ export class DashboardClientComponent implements OnInit {
       this.loadClientCommandes();
       this.loadReclamations();
       this.loadManifests();
+      this.startRealTimeUpdates();
     }
+  }
+
+  ngOnDestroy(): void {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+      this.refreshInterval = null;
+    }
+  }
+
+  private startRealTimeUpdates(): void {
+    // Refresh data every 15 seconds for real-time tracking
+    this.refreshInterval = setInterval(() => {
+      this.loadClientCommandes();
+      this.loadReclamations();
+      this.loadColisForClient(); // Also refresh colis for real-time updates
+    }, 15000);
   }
 
   private initForms(): void {
@@ -192,6 +213,8 @@ export class DashboardClientComponent implements OnInit {
       next: (res) => {
         this.commandes = res || [];
         this.pendingCommandes = this.commandes.filter(c => c.statut === 'EN_ATTENTE');
+        // Charger les colis associés pour le suivi temps réel
+        this.loadColisForClient();
         this.loading = false;
       },
       error: (err) => {
@@ -200,6 +223,30 @@ export class DashboardClientComponent implements OnInit {
         this.commandes = [];
         this.pendingCommandes = [];
         this.loading = false;
+      }
+    });
+  }
+
+  loadColisForClient(): void {
+    if (!this.clientId) return;
+
+    this.apiService.getColisByClient(this.clientId).subscribe({
+      next: (colis) => {
+        this.colisList = colis || [];
+        // Update commandes with colis status for real-time tracking
+        this.commandes.forEach(cmd => {
+          const cmdColis = this.colisList.filter(c => c.commandeId === cmd.id);
+          if (cmdColis.length > 0) {
+            // Use the latest colis status
+            const latestColis = cmdColis[cmdColis.length - 1];
+            if (latestColis.statut && latestColis.statut !== 'EN_ATTENTE') {
+              cmd.statut = latestColis.statut;
+            }
+          }
+        });
+      },
+      error: (err) => {
+        console.error('Erreur chargement colis:', err);
       }
     });
   }
@@ -480,22 +527,32 @@ export class DashboardClientComponent implements OnInit {
 
     this.apiService.creerManifeste(manifeste).subscribe({
       next: (manifest) => {
+        if (!manifest || !manifest.id) {
+          this.loading = false;
+          this.errorMessage = 'Erreur: ID manifeste non reçu';
+          return;
+        }
+
         this.apiService.validerManifeste(manifest.id).subscribe({
           next: () => {
             this.loading = false;
+            this.pendingCommandes = [];
             this.loadClientCommandes();
             this.loadManifests();
             this.errorMessage = '';
+            this.successMessage = 'Manifeste validé avec succès!';
           },
-          error: () => {
+          error: (err) => {
             this.loading = false;
-            this.errorMessage = 'Erreur lors de la validation du manifeste.';
+            console.error('Erreur validation manifeste:', err);
+            this.errorMessage = 'Erreur lors de la validation du manifeste. Vérifiez que les commandes sont valides.';
           }
         });
       },
-      error: () => {
+      error: (err) => {
         this.loading = false;
-        this.errorMessage = 'Erreur lors de la création du manifeste.';
+        console.error('Erreur création manifeste:', err);
+        this.errorMessage = 'Erreur lors de la création du manifeste. Vérifiez que vous avez des commandes en attente.';
       }
     });
   }

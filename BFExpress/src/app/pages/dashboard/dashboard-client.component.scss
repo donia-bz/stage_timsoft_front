@@ -358,6 +358,17 @@ $shadow: 0 4px 20px rgba(14, 165, 233, 0.08);
   &.status-annulee { background: #e5e7eb; color: #374151; }
 }
 
+.live-indicator {
+  font-size: 0.65rem;
+  animation: pulse 2s infinite;
+  margin-left: 0.25rem;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 // Forms
 .form-section {
   margin-bottom: 1.5rem;

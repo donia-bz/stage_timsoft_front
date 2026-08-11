@@ -292,6 +292,12 @@ export class ApiService {
     });
   }
 
+  updateColisStatut(id: string, statut: string): Observable<Colis> {
+    return this.http.patch<Colis>(`${this.commandesUrl}/colis/${id}/statut`, null, {
+      params: new HttpParams().set('statut', statut)
+    });
+  }
+
   // --- Destinataires ---
   creerDestinataire(destinataire: Destinataire): Observable<Destinataire> {
     return this.http.post<Destinataire>(`${this.commandesUrl}/destinataires`, destinataire);

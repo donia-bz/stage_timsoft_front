@@ -135,7 +135,12 @@
                   <td class="mono">{{ order.id?.substring(0, 8) || '—' }}</td>
                   <td>{{ order.nomDestinataire || order.adresseArriveeId || '—' }}</td>
                   <td>{{ order.montantTotal || 0 }} DT</td>
-                  <td><span class="status-pill" [ngClass]="getStatusClass(order.statut)">{{ getStatusLabel(order.statut || '') }}</span></td>
+                  <td>
+                    <span class="status-pill" [ngClass]="getStatusClass(order.statut)">
+                      {{ getStatusLabel(order.statut || '') }}
+                    </span>
+                    <span class="live-indicator" *ngIf="order.statut !== 'EN_ATTENTE'">🔴</span>
+                  </td>
                 </tr>
                 <tr *ngIf="commandes.length === 0">
                   <td colspan="4" class="empty">

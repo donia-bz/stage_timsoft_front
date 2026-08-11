@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -38,7 +38,7 @@ interface ToastMessage {
   templateUrl: './dashboard-admin.component.html',
   styleUrls: ['./dashboard-admin.component.scss']
 })
-export class DashboardAdminComponent implements OnInit {
+export class DashboardAdminComponent implements OnInit, OnDestroy {
 
   activeTab:
     | 'stats'
@@ -126,6 +126,8 @@ export class DashboardAdminComponent implements OnInit {
   modeEditionLivreur = false;
   livreurEnEdition: string | null = null;
 
+  private refreshInterval: any = null;
+
   constructor(
     private apiService: ApiService,
     private authService: AuthService,
@@ -134,6 +136,21 @@ export class DashboardAdminComponent implements OnInit {
 
   ngOnInit(): void {
     this.refreshData();
+    this.startRealTimeUpdates();
+  }
+
+  ngOnDestroy(): void {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+      this.refreshInterval = null;
+    }
+  }
+
+  private startRealTimeUpdates(): void {
+    // Refresh data every 10 seconds for real-time monitoring
+    this.refreshInterval = setInterval(() => {
+      this.refreshData();
+    }, 10000);
   }
 
   // ========== TOASTS ==========
