@@ -1,14 +1,17 @@
-<section class="dashboard-page">
-  <div class="dashboard-shell">
-    
-    <!-- Sidebar -->
-    <aside class="dashboard-sidebar">
-      <div class="dashboard-brand">
-        <div class="brand-logo-ic">⚡</div>
-        <span>BFExpress Admin</span>
+<div class="admin-dashboard">
+
+  <!-- SIDEBAR -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-top">
+      <div class="brand">
+        <div class="brand-logo">⚡</div>
+        <div class="brand-info">
+          <span class="brand-text">BFExpress</span>
+          <span class="brand-sub">Administration</span>
+        </div>
       </div>
 
-      <div class="sidebar-user">
+      <div class="user-card">
         <div class="user-avatar">A</div>
         <div class="user-info">
           <div class="user-name">Administrateur</div>
@@ -16,631 +19,573 @@
         </div>
       </div>
 
-      <div class="sidebar-section">
-        <nav>
-          <a class="sidebar-link" [class.active]="activeTab === 'stats'" (click)="activeTab = 'stats'">
-            <span class="icon">📊</span> Dashboard
+      <nav class="sidebar-nav">
+        <div class="nav-group">
+          <div class="nav-label">Principal</div>
+          <a class="nav-item" [class.active]="activeTab === 'stats'" (click)="activeTab = 'stats'">
+            <span class="nav-icon">📊</span> Tableau de bord
           </a>
-        </nav>
-      </div>
-
-      <div class="sidebar-section">
-        <h3>Opérations</h3>
-        <nav>
-          <a class="sidebar-link" [class.active]="activeTab === 'commandes'" (click)="activeTab = 'commandes'">
-            <span class="icon">📦</span> Commandes
+          <a class="nav-item" [class.active]="activeTab === 'commandes'" (click)="activeTab = 'commandes'">
+            <span class="nav-icon">📦</span> Commandes
           </a>
-          <a class="sidebar-link" [class.active]="activeTab === 'livreurs'" (click)="activeTab = 'livreurs'">
-            <span class="icon">🚚</span> Livreurs
-            <span class="count-badge alert" *ngIf="getPendingRegistrations().length > 0">{{ getPendingRegistrations().length }}</span>
+          <a class="nav-item" [class.active]="activeTab === 'manifests'" (click)="activeTab = 'manifests'; chargerManifests()">
+            <span class="nav-icon">📋</span> Manifestes
           </a>
-          <a class="sidebar-link" [class.active]="activeTab === 'carte'" (click)="openCarteTab()">
-            <span class="icon">🗺️</span> Carte Direct
-          </a>
-          <a class="sidebar-link" [class.active]="activeTab === 'manifests'" (click)="activeTab = 'manifests'">
-            <span class="icon">�</span> Manifests
-          </a>
-        </nav>
-      </div>
-
-      <div class="sidebar-section">
-        <h3>Ressources</h3>
-        <nav>
-          <a class="sidebar-link" [class.active]="activeTab === 'vehicules'" (click)="activeTab = 'vehicules'">
-            <span class="icon">🚗</span> Flotte
-          </a>
-          <a class="sidebar-link" [class.active]="activeTab === 'depots'" (click)="activeTab = 'depots'">
-            <span class="icon">🏬</span> Dépôts
-          </a>
-        </nav>
-      </div>
-
-      <div class="sidebar-section">
-        <h3>Clients</h3>
-        <nav>
-          <a class="sidebar-link" [class.active]="activeTab === 'inscriptions'" (click)="activeTab = 'inscriptions'">
-            <span class="icon">👥</span> Clients
-            <span class="count-badge" *ngIf="getPendingUsersCount() > 0">{{ getPendingUsersCount() }}</span>
-          </a>
-          <a class="sidebar-link" [class.active]="activeTab === 'reclamations'" (click)="activeTab = 'reclamations'">
-            <span class="icon">📝</span> Réclamations
-            <span class="count-badge alert">5</span>
-          </a>
-        </nav>
-      </div>
-
-      <div class="sidebar-section">
-        <h3>Analytics</h3>
-        <nav>
-          <a class="sidebar-link" [class.active]="activeTab === 'analytics'" (click)="activeTab = 'analytics'">
-            <span class="icon">�</span> Statistiques
-          </a>
-        </nav>
-      </div>
-
-      <div class="sidebar-section">
-        <h3>Configuration</h3>
-        <nav>
-          <a class="sidebar-link" [class.active]="activeTab === 'parametres'" (click)="activeTab = 'parametres'">
-            <span class="icon">⚙️</span> Paramètres
-          </a>
-        </nav>
-      </div>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="dashboard-content">
-      
-      <!-- Top header -->
-      <div class="dashboard-header">
-        <div>
-          <h1>Espace Administration</h1>
-          <div class="dashboard-greeting">Centre de contrôle et dispatching intelligent de BFExpress</div>
         </div>
-        <div class="header-right">
-          <button class="btn-home" routerLink="/">
-            <span class="home-ic">🏠</span> Accueil
-          </button>
-          <button class="btn-refresh" (click)="refreshData()">
-            <span class="spin-ic">🔄</span> Actualiser
-          </button>
-          <button class="btn-logout" (click)="logout()">
-            <span class="logout-ic">🚪</span> Déconnexion
-          </button>
+
+        <div class="nav-group">
+          <div class="nav-label">Équipe</div>
+          <a class="nav-item" [class.active]="activeTab === 'livreurs'" (click)="activeTab = 'livreurs'">
+            <span class="nav-icon">🚚</span> Livreurs
+            <span class="badge" *ngIf="getPendingRegistrations().length > 0">{{ getPendingRegistrations().length }}</span>
+          </a>
+          <a class="nav-item" [class.active]="activeTab === 'vehicules'" (click)="activeTab = 'vehicules'">
+            <span class="nav-icon">🚗</span> Flotte
+          </a>
+          <a class="nav-item" [class.active]="activeTab === 'depots'" (click)="activeTab = 'depots'">
+            <span class="nav-icon">🏬</span> Dépôts
+          </a>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-label">Clients</div>
+          <a class="nav-item" [class.active]="activeTab === 'inscriptions'" (click)="activeTab = 'inscriptions'">
+            <span class="nav-icon">👥</span> Utilisateurs
+            <span class="badge" *ngIf="getPendingUsersCount() > 0">{{ getPendingUsersCount() }}</span>
+          </a>
+          <a class="nav-item" [class.active]="activeTab === 'reclamations'" (click)="activeTab = 'reclamations'">
+            <span class="nav-icon">📝</span> Réclamations
+          </a>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-label">Ops</div>
+          <a class="nav-item" [class.active]="activeTab === 'carte'" (click)="openCarteTab()">
+            <span class="nav-icon">🗺️</span> Carte live
+          </a>
+          <a class="nav-item" [class.active]="activeTab === 'analytics'" (click)="activeTab = 'analytics'">
+            <span class="nav-icon">📈</span> Analytics
+          </a>
+        </div>
+      </nav>
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="btn-logout" (click)="logout()">Déconnexion</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="admin-main">
+
+    <!-- Header global -->
+    <div class="page-header">
+      <div>
+        <h1 *ngIf="activeTab === 'stats'">Tableau de bord</h1>
+        <h1 *ngIf="activeTab === 'commandes'">Commandes</h1>
+        <h1 *ngIf="activeTab === 'livreurs'">Livreurs</h1>
+        <h1 *ngIf="activeTab === 'manifests'">Manifestes</h1>
+        <h1 *ngIf="activeTab === 'vehicules'">Flotte</h1>
+        <h1 *ngIf="activeTab === 'depots'">Dépôts</h1>
+        <h1 *ngIf="activeTab === 'inscriptions'">Utilisateurs</h1>
+        <h1 *ngIf="activeTab === 'reclamations'">Réclamations</h1>
+        <h1 *ngIf="activeTab === 'carte'">Carte live</h1>
+        <h1 *ngIf="activeTab === 'analytics'">Analytics</h1>
+        <p>Centre de contrôle BFExpress — First Delivery / Navex</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" (click)="refreshData()">Actualiser</button>
+        <button class="btn btn-secondary" routerLink="/">Accueil</button>
+      </div>
+    </div>
+
+    <!-- ========== DASHBOARD ========== -->
+    <div *ngIf="activeTab === 'stats'" class="tab-panel">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Total commandes</div>
+          <div class="kpi-value">{{ commandes.length }}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">À affecter</div>
+          <div class="kpi-value">{{ getOrderCountByStatus('EN_ATTENTE') + getOrderCountByStatus('A_ENLEVER') }}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">En livraison</div>
+          <div class="kpi-value">{{ getOrderCountByStatus('EN_LIVRAISON') }}</div>
+        </div>
+        <div class="kpi-card highlight">
+          <div class="kpi-label">CA (COD)</div>
+          <div class="kpi-value">{{ getTotalRevenue() | number:'1.0-0' }} <small>DT</small></div>
         </div>
       </div>
 
-      <!-- Quick Metrics Grid -->
       <div class="dashboard-grid">
-        <div class="status-card status-blue">
-          <div class="status-icon">📦</div>
-          <div>
-            <div class="status-title">Total Commandes</div>
-            <div class="status-value">{{ commandes.length }}</div>
+        <div class="card">
+          <div class="card-header"><h3>Alertes opérationnelles</h3></div>
+          <div class="alert-list">
+            <div class="alert-row" *ngIf="getOrderCountByStatus('EN_ATTENTE') > 0">
+              <span class="dot red"></span>
+              <span>{{ getOrderCountByStatus('EN_ATTENTE') }} commandes en attente</span>
+              <button class="btn-link" (click)="activeTab = 'commandes'">Voir</button>
+            </div>
+            <div class="alert-row" *ngIf="getPendingRegistrations().length > 0">
+              <span class="dot orange"></span>
+              <span>{{ getPendingRegistrations().length }} inscriptions livreur</span>
+              <button class="btn-link" (click)="activeTab = 'livreurs'">Valider</button>
+            </div>
+            <div class="alert-row" *ngIf="getPendingUsersCount() > 0">
+              <span class="dot orange"></span>
+              <span>{{ getPendingUsersCount() }} utilisateurs en attente</span>
+              <button class="btn-link" (click)="activeTab = 'inscriptions'">Traiter</button>
+            </div>
+            <div class="alert-row" *ngIf="getPendingRegistrations().length === 0 && getOrderCountByStatus('EN_ATTENTE') === 0">
+              <span class="dot green"></span>
+              <span>Aucune alerte critique</span>
+            </div>
           </div>
         </div>
-        <div class="status-card status-yellow">
-          <div class="status-icon">⏳</div>
-          <div>
-            <div class="status-title">En attente affectation</div>
-            <div class="status-value">{{ getOrderCountByStatus('EN_ATTENTE') }}</div>
-          </div>
-        </div>
-        <div class="status-card status-green">
-          <div class="status-icon">🚚</div>
-          <div>
-            <div class="status-title">En cours de livraison</div>
-            <div class="status-value">{{ getOrderCountByStatus('EN_LIVRAISON') + getOrderCountByStatus('VALIDEE') }}</div>
-          </div>
-        </div>
-        <div class="status-card status-teal-dark">
-          <div class="status-icon">💵</div>
-          <div>
-            <div class="status-title">Chiffre d'Affaires</div>
-            <div class="status-value">{{ getTotalRevenue() | number:'1.2-2' }} DT</div>
+
+        <div class="card">
+          <div class="card-header"><h3>Répartition des statuts</h3></div>
+          <div class="status-bars">
+            <div class="bar-row" *ngFor="let s of [
+              {k:'EN_ATTENTE', l:'En attente'},
+              {k:'A_ENLEVER', l:'À enlever'},
+              {k:'EN_LIVRAISON', l:'En livraison'},
+              {k:'LIVRE', l:'Livré'},
+              {k:'LIVRE_PAYE', l:'Livré payé'},
+              {k:'RETOUR_DEPOT', l:'Retours'}
+            ]">
+              <span class="bar-label">{{ s.l }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" [style.width.%]="getOrderPercentage(s.k)"></div>
+              </div>
+              <span class="bar-count">{{ getOrderCountByStatus(s.k) }}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Tab Content Area -->
-      <div class="page-card mt-4">
+      <div class="kpi-grid kpi-4">
+        <div class="kpi-card">
+          <div class="kpi-label">Livreurs actifs</div>
+          <div class="kpi-value">{{ getActiveDriversCount() }}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Disponibles</div>
+          <div class="kpi-value">{{ getAvailableDriversCount() }}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Taux de réussite</div>
+          <div class="kpi-value">{{ getSuccessRate() }}%</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Taux de retour</div>
+          <div class="kpi-value">{{ getReturnRate() }}%</div>
+        </div>
+      </div>
+    </div>
 
-        <!-- Tab: Dashboard (Stats) -->
-        <div *ngIf="activeTab === 'stats'">
-          <div class="tab-header-flex">
+    <!-- ========== COMMANDES ========== -->
+    <div *ngIf="activeTab === 'commandes'" class="tab-panel">
+      <div class="toolbar">
+        <input class="search-input" [(ngModel)]="searchFilter" placeholder="Rechercher référence, statut..." />
+      </div>
+
+      <div class="card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Réf</th>
+                <th>Date</th>
+                <th>Trajet</th>
+                <th>Service</th>
+                <th>COD</th>
+                <th>Statut</th>
+                <th>Dispatch</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let order of filteredCommandes">
+                <td class="mono">#{{ order.id ? order.id.substring(order.id.length - 6) : 'N/A' }}</td>
+                <td>{{ order.dateCreation ? (order.dateCreation | date:'dd/MM/yy HH:mm') : '—' }}</td>
+                <td>
+                  <div class="path">
+                    <span>{{ getDepartVille(order) }}</span>
+                    <span class="arrow">→</span>
+                    <span>{{ getArriveeVille(order) }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="tag" [class.express]="order.typeService === 'EXPRESS'">
+                    {{ order.typeService || 'STANDARD' }}
+                  </span>
+                </td>
+                <td>{{ order.montantTotal || 0 }} DT</td>
+                <td>
+                  <span class="status-pill" [ngClass]="getOrderStatusClass(order)">{{ order.statut }}</span>
+                </td>
+                <td>
+                  <div class="dispatch" *ngIf="isOrderPending(order)">
+                    <select [(ngModel)]="selectedDrivers[order.id || '']">
+                      <option value="">Livreur...</option>
+                      <option *ngFor="let l of getAvailableDrivers()" [value]="l.id">
+                        {{ l.prenom }} {{ l.nom }} ({{ l.gouvernorat || '—' }})
+                      </option>
+                    </select>
+                    <button class="btn btn-primary btn-sm" (click)="assignDriverManually(order)">Affecter</button>
+                    <button class="btn btn-secondary btn-sm" (click)="assignDriverAI(order)">IA</button>
+                  </div>
+                  <div *ngIf="!isOrderPending(order)" class="muted">Affectée</div>
+                  <button class="btn-link" (click)="openHistory(order)">Historique</button>
+                </td>
+              </tr>
+              <tr *ngIf="filteredCommandes.length === 0">
+                <td colspan="7" class="empty">Aucune commande</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== MANIFESTES ========== -->
+    <div *ngIf="activeTab === 'manifests'" class="tab-panel">
+      <div class="card" *ngIf="getPendingManifests().length > 0">
+        <div class="card-header"><h3>En attente d’affectation</h3></div>
+        <div class="list-stack">
+          <div class="list-item" *ngFor="let m of getPendingManifests()">
             <div>
-              <h2>Dashboard</h2>
-              <p>Vue d'ensemble de l'activité en temps réel</p>
+              <strong>{{ getManifestId(m) }}</strong>
+              <div class="muted">{{ getManifestColisCount(m) }} colis · {{ getManifestDate(m) }}</div>
             </div>
-          </div>
-
-          <div class="dashboard-grid">
-            <div class="status-card status-blue">
-              <div class="status-icon">📦</div>
-              <div>
-                <div class="status-title">Commandes du jour</div>
-                <div class="status-value">{{ commandes.length }}</div>
-              </div>
-            </div>
-            <div class="status-card status-yellow">
-              <div class="status-icon">⏳</div>
-              <div>
-                <div class="status-title">En attente affectation</div>
-                <div class="status-value">{{ getOrderCountByStatus('EN_ATTENTE') }}</div>
-              </div>
-            </div>
-            <div class="status-card status-green">
-              <div class="status-icon">🚚</div>
-              <div>
-                <div class="status-title">Livreurs actifs</div>
-                <div class="status-value">{{ getActiveDriversCount() }}</div>
-              </div>
-            </div>
-            <div class="status-card status-teal-dark">
-              <div class="status-icon">💵</div>
-              <div>
-                <div class="status-title">Chiffre d'Affaires</div>
-                <div class="status-value">{{ getTotalRevenue() | number:'1.2-2' }} DT</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="alerts-section mt-4">
-            <h3>⚠️ Alertes urgentes</h3>
-            <div class="alert-item">
-              <span class="alert-icon">🔴</span>
-              <span>{{ getOrderCountByStatus('EN_ATTENTE') }} commandes en attente d'affectation</span>
-            </div>
-            <div class="alert-item">
-              <span class="alert-icon">🟡</span>
-              <span>{{ getPendingRegistrations().length }} inscriptions livreur en attente</span>
+            <div class="row-actions">
+              <select [(ngModel)]="selectedDrivers[m.id || '']">
+                <option value="">Livreur...</option>
+                <option *ngFor="let l of getAvailableDrivers()" [value]="l.id">
+                  {{ getDriverFullName(l) }}
+                </option>
+              </select>
+              <button class="btn btn-primary btn-sm"
+                      (click)="affecterManifest(m.id || '', getSelectedDriverForManifest(m.id || ''))"
+                      [disabled]="!isManifestDriverSelected(m.id || '')">
+                Affecter
+              </button>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Tab: Commandes -->
-        <div *ngIf="activeTab === 'commandes'">
-          <div class="tab-header-flex">
+      <div class="card">
+        <div class="card-header"><h3>En cours</h3></div>
+        <div class="list-stack" *ngIf="getInProgressManifests().length > 0">
+          <div class="list-item" *ngFor="let m of getInProgressManifests()">
             <div>
-              <h2>Suivi des Commandes & Dispatching Intelligent</h2>
-              <p>Affectation optimisée par IA ou dispatching manuel par gouvernorat.</p>
+              <strong>{{ getManifestId(m) }}</strong>
+              <div class="muted">Livreur : {{ getDriverNameForManifest(m.livreurId || '') }}</div>
             </div>
-            <div class="search-box">
-              <input type="text" [(ngModel)]="searchFilter" placeholder="🔍 Rechercher commande, client..." />
-            </div>
-          </div>
-
-          <div class="table-container">
-            <table class="premium-table">
-              <thead>
-                <tr>
-                  <th>Réf Commande</th>
-                  <th>Date</th>
-                  <th>Départ / Arrivée</th>
-                  <th>Service</th>
-                  <th>Montant</th>
-                  <th>Statut</th>
-                  <th>Dispatching Livreur</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let order of filteredCommandes">
-                  <td><strong>#{{ order.id ? order.id.substring(order.id.length - 6) : 'N/A' }}</strong></td>
-                  <td>{{ order.dateCreation ? (order.dateCreation | date:'dd/MM/yyyy HH:mm') : 'Récents' }}</td>
-                  <td>
-                    <div class="path-details">
-                      <span class="tag-dep">Dép: {{ getDepartVille(order) }}</span>
-                      <span class="tag-arr">Arr: {{ getArriveeVille(order) }}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <span class="service-badge" [class.express]="order.typeService === 'EXPRESS'">
-                      {{ order.typeService || 'STANDARD' }}
-                    </span>
-                  </td>
-                  <td><strong>{{ order.montantTotal || 25 }} DT</strong></td>
-                  <td>
-                    <span class="status-pill" [ngClass]="getOrderStatusClass(order)">
-                      {{ order.statut }}
-                    </span>
-                  </td>
-                  <td>
-                    <div class="action-dispatch" *ngIf="isOrderPending(order)">
-                      <!-- AI dispatch -->
-                      <button class="btn-ai" (click)="assignDriverAI(order)">
-                        🤖 Proposer par IA
-                      </button>
-                      
-                      <!-- Manual dispatch -->
-                      <div class="manual-group">
-                        <select [(ngModel)]="selectedDrivers[order.id || '']">
-                          <option value="" disabled selected>Livreur disponible...</option>
-                          <option *ngFor="let l of livreurs" [value]="l.id" [disabled]="l.statut !== 'DISPONIBLE'">
-                            {{ l.nom }} {{ l.prenom }} ({{ l.gouvernorat || 'Tunis' }})
-                          </option>
-                        </select>
-                        <button class="btn-dispatch" (click)="assignDriverManually(order)">Affecter</button>
-                      </div>
-                    </div>
-                    
-                    <div *ngIf="order.statut && order.statut !== 'EN_ATTENTE'" class="assigned-text">
-                      <span class="icon">✅</span> Traitée / Affectée
-                    </div>
-                    <div class="mt-2">
-                      <button class="btn-ghost" (click)="openHistory(order)">Voir historique</button>
-                    </div>
-                  </td>
-                </tr>
-                <tr *ngIf="commandes.length === 0">
-                  <td colspan="7" class="text-center">Aucune commande enregistrée.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Tab 2: Carte Live GPS (Leaflet Real Map) -->
-        <div *ngIf="activeTab === 'carte'">
-          <div class="tab-header">
-            <h2>Carte Globale en Temps Réel</h2>
-            <p>Supervision GPS des livreurs et points de livraisons sur la carte interactive de la Tunisie.</p>
-          </div>
-          
-          <div class="map-wrapper">
-            <div id="admin-map" class="real-leaflet-map"></div>
-            <div class="map-overlay-info">
-              <div class="info-badge green">🟢 {{ getAvailableDriversCount() }} Livreurs Disponibles</div>
-              <div class="info-badge blue">🚚 {{ getOrderCountByStatus('EN_LIVRAISON') }} En livraison</div>
+            <div class="row-actions">
+              <span class="status-pill status-a_enlever">{{ getManifestStatus(m) }}</span>
+              <button class="btn btn-secondary btn-sm" *ngIf="canValidateRetrait(m)"
+                      (click)="validerRetraitManifest(m.id || '')">Valider retrait</button>
             </div>
           </div>
         </div>
+        <div class="empty" *ngIf="hasNoManifests()">Aucun manifeste</div>
+      </div>
+    </div>
 
-        <!-- Tab 3: Livreurs & Gouvernorats -->
-        <div *ngIf="activeTab === 'livreurs'">
-          <div class="tab-header">
-            <h2>Livreurs & Affectation Régionale</h2>
-            <p>Supervisez l'équipe de livreurs, validez les candidatures et affectez les gouvernorats.</p>
-          </div>
-
-          <!-- Demandes en attente -->
-          <div class="pending-section mb-4" *ngIf="getPendingRegistrations().length > 0">
-            <h3>📋 Devenir Livreur (Demandes en attente : {{ getPendingRegistrations().length }})</h3>
-            <p class="section-hint">Affectez un gouvernorat pour approuver les candidatures "Devenir Livreur".</p>
-            <div class="pending-cards">
-              <div class="pending-card" *ngFor="let l of getPendingRegistrations()">
-                <div class="pending-info">
-                  <strong>{{ l.prenom }} {{ l.nom }}</strong>
-                  <span>{{ l.email || l.telephone || 'Contact non renseigné' }}</span>
-                  <span class="date-tag">Inscrit le {{ l.dateInscription ? (l.dateInscription | date:'dd/MM/yyyy') : 'Récent' }}</span>
-                </div>
-                <div class="pending-actions">
-                  <select [(ngModel)]="l.gouvernorat" class="small-select">
-                    <option value="" disabled>Choisir gouvernorat...</option>
-                    <option *ngFor="let g of gouvernorats" [value]="g">{{ g }}</option>
-                  </select>
-                  <button class="btn-primary-sm" (click)="affecterGouvernoratEtValider(l)" [disabled]="!l.gouvernorat">
-                    Valider & Affecter
-                  </button>
-                </div>
-              </div>
+    <!-- ========== LIVREURS ========== -->
+    <div *ngIf="activeTab === 'livreurs'" class="tab-panel">
+      <div class="card" *ngIf="getPendingRegistrations().length > 0">
+        <div class="card-header">
+          <h3>Inscriptions en attente ({{ getPendingRegistrations().length }})</h3>
+        </div>
+        <div class="list-stack">
+          <div class="list-item" *ngFor="let l of getPendingRegistrations()">
+            <div>
+              <strong>{{ l.prenom }} {{ l.nom }}</strong>
+              <div class="muted">{{ l.email || l.telephone || '—' }}</div>
             </div>
-          </div>
-
-          <!-- Formulaire rapide -->
-          <div class="form-box mb-4">
-            <h3>Ajouter un nouveau livreur</h3>
-            <div class="row-form">
-              <input type="text" [(ngModel)]="nouveauLivreur.nom" placeholder="Nom" />
-              <input type="text" [(ngModel)]="nouveauLivreur.prenom" placeholder="Prénom" />
-              <input type="text" [(ngModel)]="nouveauLivreur.telephone" placeholder="Téléphone" />
-              <input type="text" [(ngModel)]="nouveauLivreur.photoUrl" placeholder="URL Photo (optionnel)" />
-              <select [(ngModel)]="nouveauLivreur.gouvernorat">
-                <option value="" disabled selected>Gouvernorat...</option>
+            <div class="row-actions">
+              <select [(ngModel)]="l.gouvernorat">
+                <option value="">Gouvernorat...</option>
                 <option *ngFor="let g of gouvernorats" [value]="g">{{ g }}</option>
               </select>
-              <button class="btn-primary" (click)="enregistrerLivreur()">Enregistrer</button>
-            </div>
-          </div>
-
-          <div class="table-container">
-            <table class="premium-table">
-              <thead>
-                <tr>
-                  <th>Nom & Prénom</th>
-                  <th>Gouvernorat</th>
-                  <th>Statut</th>
-                  <th>Position GPS</th>
-                  <th>Note</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let l of livreurs">
-                  <td>
-                    <div class="user-avatar-row">
-                      <img *ngIf="l.photoUrl" [src]="l.photoUrl" alt="Avatar" class="small-avatar" />
-                      <div *ngIf="!l.photoUrl" class="small-avatar-placeholder">{{ l.nom ? l.nom.charAt(0) : 'L' }}</div>
-                      <strong>{{ l.nom }} {{ l.prenom }}</strong>
-                    </div>
-                  </td>
-                  <td>
-                    <span *ngIf="l.statut !== 'INSCRIPTION' && l.statut" class="gouv-tag">{{ getLivreurGouvernorat(l) }}</span>
-                    <select *ngIf="l.statut === 'INSCRIPTION' || !l.statut" [(ngModel)]="l.gouvernorat" class="small-select">
-                      <option value="" disabled selected>Choisir...</option>
-                      <option *ngFor="let g of gouvernorats" [value]="g">{{ g }}</option>
-                    </select>
-                    <button *ngIf="l.statut !== 'INSCRIPTION' && l.statut" class="btn-ghost-sm mt-1" (click)="affecterGouvernorat(l.id, getLivreurGouvernorat(l))">
-                      Changer gouvernorat
-                    </button>
-                  </td>
-                  <td>
-                    <span class="status-pill" [ngClass]="'status-' + (l.statut || 'DISPONIBLE').toLowerCase()">
-                      {{ l.statut || 'DISPONIBLE' }}
-                    </span>
-                  </td>
-                  <td>
-                    <span class="coord-tag">Lat: {{ getLivreurCoordLat(l).toFixed(3) }}, Lon: {{ getLivreurCoordLon(l).toFixed(3) }}</span>
-                  </td>
-                  <td><span class="star-rating">⭐ {{ getLivreurNote(l) }}/5</span></td>
-                  <td>
-                    <div class="action-row">
-                      <button class="btn-icon view" (click)="voirDetailsLivreur(l)" title="Voir détails">👁️</button>
-                      
-                      <button *ngIf="l.statut === 'INSCRIPTION' || !l.statut" class="btn-icon approve" (click)="affecterGouvernoratEtValider(l)" title="Approuver & Affecter">
-                        ✅
-                      </button>
-                      
-                      <button *ngIf="l.statut === 'INSCRIPTION' || !l.statut" class="btn-icon delete" (click)="supprimerLivreur(l.id || '')" title="Refuser / Supprimer">
-                        🗑️
-                      </button>
-                      
-                      <button *ngIf="l.statut !== 'INSCRIPTION' && l.statut" class="btn-icon view" [ngClass]="l.statut === 'DISPONIBLE' ? 'delete' : 'approve'" (click)="toggleDriverStatus(l)" [title]="l.statut === 'DISPONIBLE' ? 'Mettre Hors Ligne' : 'Rendre Disponible'">
-                        {{ l.statut === 'DISPONIBLE' ? '🛑' : '⚡' }}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Tab 4: Utilisateurs -->
-        <div *ngIf="activeTab === 'inscriptions'">
-          <div class="tab-header">
-            <h2>Membres & Utilisateurs de la Plateforme</h2>
-            <p>Gérez les comptes clients et livreurs — approuver, consulter ou supprimer.</p>
-          </div>
-
-          <div class="table-container">
-            <table class="premium-table">
-              <thead>
-                <tr>
-                  <th>Nom Complet</th>
-                  <th>Email</th>
-                  <th>Téléphone</th>
-                  <th>Rôle</th>
-                  <th>Statut</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let u of usersList">
-                  <td><strong>{{ u.nom }} {{ u.prenom }}</strong></td>
-                  <td>{{ u.email }}</td>
-                  <td>{{ u.telephone || 'Non renseigné' }}</td>
-                  <td><span class="role-badge" [ngClass]="getUserRole(u).toLowerCase()">{{ u.role }}</span></td>
-                  <td>
-                    <span *ngIf="u.approuve === true || u.statut === 'ACTIF' || u.statut === 'DISPONIBLE'" class="badge-active">Actif</span>
-                    <span *ngIf="u.approuve !== true && u.statut !== 'ACTIF' && u.statut !== 'DISPONIBLE'" class="badge-pending">En attente</span>
-                  </td>
-                  <td>
-                    <div class="action-row">
-                      <button class="btn-icon view" (click)="viewUserDetails(u)" title="Voir les coordonnées et détails">
-                        👁️
-                      </button>
-                      <button *ngIf="u.approuve !== true && u.statut !== 'ACTIF' && u.statut !== 'DISPONIBLE'" class="btn-icon approve" (click)="approveUser(u.id)" title="Approuver l'inscription">
-                        ✅
-                      </button>
-                      <button class="btn-icon delete" (click)="deleteUser(u)" title="Supprimer l'utilisateur">
-                        🗑️
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                <tr *ngIf="usersList.length === 0">
-                  <td colspan="6" class="text-center text-muted">Aucun utilisateur trouvé.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Tab 5: Dépôts -->
-        <div *ngIf="activeTab === 'depots'">
-          <div class="tab-header">
-            <h2>Gestion des Dépôts de Stockage</h2>
-            <p>Supervisez les capacités et la charge de vos centres logistiques en Tunisie.</p>
-          </div>
-
-          <div class="row-form mb-4">
-            <input [(ngModel)]="nouveauDepot.nom" placeholder="Nom dépôt (ex: Dépôt Sousse)" />
-            <input [(ngModel)]="nouveauDepot.ville" placeholder="Ville" />
-            <input [(ngModel)]="nouveauDepot.capacite" type="number" placeholder="Capacité (colis)" />
-            <button class="btn-primary" (click)="addDepotAndReset()">Ajouter Dépôt</button>
-          </div>
-
-          <div class="depot-cards-grid">
-            <div class="depot-card-item" *ngFor="let d of depots" [class.depot-over]="isDepotOverCapacity(d)">
-              <div class="depot-ic">🏬</div>
-              <div class="depot-details-box">
-                <h4>{{ d.nom }}</h4>
-                <p>📍 {{ d.ville }}</p>
-                <div class="capacity-bar">
-                  <div class="fill" [style.width.%]="getDepotFillPercent(d)" [class.over]="isDepotOverCapacity(d)"></div>
-                </div>
-                <div class="cap-text">
-                  {{ d.colisActuels || 0 }} / {{ d.capacite }} colis ({{ getDepotFillPercent(d) }}%)
-                </div>
-                <div class="depot-alert" *ngIf="isDepotOverCapacity(d)">
-                  ⚠️ Capacité dépassée — réorganiser les colis
-                </div>
-              </div>
-              <button class="btn-danger-sm" (click)="removeDepot(d.id)">Supprimer</button>
+              <button class="btn btn-primary btn-sm" (click)="affecterGouvernoratEtValider(l)" [disabled]="!l.gouvernorat">
+                Valider
+              </button>
+              <button class="btn btn-secondary btn-sm" (click)="supprimerLivreur(l.id || '')">Refuser</button>
             </div>
           </div>
         </div>
-
-        <!-- Tab 6: Flotte Véhicules -->
-        <div *ngIf="activeTab === 'vehicules'">
-          <div class="tab-header">
-            <h2>Flotte de Véhicules</h2>
-            <p>Gérez les camionnettes, motos et véhicules d'acheminement.</p>
-          </div>
-
-          <div class="row-form compact mb-4">
-            <input #vImma placeholder="Immatriculation" [(ngModel)]="nouveauVehicule.immatriculation" class="compact-input" />
-            <input #vModele placeholder="Modèle" [(ngModel)]="nouveauVehicule.modele" class="compact-input" />
-            <input #vCap type="number" placeholder="Capacité" [(ngModel)]="nouveauVehicule.capacite" class="compact-input" />
-            <input #vPhoto type="file" (change)="uploadNewVehiclePhoto($event)" accept="image/*" class="compact-input-file" />
-            <button class="btn-primary compact-btn" (click)="addVehiculeAndReset()">➕</button>
-          </div>
-
-          <div class="vehicule-cards-grid">
-            <div class="vehicule-card team-card compact square" *ngFor="let v of vehicules" [ngClass]="getVehicleStatusClass(v.statut)">
-              <div class="card-header">
-                <div class="vehicle-photo">
-                  <img *ngIf="v.photoUrl" [src]="v.photoUrl" [alt]="v.modele" />
-                  <span *ngIf="!v.photoUrl" class="vehicle-placeholder">🚗</span>
-                  <input type="file" #photoInput (change)="uploadVehiclePhoto(v.id, $event)" accept="image/*" class="photo-upload" title="Changer photo" />
-                </div>
-                <div class="vehicle-info">
-                  <h4>{{ v.immatriculation }}</h4>
-                  <p>{{ v.modele }}</p>
-                </div>
-                <button class="btn-delete" (click)="removeVehicule(v.id)">🗑️</button>
-              </div>
-              
-              <div class="card-body">
-                <div class="editable-field">
-                  <label>Capacité:</label>
-                  <input type="number" [(ngModel)]="v.capacite" (change)="updateVehicleCapacity(v.id, v.capacite)" class="compact-input" />
-                  <span>colis</span>
-                </div>
-                
-                <div class="editable-field">
-                  <label>État:</label>
-                  <select [(ngModel)]="v.statut" (change)="updateVehicleStatus(v.id, v.statut)" class="compact-select">
-                    <option value="DISPONIBLE">Disponible</option>
-                    <option value="EN_COURSE">En course</option>
-                    <option value="MAINTENANCE">Maintenance</option>
-                    <option value="HORS_SERVICE">Hors service</option>
-                  </select>
-                </div>
-                
-                <div class="vehicle-meta">
-                  <span class="meta-tag">Type: {{ getVehicleTypeDisplay(v) }}</span>
-                  <span class="meta-tag">Ajouté: {{ v.dateAjout | date:'dd/MM/yyyy' }}</span>
-                </div>
-              </div>
-            </div>
-            <div *ngIf="vehicules.length === 0" class="empty-state">
-              Aucun véhicule enregistré. Ajoutez votre premier véhicule ci-dessus.
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab: Réclamations -->
-        <div *ngIf="activeTab === 'reclamations'">
-          <div class="tab-header-flex">
-            <div>
-              <h2>Réclamations</h2>
-              <p>Gestion des réclamations clients</p>
-            </div>
-          </div>
-          <div class="empty-state">
-            Aucune réclamation pour le moment.
-          </div>
-        </div>
-
-        <!-- Tab: Analytics (Statistiques détaillées) -->
-        <div *ngIf="activeTab === 'analytics'">
-          <div class="tab-header-flex">
-            <div>
-              <h2>Statistiques</h2>
-              <p>Analyse détaillée des performances</p>
-            </div>
-          </div>
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-title">Temps Moyen Livraison</div>
-              <div class="stat-value">{{ getStatsAvgDelivery() }} min</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-title">Taux de Réussite</div>
-              <div class="stat-value text-green">{{ getStatsSuccessRate() }}%</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-title">Satisfaction Client</div>
-              <div class="stat-value">⭐ {{ getStatsSatisfaction() }}/5</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-title">Chiffre d'Affaires</div>
-              <div class="stat-value">{{ getTotalRevenue() | number:'1.2-2' }} DT</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab: Paramètres -->
-        <div *ngIf="activeTab === 'parametres'">
-          <div class="tab-header-flex">
-            <div>
-              <h2>Paramètres</h2>
-              <p>Configuration du système</p>
-            </div>
-          </div>
-          <div class="empty-state">
-            Paramètres du système à configurer.
-          </div>
-        </div>
-
       </div>
-    </main>
 
-  </div>
-</section>
+      <div class="card">
+        <div class="card-header"><h3>Ajouter un livreur</h3></div>
+        <div class="form-row">
+          <input [(ngModel)]="nouveauLivreur.nom" placeholder="Nom" />
+          <input [(ngModel)]="nouveauLivreur.prenom" placeholder="Prénom" />
+          <input [(ngModel)]="nouveauLivreur.telephone" placeholder="Téléphone" />
+          <select [(ngModel)]="nouveauLivreur.gouvernorat">
+            <option value="">Gouvernorat...</option>
+            <option *ngFor="let g of gouvernorats" [value]="g">{{ g }}</option>
+          </select>
+          <button class="btn btn-primary" (click)="enregistrerLivreur()">Enregistrer</button>
+        </div>
+      </div>
 
-<!-- History Overlay Modal -->
-<div class="history-panel" *ngIf="showHistoryPanel">
-  <div class="panel-card">
-    <div class="panel-header">
-      <h3>Historique de Livraison — Commande #{{ historyForOrderId ? historyForOrderId.substring(historyForOrderId.length - 6) : '' }}</h3>
-      <button class="btn-ghost" (click)="closeHistory()">✕ Fermer</button>
+      <div class="card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Livreur</th>
+                <th>Gouvernorat</th>
+                <th>Statut</th>
+                <th>Note</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let l of livreurs">
+                <td>
+                  <strong>{{ l.prenom }} {{ l.nom }}</strong>
+                  <div class="muted">{{ l.email || l.telephone }}</div>
+                </td>
+                <td>{{ getLivreurGouvernorat(l) }}</td>
+                <td><span class="status-pill" [ngClass]="'status-' + (l.statut || 'disponible').toLowerCase()">{{ l.statut || 'DISPONIBLE' }}</span></td>
+                <td>⭐ {{ getLivreurNote(l) }}</td>
+                <td class="actions">
+                  <button class="btn-icon" (click)="voirDetailsLivreur(l)" title="Détails">👁️</button>
+                  <button class="btn-icon" (click)="toggleDriverStatus(l)" title="Statut">⚡</button>
+                  <button class="btn-icon" *ngIf="l.statut !== 'SUSPENDU'" (click)="suspendreLivreur(l.id || '')" title="Suspendre">⏸️</button>
+                  <button class="btn-icon" *ngIf="l.statut === 'SUSPENDU'" (click)="reactiverLivreur(l.id || '')" title="Réactiver">▶️</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
-    <div class="panel-body">
-      <div *ngIf="deliveriesHistory.length === 0" class="text-center text-muted p-4">Aucun enregistrement d'historique pour cette commande.</div>
-      <div *ngFor="let h of deliveriesHistory" class="history-item">
-        <div class="history-main">
-          <div><strong>ID Livraison:</strong> {{ h.livraison.id }}</div>
-          <div><strong>Statut:</strong> <span class="status-pill status-livree">{{ h.livraison.statut }}</span></div>
-          <div><strong>Date Affectation:</strong> {{ h.livraison.dateAffectation | date:'dd/MM/yyyy HH:mm' }}</div>
+
+    <!-- ========== UTILISATEURS ========== -->
+    <div *ngIf="activeTab === 'inscriptions'" class="tab-panel">
+      <div class="card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Email</th>
+                <th>Téléphone</th>
+                <th>Rôle</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let u of usersList">
+                <td><strong>{{ u.prenom }} {{ u.nom }}</strong></td>
+                <td>{{ u.email }}</td>
+                <td>{{ u.telephone || '—' }}</td>
+                <td><span class="tag">{{ u.role }}</span></td>
+                <td>
+                  <span class="status-pill status-livre" *ngIf="u.approuve === true || u.statut === 'ACTIF'">Actif</span>
+                  <span class="status-pill status-en_attente" *ngIf="u.approuve !== true && u.statut !== 'ACTIF'">En attente</span>
+                </td>
+                <td class="actions">
+                  <button class="btn-icon" (click)="viewUserDetails(u)">👁️</button>
+                  <button class="btn-icon" *ngIf="u.approuve !== true && u.statut !== 'ACTIF'" (click)="approveUser(u.id)">✅</button>
+                  <button class="btn-icon" (click)="deleteUser(u)">🗑️</button>
+                </td>
+              </tr>
+              <tr *ngIf="usersList.length === 0">
+                <td colspan="6" class="empty">Aucun utilisateur</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <div class="history-positions mt-2" *ngIf="h.positions && h.positions.length">
-          <strong>Historique GPS enregistré:</strong>
-          <div *ngFor="let p of h.positions" class="coord-tag mt-1">{{ p.horodatage }} — Lat: {{ p.latitude }}, Lon: {{ p.longitude }}</div>
+      </div>
+    </div>
+
+    <!-- ========== DEPOTS ========== -->
+    <div *ngIf="activeTab === 'depots'" class="tab-panel">
+      <div class="card">
+        <div class="form-row">
+          <input [(ngModel)]="nouveauDepot.nom" placeholder="Nom dépôt" />
+          <input [(ngModel)]="nouveauDepot.ville" placeholder="Ville" />
+          <input type="number" [(ngModel)]="nouveauDepot.capacite" placeholder="Capacité" />
+          <button class="btn btn-primary" (click)="addDepotAndReset()">Ajouter</button>
         </div>
+      </div>
+      <div class="cards-grid">
+        <div class="card depot-card" *ngFor="let d of depots" [class.over]="isDepotOverCapacity(d)">
+          <h3>{{ d.nom }}</h3>
+          <p class="muted">{{ d.ville }}</p>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="getDepotFillPercent(d)"></div>
+          </div>
+          <div class="muted">{{ d.colisActuels || 0 }} / {{ d.capacite }} colis</div>
+          <button class="btn btn-secondary btn-sm" (click)="removeDepot(d.id)">Supprimer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== VEHICULES ========== -->
+    <div *ngIf="activeTab === 'vehicules'" class="tab-panel">
+      <div class="card">
+        <div class="form-row">
+          <input [(ngModel)]="nouveauVehicule.immatriculation" placeholder="Immatriculation" />
+          <input [(ngModel)]="nouveauVehicule.modele" placeholder="Modèle" />
+          <input type="number" [(ngModel)]="nouveauVehicule.capacite" placeholder="Capacité" />
+          <button class="btn btn-primary" (click)="addVehiculeAndReset()">Ajouter</button>
+        </div>
+      </div>
+      <div class="cards-grid">
+        <div class="card" *ngFor="let v of vehicules">
+          <div class="card-header">
+            <h3>{{ v.immatriculation }}</h3>
+            <button class="btn-icon" (click)="removeVehicule(v.id)">🗑️</button>
+          </div>
+          <p class="muted">{{ v.modele }}</p>
+          <div class="form-row compact">
+            <input type="number" [(ngModel)]="v.capacite" (change)="updateVehicleCapacity(v.id, v.capacite)" />
+            <select [(ngModel)]="v.statut" (change)="updateVehicleStatus(v.id, v.statut)">
+              <option value="DISPONIBLE">Disponible</option>
+              <option value="EN_COURSE">En course</option>
+              <option value="MAINTENANCE">Maintenance</option>
+              <option value="HORS_SERVICE">Hors service</option>
+            </select>
+          </div>
+        </div>
+        <div class="empty" *ngIf="vehicules.length === 0">Aucun véhicule</div>
+      </div>
+    </div>
+
+    <!-- ========== CARTE ========== -->
+    <div *ngIf="activeTab === 'carte'" class="tab-panel">
+      <div class="card">
+        <div class="map-wrapper">
+          <div id="admin-map" class="real-leaflet-map"></div>
+          <div class="map-badges">
+            <span class="map-badge">{{ getAvailableDriversCount() }} disponibles</span>
+            <span class="map-badge">{{ getOrderCountByStatus('EN_LIVRAISON') }} en livraison</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== RECLAMATIONS ========== -->
+    <div *ngIf="activeTab === 'reclamations'" class="tab-panel">
+      <div class="page-header">
+        <div>
+          <h1>Réclamations</h1>
+          <p>Gérer les réclamations des clients</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-secondary" (click)="refreshData()">Actualiser</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Référence</th>
+                <th>Client</th>
+                <th>Commande</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Date</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let rec of reclamations">
+                <td class="mono">{{ rec.id?.substring(0, 8) || '—' }}</td>
+                <td>{{ getReclamationClientName(rec.clientId) }}</td>
+                <td class="mono">{{ rec.commandeId || rec.codeBarre || '—' }}</td>
+                <td>{{ rec.type || rec.objet || '—' }}</td>
+                <td>{{ rec.description?.substring(0, 50) || '—' }}{{ rec.description?.length > 50 ? '...' : '' }}</td>
+                <td>{{ rec.dateCreation ? formatDate(rec.dateCreation) : '—' }}</td>
+                <td>
+                  <span class="status-pill" [ngClass]="getReclamationStatutClass(rec.statut)">
+                    {{ rec.statut || 'EN_ATTENTE' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <select [(ngModel)]="rec.statut" (change)="updateReclamationStatus(rec.id, rec.statut)" class="status-select">
+                      <option value="EN_ATTENTE">En attente</option>
+                      <option value="EN_COURS">En cours</option>
+                      <option value="RESOLUE">Résolue</option>
+                      <option value="REJETEE">Rejetée</option>
+                    </select>
+                    <button class="btn-icon danger" (click)="deleteReclamation(rec.id)" title="Supprimer">🗑️</button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="reclamations.length === 0">
+                <td colspan="8" class="empty">Aucune réclamation pour le moment.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== ANALYTICS ========== -->
+    <div *ngIf="activeTab === 'analytics'" class="tab-panel">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Temps moyen</div>
+          <div class="kpi-value">{{ getStatsAvgDelivery() }} <small>min</small></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Réussite</div>
+          <div class="kpi-value">{{ getStatsSuccessRate() }}%</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Satisfaction</div>
+          <div class="kpi-value">⭐ {{ getStatsSatisfaction() }}</div>
+        </div>
+        <div class="kpi-card highlight">
+          <div class="kpi-label">CA</div>
+          <div class="kpi-value">{{ getTotalRevenue() | number:'1.0-0' }} <small>DT</small></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- History modal -->
+<div class="modal-overlay" *ngIf="showHistoryPanel" (click)="closeHistory()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Historique #{{ historyForOrderId ? historyForOrderId.substring(historyForOrderId.length - 6) : '' }}</h3>
+      <button class="btn-icon" (click)="closeHistory()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div *ngIf="deliveriesHistory.length === 0" class="empty">Aucun historique</div>
+      <div class="history-item" *ngFor="let h of deliveriesHistory">
+        <div><strong>Livraison</strong> {{ h.livraison.id }}</div>
+        <div class="muted">{{ h.livraison.statut }} · {{ h.livraison.dateAffectation | date:'dd/MM/yyyy HH:mm' }}</div>
+        <div *ngIf="h.positions?.length" class="muted">{{ h.positions.length }} positions GPS</div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Toast Container -->
+<!-- Toasts -->
 <div class="toast-container">
   <div *ngFor="let toast of toasts" class="toast" [ngClass]="'toast-' + toast.type">
-    <span class="toast-icon" *ngIf="toast.type === 'success'">✅</span>
-    <span class="toast-icon" *ngIf="toast.type === 'error'">🚨</span>
-    <span class="toast-icon" *ngIf="toast.type === 'info'">ℹ️</span>
-    <span class="toast-message">{{ toast.message }}</span>
-    <button class="toast-close" (click)="removeToast(toast.id)">✕</button>
+    <span>{{ toast.message }}</span>
+    <button (click)="removeToast(toast.id)">✕</button>
   </div>
 </div>

@@ -363,52 +363,93 @@ export class DashboardClientComponent implements OnInit {
     this.errorMessage = '';
     const formValue = this.packageForm.value;
 
-    const commande: any = {
-      clientId: this.clientId,
-      typeService: formValue.typeService,
-      montantTotal: formValue.price || 0,
-      nomDestinataire: formValue.pickupName?.trim(),
-      telephoneDestinataire: formValue.phone1?.trim(),
-      telephone: formValue.phone1?.trim(),
-      telephone2: formValue.phone2?.trim() || null,
+    // Créer l'adresse de destination (arrivée)
+    const adresseArrivee = {
       gouvernorat: formValue.governorate,
       ville: formValue.city?.trim(),
       localite: formValue.locality?.trim(),
-      adresseComplete: formValue.address?.trim(),
-      designation: formValue.designation?.trim(),
-      nombreArticles: formValue.itemCount || 1,
-      nombreColis: formValue.packageCount || 1,
-      modePaiement: formValue.paymentMode,
-      ouvertureAvantPaiement: formValue.openBeforePayment === 'Oui',
-      echangePossible: formValue.exchange === 'Oui',
-      remarques: formValue.remarks?.trim() || null,
-      statut: 'EN_ATTENTE',
-      colis: [{
-        clientId: this.clientId,
-        poids: 1.0,
-        fragile: false,
-        statut: 'EN_ATTENTE'
-      }]
+      rue: formValue.address?.trim(),
+      telephone: formValue.phone1?.trim()
     };
 
-    this.apiService.creerCommande(commande).subscribe({
-      next: () => {
-        this.loading = false;
-        this.packageForm.reset({
-          itemCount: 1,
-          packageCount: 1,
-          paymentMode: 'Espèce seulement',
-          openBeforePayment: 'Non',
-          exchange: 'Non',
-          typeService: 'STANDARD'
+    // Créer l'adresse de départ (adresse par défaut du client)
+    const adresseDepart = {
+      gouvernorat: 'Tunis',
+      ville: 'Tunis',
+      localite: 'Centre',
+      rue: 'Siège social',
+      telephone: '+216 71 000 000',
+      adressePrincipale: true
+    };
+
+    // Créer d'abord les adresses
+    this.apiService.creerAdresse(adresseDepart).subscribe({
+      next: (depart) => {
+        this.apiService.creerAdresse(adresseArrivee).subscribe({
+          next: (arrivee) => {
+            // Maintenant créer la commande avec les IDs d'adresses
+            const commande: any = {
+              clientId: this.clientId,
+              adresseDepartId: depart.id,
+              adresseArriveeId: arrivee.id,
+              typeService: formValue.typeService,
+              montantTotal: formValue.price || 0,
+              nomDestinataire: formValue.pickupName?.trim(),
+              telephoneDestinataire: formValue.phone1?.trim(),
+              telephone: formValue.phone1?.trim(),
+              telephone2: formValue.phone2?.trim() || null,
+              gouvernorat: formValue.governorate,
+              ville: formValue.city?.trim(),
+              localite: formValue.locality?.trim(),
+              adresseComplete: formValue.address?.trim(),
+              designation: formValue.designation?.trim(),
+              nombreArticles: formValue.itemCount || 1,
+              nombreColis: formValue.packageCount || 1,
+              modePaiement: formValue.paymentMode,
+              ouvertureAvantPaiement: formValue.openBeforePayment === 'Oui',
+              echangePossible: formValue.exchange === 'Oui',
+              remarques: formValue.remarks?.trim() || null,
+              statut: 'EN_ATTENTE',
+              colis: [{
+                clientId: this.clientId,
+                poids: 1.0,
+                fragile: false,
+                statut: 'EN_ATTENTE'
+              }]
+            };
+
+            this.apiService.creerCommande(commande).subscribe({
+              next: () => {
+                this.loading = false;
+                this.packageForm.reset({
+                  itemCount: 1,
+                  packageCount: 1,
+                  paymentMode: 'Espèce seulement',
+                  openBeforePayment: 'Non',
+                  exchange: 'Non',
+                  typeService: 'STANDARD'
+                });
+                this.loadClientCommandes();
+                this.setTab('manifest');
+              },
+              error: (err) => {
+                this.loading = false;
+                this.errorMessage =
+                  err.error?.message || err.message || 'Erreur lors de la création de la commande.';
+              }
+            });
+          },
+          error: (err) => {
+            this.loading = false;
+            this.errorMessage =
+              err.error?.message || err.message || 'Erreur lors de la création de l\'adresse de destination.';
+          }
         });
-        this.loadClientCommandes();
-        this.setTab('manifest');
       },
       error: (err) => {
         this.loading = false;
         this.errorMessage =
-          err.error?.message || err.message || 'Erreur lors de la création de la commande.';
+          err.error?.message || err.message || 'Erreur lors de la création de l\'adresse de départ.';
       }
     });
   }
