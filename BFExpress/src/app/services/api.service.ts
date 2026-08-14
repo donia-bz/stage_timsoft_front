@@ -490,6 +490,27 @@ export class ApiService {
     return this.http.post<AffectationIA>(`${this.iaUrl}/affecter-livreur`, livreurDTOs, { params });
   }
 
+  dispatchGlobal(commandes: any[], livreurs: Livreur[]): Observable<any> {
+    const payload = {
+      commandes: commandes.map(c => ({
+        id: c.id,
+        latitude: c.latDepart || 36.8,
+        longitude: c.longDepart || 10.1,
+        poidsKg: c.poidsKg || 1.0,
+        ville: c.gouvernoratDepart || c.villeDepart
+      })),
+      livreurs: livreurs.map(l => ({
+        id: l.id,
+        nom: l.nom,
+        prenom: l.prenom,
+        latitudeActuelle: l.latitudeActuelle || 36.8,
+        longitudeActuelle: l.longitudeActuelle || 10.1,
+        noteMoyenne: l.noteMoyenne || 5.0
+      }))
+    };
+    return this.http.post<any>(`${this.iaUrl}/dispatch-global`, payload);
+  }
+
   // --- Véhicules ---
   getAllVehicules(): Observable<Vehicule[]> {
     return this.http.get<Vehicule[]>(`${this.vehiclesUrl}/vehicules`);

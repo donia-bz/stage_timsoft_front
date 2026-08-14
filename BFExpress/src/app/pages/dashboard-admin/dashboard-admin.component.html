@@ -189,8 +189,11 @@
 
     <!-- ========== COMMANDES ========== -->
     <div *ngIf="activeTab === 'commandes'" class="tab-panel">
-      <div class="toolbar">
-        <input class="search-input" [(ngModel)]="searchFilter" placeholder="Rechercher référence, statut..." />
+      <div class="toolbar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <input class="search-input" [(ngModel)]="searchFilter" placeholder="Rechercher référence, statut..." style="width: 300px;" />
+        <button class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); border: none;" (click)="dispatchGlobalIA()">
+          🚀 Dispatching Global (IA)
+        </button>
       </div>
 
       <div class="card">
@@ -455,56 +458,129 @@
 
     <!-- ========== DEPOTS ========== -->
     <div *ngIf="activeTab === 'depots'" class="tab-panel">
-      <div class="card">
+      <!-- Formulaire d'ajout rapide -->
+      <div class="card mb-20">
         <div class="form-row">
-          <input [(ngModel)]="nouveauDepot.nom" placeholder="Nom dépôt" />
-          <input [(ngModel)]="nouveauDepot.ville" placeholder="Ville" />
-          <input type="number" [(ngModel)]="nouveauDepot.capacite" placeholder="Capacité" />
-          <button class="btn btn-primary" (click)="addDepotAndReset()">Ajouter</button>
+          <input [(ngModel)]="nouveauDepot.nom" placeholder="Nom du dépôt (ex: Dépôt Tunis)" />
+          <input [(ngModel)]="nouveauDepot.ville" placeholder="Ville / Gouvernorat" />
+          <input type="number" [(ngModel)]="nouveauDepot.capacite" placeholder="Capacité max (ex: 500)" />
+          <button class="btn btn-primary" (click)="addDepotAndReset()">Ajouter le dépôt</button>
         </div>
       </div>
+
+      <!-- Grille des Dépôts (Smart Hubs) -->
       <div class="cards-grid">
-        <div class="card depot-card" *ngFor="let d of depots" [class.over]="isDepotOverCapacity(d)">
-          <h3>{{ d.nom }}</h3>
-          <p class="muted">{{ d.ville }}</p>
-          <div class="progress-bar">
-            <div class="progress-fill" [style.width.%]="getDepotFillPercent(d)"></div>
+        <div class="card depot-card" *ngFor="let d of depots" [class.over]="isDepotOverCapacity(d)" (click)="openDepotPanel(d)" style="cursor: pointer;">
+          <div class="card-header">
+            <h3>{{ d.nom }}</h3>
+            <span class="status-badge" *ngIf="hasDormantStock(d)" style="background: #fee2e2; color: #991b1b;">⚠️ Stock dormant</span>
           </div>
-          <div class="muted">{{ d.colisActuels || 0 }} / {{ d.capacite }} colis</div>
-          <button class="btn btn-secondary btn-sm" (click)="removeDepot(d.id)">Supprimer</button>
+          <p class="muted" style="margin-top: 0;"><span class="icon">📍</span> {{ d.gouvernorat || d.ville }}</p>
+          
+          <!-- Barres de progression multiples (Smart Occupancy) -->
+          <div class="depot-stats-bars">
+            <div class="stat-row">
+              <span class="stat-label">Nouveaux ({{ d.stats?.nouveaux?.length || 0 }})</span>
+              <div class="progress-bar"><div class="progress-fill fill-blue" [style.width.%]="getDepotFillPercent(d, 'nouveaux')"></div></div>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">En transit ({{ d.stats?.enTransit?.length || 0 }})</span>
+              <div class="progress-bar"><div class="progress-fill fill-green" [style.width.%]="getDepotFillPercent(d, 'enTransit')"></div></div>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Retours ({{ d.stats?.retours?.length || 0 }})</span>
+              <div class="progress-bar"><div class="progress-fill fill-red" [style.width.%]="getDepotFillPercent(d, 'retours')"></div></div>
+            </div>
+          </div>
+
+          <div class="depot-footer">
+            <span class="occupancy-text" [class.danger]="isDepotOverCapacity(d)">
+              {{ d.colisActuels || 0 }} / {{ d.capacite }} colis au total
+            </span>
+            <button class="btn-icon danger" (click)="removeDepot(d.id); $event.stopPropagation()" title="Supprimer">🗑️</button>
+          </div>
         </div>
       </div>
+      <div class="empty" *ngIf="depots.length === 0">Aucun dépôt configuré.</div>
     </div>
 
-    <!-- ========== VEHICULES ========== -->
+    <!-- ========== VEHICULES (FLOTTES) ========== -->
     <div *ngIf="activeTab === 'vehicules'" class="tab-panel">
-      <div class="card">
-        <div class="form-row">
-          <input [(ngModel)]="nouveauVehicule.immatriculation" placeholder="Immatriculation" />
-          <input [(ngModel)]="nouveauVehicule.modele" placeholder="Modèle" />
-          <input type="number" [(ngModel)]="nouveauVehicule.capacite" placeholder="Capacité" />
-          <button class="btn btn-primary" (click)="addVehiculeAndReset()">Ajouter</button>
+      
+      <!-- KPIs Control Tower -->
+      <div class="kpi-grid kpi-4 mb-20">
+        <div class="kpi-card">
+          <div class="kpi-label">Total Véhicules</div>
+          <div class="kpi-value">{{ vehicules.length }}</div>
+        </div>
+        <div class="kpi-card highlight-success">
+          <div class="kpi-label">Actifs sur le terrain</div>
+          <div class="kpi-value">{{ getVehiculesActifs() }}</div>
+        </div>
+        <div class="kpi-card highlight-warning">
+          <div class="kpi-label">En Maintenance</div>
+          <div class="kpi-value">{{ getVehiculesMaintenance() }}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Capacité Totale (Kg)</div>
+          <div class="kpi-value">{{ getCapaciteTotaleKg() }} <small>Kg</small></div>
         </div>
       </div>
+
+      <!-- Formulaire d'ajout -->
+      <div class="card mb-20">
+        <div class="form-row">
+          <input [(ngModel)]="nouveauVehicule.immatriculation" placeholder="Immatriculation (ex: 123 TUN 456)" />
+          <input [(ngModel)]="nouveauVehicule.modele" placeholder="Modèle (ex: Renault Master)" />
+          <select [(ngModel)]="nouveauVehicule.type">
+            <option value="CAMIONNETTE">Camionnette (Motos/Petits colis)</option>
+            <option value="UTILITAIRE">Utilitaire (Standard)</option>
+            <option value="CAMION">Camion (Lourd/Gros volume)</option>
+          </select>
+          <input type="number" [(ngModel)]="nouveauVehicule.capaciteKg" placeholder="Capacité en Kg" />
+          <button class="btn btn-primary" (click)="addVehiculeAndReset()">Ajouter véhicule</button>
+        </div>
+      </div>
+
+      <!-- Grille des Véhicules -->
       <div class="cards-grid">
-        <div class="card" *ngFor="let v of vehicules">
+        <div class="card vehicule-card" *ngFor="let v of vehicules" (click)="openVehiculePanel(v)" style="cursor: pointer;">
           <div class="card-header">
-            <h3>{{ v.immatriculation }}</h3>
-            <button class="btn-icon" (click)="removeVehicule(v.id)">🗑️</button>
+            <div class="vehicule-title">
+              <span class="icon">{{ v.type === 'CAMION' ? '🚛' : (v.type === 'CAMIONNETTE' ? '🛵' : '🚐') }}</span>
+              <h3>{{ v.immatriculation }}</h3>
+            </div>
+            <span class="status-badge" [ngClass]="{'active': v.statut === 'DISPONIBLE', 'pending': v.statut === 'EN_SERVICE' || v.statut === 'EN_COURSE', 'suspended': v.statut === 'MAINTENANCE'}">
+              {{ v.statut }}
+            </span>
           </div>
-          <p class="muted">{{ v.modele }}</p>
-          <div class="form-row compact">
-            <input type="number" [(ngModel)]="v.capacite" (change)="updateVehicleCapacity(v.id, v.capacite)" />
-            <select [(ngModel)]="v.statut" (change)="updateVehicleStatus(v.id, v.statut)">
-              <option value="DISPONIBLE">Disponible</option>
-              <option value="EN_COURSE">En course</option>
-              <option value="MAINTENANCE">Maintenance</option>
-              <option value="HORS_SERVICE">Hors service</option>
+          
+          <p class="muted mt-10">{{ v.modele }} • {{ v.annee || 2023 }}</p>
+          
+          <!-- Capacity Bar -->
+          <div class="capacity-bar-container mt-15">
+            <div class="capacity-labels">
+              <span>Charge actuelle (simulée)</span>
+              <span>Max: {{ v.capaciteKg || v.capacite || 1000 }} Kg</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill fill-blue" [style.width.%]="v.statut === 'EN_COURSE' ? 75 : 0"></div>
+            </div>
+          </div>
+
+          <div class="driver-assignment mt-15" (click)="$event.stopPropagation()">
+            <div class="assigned-driver">
+              <span class="icon">👤</span> {{ getDriverForVehicule(v) }}
+            </div>
+            <select *ngIf="!v.livreurId" class="small-select" (change)="assignerLivreurVehicule(v, $event)">
+              <option value="">Assigner...</option>
+              <option *ngFor="let l of livreurs" [value]="l.id">{{ l.prenom }} {{ l.nom }}</option>
             </select>
           </div>
         </div>
-        <div class="empty" *ngIf="vehicules.length === 0">Aucun véhicule</div>
       </div>
+      
+      <div class="empty" *ngIf="vehicules.length === 0">Aucun véhicule enregistré dans la flotte.</div>
     </div>
 
     <!-- ========== CARTE ========== -->
@@ -845,6 +921,140 @@
       <button class="btn btn-primary w-full" *ngIf="!selectedUser.approuve" (click)="approveUser(selectedUser.id)">Approuver le compte</button>
       <button class="btn btn-secondary w-full" *ngIf="selectedUser.statut !== 'SUSPENDU'" (click)="toggleUserSelection(selectedUser.id); bulkSuspend(); closeUserPanel()">Suspendre l'utilisateur</button>
       <button class="btn btn-secondary danger w-full" (click)="deleteUser(selectedUser); closeUserPanel()">Supprimer le compte</button>
+    </div>
+  </div>
+</div>
+
+<!-- Side Panel Dépôt (Inventaire) -->
+<div class="panel-backdrop" *ngIf="showDepotPanel" (click)="closeDepotPanel()"></div>
+<div class="user-side-panel glass-panel depot-panel" [class.open]="showDepotPanel">
+  <div class="panel-header">
+    <h3>Inventaire : {{ selectedDepot?.nom }}</h3>
+    <button class="btn-icon" (click)="closeDepotPanel()">✕</button>
+  </div>
+  
+  <div class="panel-content" *ngIf="selectedDepot">
+    <div class="profile-header depot-header-card">
+      <h2>{{ selectedDepot.nom }}</h2>
+      <span class="muted"><span class="icon">📍</span> {{ selectedDepot.gouvernorat || selectedDepot.ville }}</span>
+      <div class="capacity-circle">
+        <div class="circle-value">{{ selectedDepot.colisActuels || 0 }}</div>
+        <div class="circle-max">/ {{ selectedDepot.capacite }}</div>
+      </div>
+    </div>
+    
+    <div class="panel-actions mb-20">
+      <button class="btn btn-primary w-full" (click)="showToast('Scanner activé', 'info')">📷 Mode Scan (Entrée/Sortie)</button>
+    </div>
+
+    <div class="info-group">
+      <h4>Nouveaux Colis ({{ selectedDepotCommandes.nouveaux.length }})</h4>
+      <div class="colis-list" *ngIf="selectedDepotCommandes.nouveaux.length > 0">
+        <div class="colis-item" *ngFor="let c of selectedDepotCommandes.nouveaux">
+          <div class="colis-id">#{{ c.id?.substring(c.id.length - 6) }}</div>
+          <div class="colis-status badge-blue">{{ c.statut }}</div>
+        </div>
+      </div>
+      <div class="empty-list" *ngIf="selectedDepotCommandes.nouveaux.length === 0">Aucun nouveau colis</div>
+    </div>
+
+    <div class="info-group">
+      <h4>En Transit depuis ce dépôt ({{ selectedDepotCommandes.enTransit.length }})</h4>
+      <div class="colis-list" *ngIf="selectedDepotCommandes.enTransit.length > 0">
+        <div class="colis-item" *ngFor="let c of selectedDepotCommandes.enTransit">
+          <div class="colis-id">#{{ c.id?.substring(c.id.length - 6) }}</div>
+          <div class="colis-status badge-green">{{ c.statut }}</div>
+        </div>
+      </div>
+      <div class="empty-list" *ngIf="selectedDepotCommandes.enTransit.length === 0">Aucun colis en transit</div>
+    </div>
+
+    <div class="info-group">
+      <h4>Retours / Quarantaine ({{ selectedDepotCommandes.retours.length }})</h4>
+      <div class="colis-list" *ngIf="selectedDepotCommandes.retours.length > 0">
+        <div class="colis-item" *ngFor="let c of selectedDepotCommandes.retours">
+          <div class="colis-id">#{{ c.id?.substring(c.id.length - 6) }}</div>
+          <div class="colis-status badge-red">{{ c.statut }}</div>
+        </div>
+      </div>
+      <div class="empty-list" *ngIf="selectedDepotCommandes.retours.length === 0">Aucun retour en souffrance</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Side Panel Vehicule -->
+<div class="panel-backdrop" *ngIf="showVehiculePanel" (click)="closeVehiculePanel()"></div>
+<div class="user-side-panel glass-panel vehicule-panel" [class.open]="showVehiculePanel">
+  <div class="panel-header">
+    <h3>Fiche Véhicule</h3>
+    <button class="btn-icon" (click)="closeVehiculePanel()">✕</button>
+  </div>
+  
+  <div class="panel-content" *ngIf="selectedVehicule">
+    <div class="profile-header vehicule-header-card">
+      <div class="vehicule-icon-large">
+        {{ selectedVehicule.type === 'CAMION' ? '🚛' : (selectedVehicule.type === 'CAMIONNETTE' ? '🛵' : '🚐') }}
+      </div>
+      <h2>{{ selectedVehicule.immatriculation }}</h2>
+      <span class="tag">{{ selectedVehicule.modele }}</span>
+    </div>
+    
+    <div class="info-group">
+      <h4>Informations Techniques</h4>
+      <div class="info-row">
+        <span class="icon">🏷️</span> Marque : {{ selectedVehicule.marque || 'Non spécifiée' }}
+      </div>
+      <div class="info-row">
+        <span class="icon">📅</span> Année : {{ selectedVehicule.annee || 2023 }}
+      </div>
+      <div class="info-row" style="align-items: center; justify-content: space-between;">
+        <div><span class="icon">📦</span> Capacité (Kg) :</div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <input type="number" class="form-input" style="width: 80px; padding: 0.25rem 0.5rem;"
+                 [(ngModel)]="selectedVehicule.capaciteKg"
+                 (change)="updateVehicleCapacity(selectedVehicule.id, selectedVehicule.capaciteKg)" />
+        </div>
+      </div>
+      <div class="info-row" *ngIf="selectedVehicule.capaciteVolume">
+        <span class="icon">📐</span> Volume : {{ selectedVehicule.capaciteVolume }} m³
+      </div>
+    </div>
+
+    <div class="info-group">
+      <h4>Affectation Actuelle</h4>
+      <div class="info-row">
+        <span class="icon">👤</span> Livreur : {{ getDriverForVehicule(selectedVehicule) }}
+      </div>
+      <div class="mt-10" *ngIf="!selectedVehicule.livreurId">
+        <select class="w-full form-input" (change)="assignerLivreurVehicule(selectedVehicule, $event)">
+          <option value="">Sélectionner un livreur disponible...</option>
+          <option *ngFor="let l of livreurs" [value]="l.id">{{ l.prenom }} {{ l.nom }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="info-group">
+      <h4>Gestion du Statut</h4>
+      <select class="w-full form-input" [(ngModel)]="selectedVehicule.statut" (change)="updateVehicleStatus(selectedVehicule.id, selectedVehicule.statut)">
+        <option value="DISPONIBLE">Disponible (Au dépôt)</option>
+        <option value="EN_SERVICE">En Service (Assigné)</option>
+        <option value="EN_COURSE">En Course (Sur le terrain)</option>
+        <option value="MAINTENANCE">En Maintenance</option>
+        <option value="HORS_SERVICE">Hors Service</option>
+      </select>
+    </div>
+
+    <div class="panel-actions">
+      <button class="btn btn-primary w-full" *ngIf="selectedVehicule.statut !== 'MAINTENANCE'" (click)="toggleVehiculeMaintenance(selectedVehicule)">
+        🛠️ Déclarer en Maintenance
+      </button>
+      <button class="btn btn-secondary w-full" *ngIf="selectedVehicule.statut === 'MAINTENANCE'" (click)="toggleVehiculeMaintenance(selectedVehicule)">
+        ✅ Remettre en Service
+      </button>
+      <button class="btn btn-secondary danger w-full mt-10" (click)="removeVehicule(selectedVehicule.id); closeVehiculePanel()">
+        🗑️ Supprimer le véhicule
+      </button>
     </div>
   </div>
 </div>

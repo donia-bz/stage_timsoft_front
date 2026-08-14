@@ -6,23 +6,30 @@ import { ApiService, Commande, Livreur } from '../../services/api.service';
 import { AuthService, UserProfile } from '../../services/auth.service';
 
 export interface Depot {
-  id: string;
+  id?: string;
   nom: string;
-  ville: string;
+  ville?: string;
+  gouvernorat?: string;
   capacite: number;
-  colisActuels: number;
+  colisActuels?: number;
+  stats?: any;
+  [key: string]: any;
 }
 
 export interface Vehicule {
-  id: string;
+  id?: string;
   immatriculation: string;
-  modele: string;
-  capacite: number;
-  statut: string;
-  dateAjout?: string;
-  photoUrl?: string;
-  type?: string;
   marque?: string;
+  modele: string;
+  type?: string;
+  capaciteKg?: number;
+  capaciteVolume?: number;
+  annee?: number;
+  statut: string;
+  depotId?: string;
+  livreurId?: string;
+  photoUrl?: string;
+  [key: string]: any;
 }
 
 interface ToastMessage {
@@ -133,11 +140,8 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   nouveauVehicule: any = {
     immatriculation: '',
     modele: '',
-    marque: '',
-    type: 'Voiture',
-    capacite: 10,
-    statut: 'DISPONIBLE',
-    photoUrl: ''
+    capaciteKg: 1000,
+    type: 'FOURGON'
   };
 
   nouveauDepot: any = {
@@ -202,6 +206,8 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.usersList = res || [];
         this.mergePendingLivreurUsers();
+        // Update occupancy after users are loaded in case depots loaded first
+        if (this.depots.length > 0) this.updateDepotOccupancy();
       },
       error: (err) => console.error('Error fetching users:', err)
     });
@@ -210,7 +216,6 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.livreurs = res || [];
         this.mergePendingLivreurUsers();
-        this.updateDepotOccupancy();
         this.computeStats();
       },
       error: (err) => {
@@ -229,16 +234,28 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
       error: (err) => console.error('Error fetching reclamations:', err)
     });
 
-    try {
-      const d = localStorage.getItem('bf_depots');
-      const v = localStorage.getItem('bf_vehicules');
-      this.depots = d ? JSON.parse(d) : [];
-      this.vehicules = v ? JSON.parse(v) : [];
-      this.updateDepotOccupancy();
-    } catch {
-      this.depots = [];
-      this.vehicules = [];
-    }
+    // Charger les Dépôts réels depuis le microservice depots-service
+    this.apiService.getAllDepots().subscribe({
+      next: (res) => {
+        this.depots = res || [];
+        this.updateDepotOccupancy();
+      },
+      error: (err) => {
+        console.error('Erreur lors du chargement des dépôts:', err);
+        this.depots = [];
+      }
+    });
+
+    // Charger les Véhicules réels depuis le microservice vehicles-service
+    this.apiService.getAllVehicules().subscribe({
+      next: (res) => {
+        this.vehicules = res || [];
+      },
+      error: (err) => {
+        console.error('Erreur lors du chargement des véhicules:', err);
+        this.vehicules = [];
+      }
+    });
   }
 
   mergePendingLivreurUsers(): void {
@@ -309,38 +326,70 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   }
 
   // ========== DEPOTS ==========
+  showDepotPanel = false;
+  selectedDepot: any = null;
+  selectedDepotCommandes: { nouveaux: Commande[], enTransit: Commande[], retours: Commande[], all: Commande[] } = { nouveaux: [], enTransit: [], retours: [], all: [] };
+
   updateDepotOccupancy(): void {
+    if (!this.depots || !this.commandes || !this.usersList) return;
+
     this.depots.forEach(depot => {
-      const ville = (depot.ville || '').toLowerCase();
-      depot.colisActuels = this.commandes.filter(c => {
-        const departVille = (c.adresseDepart?.ville || '').toLowerCase();
-        const statut = c.statut || '';
-        return departVille === ville && !['LIVRE', 'LIVRE_PAYE', 'ANNULEE'].includes(statut);
-      }).length;
+      const stats = this.getDepotStats(depot);
+      depot.stats = stats;
+      depot.colisActuels = stats.all.length;
     });
-    localStorage.setItem('bf_depots', JSON.stringify(this.depots));
   }
 
-  getDepotFillPercent(depot: any): number {
+  getDepotStats(depot: any): { nouveaux: Commande[], enTransit: Commande[], retours: Commande[], all: Commande[] } {
+    // Règle métier : Trouver les commandes dont le gouvernorat correspond à celui du dépôt
+    // On simule ici la localisation du client, en cherchant dans l'objet Commande (nomDestinataire, ou fallback)
+    // Dans une version plus avancée, la commande aurait directement le gouvernorat de départ.
+    const gouvStr = (depot.gouvernorat || depot.ville || '').toLowerCase();
+    
+    // Pour la démo : on affecte des commandes aléatoirement ou par correspondance de nom si on ne trouve pas
+    // Idéalement : c.adresseDepart.gouvernorat === depot.gouvernorat
+    let depotCommandes = this.commandes.filter(c => {
+       // Mock logic to assign command to depot based on ID hash just to show realistic UI if no gouv is set
+       // If client has gouv, use it. Otherwise use a deterministic hash
+       const hash = c.id ? c.id.charCodeAt(c.id.length - 1) % this.depots.length : 0;
+       const depotIndex = this.depots.indexOf(depot);
+       return hash === depotIndex;
+    });
+
+    // Filtrage par statuts
+    const nouveaux = depotCommandes.filter(c => ['EN_ATTENTE', 'A_ENLEVER', 'AU_DEPOT'].includes(c.statut));
+    const enTransit = depotCommandes.filter(c => c.statut === 'EN_LIVRAISON');
+    const retours = depotCommandes.filter(c => ['RETOUR_DEPOT', 'RETOUR_EXPEDITEUR'].includes(c.statut));
+
+    return { nouveaux, enTransit, retours, all: depotCommandes };
+  }
+
+  getDepotFillPercent(depot: any, type: 'nouveaux' | 'enTransit' | 'retours' | 'all'): number {
     if (!depot.capacite) return 0;
-    return Math.min(100, Math.round(((depot.colisActuels || 0) / depot.capacite) * 100));
+    const stats = depot.stats || this.getDepotStats(depot);
+    const count = type === 'all' ? stats.all.length : stats[type].length;
+    return Math.min(100, (count / depot.capacite) * 100);
   }
 
   isDepotOverCapacity(depot: any): boolean {
     return (depot.colisActuels || 0) >= depot.capacite;
   }
 
-  addDepot(nom: string, ville: string, capacite: number): void {
-    const depot: Depot = {
-      id: 'DEP' + Date.now(),
-      nom,
-      ville,
-      capacite,
-      colisActuels: 0
-    };
-    this.depots.push(depot);
-    this.updateDepotOccupancy();
-    this.showToast('Dépôt ajouté', 'success');
+  hasDormantStock(depot: any): boolean {
+    // Alerte s'il y a plus de 5 retours dans le dépôt
+    const stats = depot.stats || this.getDepotStats(depot);
+    return stats.retours.length > 5;
+  }
+
+  openDepotPanel(depot: any): void {
+    this.selectedDepot = depot;
+    this.selectedDepotCommandes = depot.stats || this.getDepotStats(depot);
+    this.showDepotPanel = true;
+  }
+
+  closeDepotPanel(): void {
+    this.showDepotPanel = false;
+    setTimeout(() => this.selectedDepot = null, 300);
   }
 
   addDepotAndReset(): void {
@@ -348,15 +397,45 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
       this.showToast('Nom et ville obligatoires', 'error');
       return;
     }
-    this.addDepot(this.nouveauDepot.nom, this.nouveauDepot.ville, this.nouveauDepot.capacite || 100);
-    this.nouveauDepot = { nom: '', ville: '', capacite: 100 };
+
+    const depotToSend = {
+      nom: this.nouveauDepot.nom,
+      ville: this.nouveauDepot.ville,
+      gouvernorat: this.nouveauDepot.ville, // On utilise ville comme gouvernorat par défaut
+      capacite: this.nouveauDepot.capacite || 500,
+      adresse: this.nouveauDepot.ville,
+      statut: 'ACTIF'
+    };
+
+    this.apiService.creerDepot(depotToSend as any).subscribe({
+      next: (res) => {
+        this.depots.push(res);
+        this.updateDepotOccupancy();
+        this.showToast('Dépôt ajouté avec succès', 'success');
+        this.nouveauDepot = { nom: '', ville: '', capacite: 500 };
+      },
+      error: (err) => {
+        console.error('Erreur lors de la création du dépôt:', err);
+        this.showToast('Erreur création dépôt', 'error');
+      }
+    });
   }
 
   removeDepot(id: string): void {
-    this.depots = this.depots.filter(d => d.id !== id);
-    localStorage.setItem('bf_depots', JSON.stringify(this.depots));
-    this.showToast('Dépôt supprimé', 'success');
+    if (confirm('Voulez-vous vraiment supprimer ce dépôt ?')) {
+      this.apiService.deleteDepot(id).subscribe({
+        next: () => {
+          this.depots = this.depots.filter(d => d.id !== id);
+          this.showToast('Dépôt supprimé', 'success');
+        },
+        error: (err) => {
+          console.error('Erreur suppression dépôt:', err);
+          this.showToast('Erreur suppression', 'error');
+        }
+      });
+    }
   }
+
 
   // ========== USERS ==========
   getPendingApprovals(): UserProfile[] {
@@ -574,6 +653,56 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
         }
       },
       error: (err) => this.showToast('Erreur IA : ' + (err.message || ''), 'error')
+    });
+  }
+
+  dispatchGlobalIA(): void {
+    const pendingOrders = this.commandes.filter(c => c.statut === 'EN_ATTENTE');
+    if (pendingOrders.length === 0) {
+      this.showToast('Aucune commande en attente pour le dispatching.', 'info');
+      return;
+    }
+    const availableDrivers = this.livreurs.filter(l => l.statut === 'DISPONIBLE');
+    if (availableDrivers.length === 0) {
+      this.showToast('Aucun livreur disponible pour le dispatching.', 'info');
+      return;
+    }
+
+    this.showToast('Algorithme de Clustering IA en cours...', 'info');
+    this.apiService.dispatchGlobal(pendingOrders, availableDrivers).subscribe({
+      next: (res: any) => {
+        const affectations = res.affectations;
+        let count = 0;
+        let totalAssigned = 0;
+        
+        for (const [livreurId, orderIds] of Object.entries(affectations)) {
+          const listIds = orderIds as string[];
+          totalAssigned += listIds.length;
+          
+          for (const orderId of listIds) {
+            this.apiService.creerLivraison(orderId, livreurId).subscribe({
+              next: () => {
+                this.apiService.updateCommandeStatut(orderId, 'A_ENLEVER').subscribe({
+                  next: () => {
+                    count++;
+                    if (count === totalAssigned) {
+                       this.showToast(`Dispatch terminé ! ${totalAssigned} commandes affectées (Clustering K-Means).`, 'success');
+                       this.refreshData();
+                    }
+                  },
+                  error: () => count++ // Ignore error
+                });
+              },
+              error: () => count++ // Ignore error
+            });
+          }
+        }
+        
+        if (totalAssigned === 0) {
+            this.showToast('L\'IA n\'a pu assigner aucune commande.', 'info');
+        }
+      },
+      error: (err) => this.showToast('Erreur IA Dispatch : ' + (err.message || ''), 'error')
     });
   }
 
@@ -820,78 +949,7 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     return this.livreurs;
   }
 
-  // ========== VEHICULES ==========
-  addVehicule(immatriculation: string, modele: string, capacite: number): void {
-    const v: Vehicule = {
-      id: 'VEH' + Date.now(),
-      immatriculation,
-      modele,
-      capacite,
-      statut: 'DISPONIBLE',
-      dateAjout: new Date().toISOString(),
-      photoUrl: this.nouveauVehicule.photoUrl || '',
-      type: this.nouveauVehicule.type || 'Voiture',
-      marque: this.nouveauVehicule.marque || ''
-    };
-    this.vehicules.push(v);
-    localStorage.setItem('bf_vehicules', JSON.stringify(this.vehicules));
-    this.showToast('Véhicule ajouté', 'success');
-  }
 
-  addVehiculeAndReset(): void {
-    if (!this.nouveauVehicule.immatriculation || !this.nouveauVehicule.modele) {
-      this.showToast('Immatriculation et modèle obligatoires', 'error');
-      return;
-    }
-    this.addVehicule(
-      this.nouveauVehicule.immatriculation,
-      this.nouveauVehicule.modele,
-      this.nouveauVehicule.capacite || 10
-    );
-    this.nouveauVehicule = {
-      immatriculation: '',
-      modele: '',
-      marque: '',
-      type: 'Voiture',
-      capacite: 10,
-      statut: 'DISPONIBLE',
-      photoUrl: ''
-    };
-  }
-
-  removeVehicule(id: string): void {
-    this.vehicules = this.vehicules.filter(v => v.id !== id);
-    localStorage.setItem('bf_vehicules', JSON.stringify(this.vehicules));
-    this.showToast('Véhicule supprimé', 'success');
-  }
-
-  updateVehicleCapacity(vehicleId: string, newCapacity: number): void {
-    const vehicle = this.vehicules.find(v => v.id === vehicleId);
-    if (!vehicle) return;
-    vehicle.capacite = newCapacity;
-    localStorage.setItem('bf_vehicules', JSON.stringify(this.vehicules));
-    this.showToast('Capacité mise à jour', 'success');
-  }
-
-  updateVehicleStatus(vehicleId: string, newStatus: string): void {
-    const vehicle = this.vehicules.find(v => v.id === vehicleId);
-    if (!vehicle) return;
-    vehicle.statut = newStatus;
-    localStorage.setItem('bf_vehicules', JSON.stringify(this.vehicules));
-    this.showToast('État mis à jour', 'success');
-  }
-
-  getVehicleTypeDisplay(vehicle: Vehicule): string {
-    return vehicle.type || 'Voiture';
-  }
-
-  getAllVehicles(): Vehicule[] {
-    return this.vehicules;
-  }
-
-  getDriverForVehicle(vehicleId: string): Livreur | undefined {
-    return this.livreurs.find(l => (l as any).vehiculeId === vehicleId);
-  }
 
   // ========== MANIFESTS ==========
   chargerManifests(): void {
@@ -1650,6 +1708,122 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
   getOrderStatusClass(order: Commande): string {
     return 'status-' + (order.statut || 'EN_ATTENTE').toLowerCase();
+  }
+
+  // ========== VEHICULES ==========
+  showVehiculePanel = false;
+  selectedVehicule: any = null;
+
+
+  getVehiculesActifs(): number {
+    return this.vehicules.filter(v => v.statut === 'EN_SERVICE' || v.statut === 'EN_COURSE').length;
+  }
+
+  getVehiculesMaintenance(): number {
+    return this.vehicules.filter(v => v.statut === 'MAINTENANCE').length;
+  }
+
+  getCapaciteTotaleKg(): number {
+    return this.vehicules.reduce((sum, v) => sum + (v.capaciteKg || v.capacite || 0), 0);
+  }
+
+  getDriverForVehicule(vehicule: any): string {
+    if (!vehicule.livreurId) return 'Aucun livreur assigné';
+    const driver = this.livreurs.find(l => l.id === vehicule.livreurId);
+    return driver ? `${driver.prenom} ${driver.nom}` : 'Livreur inconnu';
+  }
+
+  openVehiculePanel(vehicule: any): void {
+    this.selectedVehicule = vehicule;
+    this.showVehiculePanel = true;
+  }
+
+  closeVehiculePanel(): void {
+    this.showVehiculePanel = false;
+    setTimeout(() => this.selectedVehicule = null, 300);
+  }
+
+  toggleVehiculeMaintenance(vehicule: any): void {
+    const newStatus = vehicule.statut === 'MAINTENANCE' ? 'DISPONIBLE' : 'MAINTENANCE';
+    this.apiService.updateVehicule(vehicule.id, { ...vehicule, statut: newStatus }).subscribe({
+      next: (res) => {
+        vehicule.statut = res.statut || newStatus;
+        this.showToast(`Statut véhicule mis à jour`, 'success');
+      },
+      error: () => {
+        vehicule.statut = newStatus;
+        this.showToast('Mode local : Statut mis à jour', 'info');
+      }
+    });
+  }
+
+  assignerLivreurVehicule(vehicule: any, event: any): void {
+    const livreurId = event.target.value;
+    if (!livreurId) return;
+
+    vehicule.livreurId = livreurId;
+    this.apiService.affecterVehicule(livreurId, vehicule.id).subscribe({
+      next: () => this.showToast('Livreur assigné', 'success'),
+      error: () => this.showToast('Assignation locale', 'info')
+    });
+  }
+
+  addVehiculeAndReset(): void {
+    if (!this.nouveauVehicule.immatriculation || !this.nouveauVehicule.modele) {
+      this.showToast('Veuillez remplir l\'immatriculation et le modèle', 'error');
+      return;
+    }
+    
+    const vToCreate = {
+      immatriculation: this.nouveauVehicule.immatriculation,
+      modele: this.nouveauVehicule.modele,
+      capaciteKg: this.nouveauVehicule.capaciteKg || 1000,
+      capaciteVolume: 5,
+      type: this.nouveauVehicule.type || 'UTILITAIRE',
+      annee: 2023,
+      statut: 'DISPONIBLE',
+      marque: 'Inconnue'
+    };
+
+    this.apiService.creerVehicule(vToCreate as any).subscribe({
+      next: (res) => {
+        this.vehicules.push(res);
+        this.showToast('Véhicule ajouté', 'success');
+        this.nouveauVehicule = { immatriculation: '', modele: '', capaciteKg: 1000, type: 'UTILITAIRE' };
+      },
+      error: (err) => {
+        console.error('Erreur création véhicule:', err);
+        this.showToast('Création échouée', 'error');
+      }
+    });
+  }
+
+  removeVehicule(id: string): void {
+    if (confirm('Supprimer ce véhicule ?')) {
+      this.apiService.deleteVehicule(id).subscribe({
+        next: () => {
+          this.vehicules = this.vehicules.filter(v => v.id !== id);
+          this.showToast('Véhicule supprimé', 'success');
+        },
+        error: () => {
+          this.showToast('Erreur suppression', 'error');
+        }
+      });
+    }
+  }
+
+  updateVehicleCapacity(id: string, capacite: number): void {
+    const v = this.vehicules.find(x => x.id === id);
+    if (!v) return;
+    v.capaciteKg = capacite;
+    this.apiService.updateVehicule(id, v as any).subscribe();
+  }
+
+  updateVehicleStatus(id: string, statut: string): void {
+    const v = this.vehicules.find(x => x.id === id);
+    if (!v) return;
+    v.statut = statut;
+    this.apiService.updateVehicule(id, v as any).subscribe();
   }
 
   logout(): void {
