@@ -87,6 +87,14 @@ export class AuthService {
     });
   }
 
+  bulkApprouverUtilisateurs(ids: string[]): Observable<UserProfile[]> {
+    return this.http.patch<UserProfile[]>(`${this.apiUrl}/users/bulk-approuver`, ids);
+  }
+
+  bulkChangerStatut(ids: string[], statut: string): Observable<UserProfile[]> {
+    return this.http.patch<UserProfile[]>(`${this.apiUrl}/users/bulk-statut`, { ids, statut });
+  }
+
   getProfile(id: string): Observable<UserProfile> {
     return this.http.get<UserProfile>(`${this.apiUrl}/users/${id}`);
   }

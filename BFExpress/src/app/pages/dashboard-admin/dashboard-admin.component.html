@@ -373,37 +373,79 @@
 
     <!-- ========== UTILISATEURS ========== -->
     <div *ngIf="activeTab === 'inscriptions'" class="tab-panel">
+      <!-- Filtres et Actions de masse -->
+      <div class="card mb-20">
+        <div class="filter-bar">
+          <input class="search-input" [(ngModel)]="userSearchFilter" placeholder="Rechercher par nom, email..." />
+          <select class="filter-select" [(ngModel)]="userRoleFilter">
+            <option value="">Tous les rôles</option>
+            <option value="CLIENT">Client</option>
+            <option value="LIVREUR">Livreur</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+          <select class="filter-select" [(ngModel)]="userStatusFilter">
+            <option value="">Tous les statuts</option>
+            <option value="ACTIF">Actif</option>
+            <option value="INSCRIPTION">En attente</option>
+            <option value="SUSPENDU">Suspendu</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="bulk-action-bar" *ngIf="selectedUserIds.size > 0">
+        <span>{{ selectedUserIds.size }} utilisateur(s) sélectionné(s)</span>
+        <div class="bulk-actions">
+          <button class="btn btn-primary btn-sm" (click)="bulkApprove()">Approuver</button>
+          <button class="btn btn-secondary btn-sm" (click)="bulkSuspend()">Suspendre</button>
+        </div>
+      </div>
+
       <div class="card">
         <div class="table-responsive">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Nom</th>
-                <th>Email</th>
-                <th>Téléphone</th>
+                <th width="40"><input type="checkbox" (change)="selectAllUsers(filteredUsersList)" [checked]="selectedUserIds.size === filteredUsersList.length && filteredUsersList.length > 0" /></th>
+                <th>Utilisateur</th>
+                <th>Contact</th>
                 <th>Rôle</th>
                 <th>Statut</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let u of usersList">
-                <td><strong>{{ u.prenom }} {{ u.nom }}</strong></td>
-                <td>{{ u.email }}</td>
-                <td>{{ u.telephone || '—' }}</td>
+              <tr *ngFor="let u of filteredUsersList" [class.selected]="isUserSelected(u.id)">
+                <td><input type="checkbox" [checked]="isUserSelected(u.id)" (change)="toggleUserSelection(u.id)" /></td>
+                <td>
+                  <div class="user-cell">
+                    <div class="avatar-initials" [style.backgroundColor]="getAvatarColor(u.id)">
+                      {{ getAvatarInitials(u) }}
+                    </div>
+                    <div class="user-name">
+                      <strong>{{ u.prenom }} {{ u.nom }}</strong>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="contact-info">
+                    <span>{{ u.email }}</span>
+                    <span class="muted text-sm">{{ u.telephone || '—' }}</span>
+                  </div>
+                </td>
                 <td><span class="tag">{{ u.role }}</span></td>
                 <td>
-                  <span class="status-pill status-livre" *ngIf="u.approuve === true || u.statut === 'ACTIF'">Actif</span>
-                  <span class="status-pill status-en_attente" *ngIf="u.approuve !== true && u.statut !== 'ACTIF'">En attente</span>
+                  <span class="status-badge" [ngClass]="{'active': u.statut === 'ACTIF' || u.approuve, 'pending': u.statut === 'INSCRIPTION' && !u.approuve, 'suspended': u.statut === 'SUSPENDU'}">
+                    {{ (u.statut === 'ACTIF' || u.approuve) ? 'Actif' : (u.statut === 'SUSPENDU' ? 'Suspendu' : 'En attente') }}
+                  </span>
                 </td>
                 <td class="actions">
                   <button class="btn-icon" (click)="viewUserDetails(u)">👁️</button>
                   <button class="btn-icon" *ngIf="u.approuve !== true && u.statut !== 'ACTIF'" (click)="approveUser(u.id)">✅</button>
-                  <button class="btn-icon" (click)="deleteUser(u)">🗑️</button>
+                  <button class="btn-icon danger" (click)="deleteUser(u)">🗑️</button>
                 </td>
               </tr>
-              <tr *ngIf="usersList.length === 0">
-                <td colspan="6" class="empty">Aucun utilisateur</td>
+              <tr *ngIf="filteredUsersList.length === 0">
+                <td colspan="6" class="empty">Aucun utilisateur trouvé</td>
               </tr>
             </tbody>
           </table>
@@ -754,6 +796,57 @@
     </div>
 
   </main>
+</div>
+
+<!-- Side Panel Utilisateur -->
+<div class="panel-backdrop" *ngIf="showUserPanel" (click)="closeUserPanel()"></div>
+<div class="user-side-panel glass-panel" [class.open]="showUserPanel">
+  <div class="panel-header">
+    <h3>Détails Utilisateur</h3>
+    <button class="btn-icon" (click)="closeUserPanel()">✕</button>
+  </div>
+  <div class="panel-content" *ngIf="selectedUser">
+    <div class="profile-header">
+      <div class="avatar-large" [style.backgroundColor]="getAvatarColor(selectedUser.id)">
+        {{ getAvatarInitials(selectedUser) }}
+      </div>
+      <h2>{{ selectedUser.prenom }} {{ selectedUser.nom }}</h2>
+      <span class="tag">{{ selectedUser.role }}</span>
+    </div>
+    
+    <div class="info-group">
+      <h4>Coordonnées</h4>
+      <div class="info-row">
+        <span class="icon">📧</span> {{ selectedUser.email }}
+      </div>
+      <div class="info-row">
+        <span class="icon">📱</span> {{ selectedUser.telephone || 'Non renseigné' }}
+      </div>
+    </div>
+
+    <div class="info-group" *ngIf="selectedUser.entreprise">
+      <h4>Entreprise</h4>
+      <div class="info-row">
+        <span class="icon">🏢</span> {{ selectedUser.entreprise }}
+      </div>
+      <div class="info-row" *ngIf="selectedUser.matriculeFiscal">
+        <span class="icon">🧾</span> {{ selectedUser.matriculeFiscal }}
+      </div>
+    </div>
+
+    <div class="info-group">
+      <h4>Statut</h4>
+      <span class="status-badge" [ngClass]="{'active': selectedUser.statut === 'ACTIF' || selectedUser.approuve, 'pending': selectedUser.statut === 'INSCRIPTION' && !selectedUser.approuve, 'suspended': selectedUser.statut === 'SUSPENDU'}">
+        {{ (selectedUser.statut === 'ACTIF' || selectedUser.approuve) ? 'Actif' : (selectedUser.statut === 'SUSPENDU' ? 'Suspendu' : 'En attente') }}
+      </span>
+    </div>
+
+    <div class="panel-actions">
+      <button class="btn btn-primary w-full" *ngIf="!selectedUser.approuve" (click)="approveUser(selectedUser.id)">Approuver le compte</button>
+      <button class="btn btn-secondary w-full" *ngIf="selectedUser.statut !== 'SUSPENDU'" (click)="toggleUserSelection(selectedUser.id); bulkSuspend(); closeUserPanel()">Suspendre l'utilisateur</button>
+      <button class="btn btn-secondary danger w-full" (click)="deleteUser(selectedUser); closeUserPanel()">Supprimer le compte</button>
+    </div>
+  </div>
 </div>
 
 <!-- History modal -->

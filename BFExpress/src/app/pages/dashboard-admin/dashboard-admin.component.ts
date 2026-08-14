@@ -100,6 +100,10 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
   showUserPanel = false;
   selectedUser: UserProfile | null = null;
+  selectedUserIds: Set<string> = new Set();
+  userSearchFilter = '';
+  userRoleFilter = '';
+  userStatusFilter = '';
 
   selectedDrivers: { [key: string]: string } = {};
   aiPredictions: { [key: string]: { driverName: string; score: number } } = {};
@@ -398,9 +402,6 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   viewUserDetails(user: UserProfile): void {
     this.selectedUser = user;
     this.showUserPanel = true;
-    alert(
-      `Utilisateur\n\nNom: ${user.prenom} ${user.nom}\nEmail: ${user.email}\nTéléphone: ${user.telephone || '—'}\nRôle: ${user.role}`
-    );
   }
 
   closeUserPanel(): void {
@@ -410,6 +411,91 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
   getUserRole(user: UserProfile): string {
     return user.role || 'CLIENT';
+  }
+
+  get filteredUsersList(): UserProfile[] {
+    let result = this.usersList;
+    if (this.userRoleFilter) {
+      result = result.filter(u => u.role === this.userRoleFilter);
+    }
+    if (this.userStatusFilter) {
+      result = result.filter(u => u.statut === this.userStatusFilter);
+    }
+    if (this.userSearchFilter.trim()) {
+      const q = this.userSearchFilter.toLowerCase();
+      result = result.filter(u => 
+        u.nom?.toLowerCase().includes(q) || 
+        u.prenom?.toLowerCase().includes(q) || 
+        u.email?.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }
+
+  toggleUserSelection(userId: string): void {
+    if (this.selectedUserIds.has(userId)) {
+      this.selectedUserIds.delete(userId);
+    } else {
+      this.selectedUserIds.add(userId);
+    }
+  }
+
+  selectAllUsers(users: any[]): void {
+    if (this.selectedUserIds.size === users.length) {
+      this.selectedUserIds.clear();
+    } else {
+      users.forEach(u => this.selectedUserIds.add(u.id));
+    }
+  }
+
+  isUserSelected(userId: string): boolean {
+    return this.selectedUserIds.has(userId);
+  }
+
+  bulkApprove(): void {
+    const ids = Array.from(this.selectedUserIds);
+    if (ids.length === 0) return;
+    if (!confirm(`Approuver ${ids.length} utilisateurs ?`)) return;
+
+    this.authService.bulkApprouverUtilisateurs(ids).subscribe({
+      next: () => {
+        this.showToast(`${ids.length} utilisateurs approuvés`, 'success');
+        this.selectedUserIds.clear();
+        this.refreshData();
+      },
+      error: () => this.showToast('Erreur lors de l\'approbation en masse', 'error')
+    });
+  }
+
+  bulkSuspend(): void {
+    const ids = Array.from(this.selectedUserIds);
+    if (ids.length === 0) return;
+    if (!confirm(`Suspendre ${ids.length} utilisateurs ?`)) return;
+
+    this.authService.bulkChangerStatut(ids, 'SUSPENDU').subscribe({
+      next: () => {
+        this.showToast(`${ids.length} utilisateurs suspendus`, 'success');
+        this.selectedUserIds.clear();
+        this.refreshData();
+      },
+      error: () => this.showToast('Erreur lors de la suspension en masse', 'error')
+    });
+  }
+
+  getAvatarInitials(user: any): string {
+    const first = user.prenom ? user.prenom.charAt(0).toUpperCase() : '';
+    const last = user.nom ? user.nom.charAt(0).toUpperCase() : '';
+    return (first + last) || 'U';
+  }
+
+  getAvatarColor(userId: string): string {
+    if (!userId) return '#3b82f6';
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
+    let hash = 0;
+    for (let i = 0; i < userId.length; i++) {
+      hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
   }
 
   // ========== COMMANDES / DISPATCH ==========
