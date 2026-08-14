@@ -581,6 +581,33 @@ export class ApiService {
     return this.http.get<Reclamation[]>(`${this.reclamationsUrl}/reclamations/statut/${statut}`);
   }
 
+  // --- IA pour Réclamations ---
+  analyserReclamation(reclamationId: string, description: string, typeReclamation?: string, clientId?: string, commandeId?: string, dateCreation?: string): Observable<any> {
+    return this.http.post<any>(`${this.iaUrl}/api/ia/analyser-reclamation`, {
+      reclamation_id: reclamationId,
+      description: description,
+      type_reclamation: typeReclamation,
+      client_id: clientId,
+      commande_id: commandeId,
+      date_creation: dateCreation
+    });
+  }
+
+  genererReponseReclamation(reclamationId: string, typeReponse: 'FORMELLE' | 'EMPATHIQUE' | 'TECHNIQUE', contexte?: any): Observable<any> {
+    return this.http.post<any>(`${this.iaUrl}/api/ia/generer-reponse`, {
+      reclamation_id: reclamationId,
+      type_reponse: typeReponse,
+      contexte: contexte
+    });
+  }
+
+  detecterAnomaliesReclamations(reclamations: any[], periodeJours: number = 7): Observable<any> {
+    return this.http.post<any>(`${this.iaUrl}/api/ia/anomalies-reclamations`, {
+      reclamations: reclamations,
+      periode_jours: periodeJours
+    });
+  }
+
   // --- Évaluations ---
   creerEvaluation(evaluation: EvaluationLivreur): Observable<EvaluationLivreur> {
     return this.http.post<EvaluationLivreur>(`${this.statsUrl}/stats/evaluations`, evaluation);

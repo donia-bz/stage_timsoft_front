@@ -335,6 +335,197 @@ $sidebar-w: 280px;
 .empty { text-align: center; color: $muted; padding: 1.5rem; }
 
 // ========== RECLAMATIONS STYLES ==========
+
+.highlight-warning { border-color: rgba($warning, 0.35); background: #fffbeb; }
+.highlight-success { border-color: rgba($success, 0.35); background: #f0fdf4; }
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.filter-select {
+  padding: 0.55rem 0.85rem;
+  border: 1px solid $border;
+  border-radius: 10px;
+  background: white;
+  font-size: 0.9rem;
+  &:focus { outline: none; border-color: $primary; }
+}
+
+.priority-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  &.priority-urgent { background: #fee2e2; color: #991b1b; }
+  &.priority-normal { background: #fef3c7; color: #92400e; }
+  &.priority-faible { background: #d1fae5; color: #065f46; }
+  &.priority-default { background: #f3f4f6; color: #374151; }
+}
+
+.description-cell {
+  max-width: 200px;
+  .btn-link { margin-left: 0.5rem; }
+}
+
+tr.urgent {
+  background: #fff7ed;
+  &:hover td { background: #ffedd5; }
+}
+
+.status-resolved { background: #d1fae5; color: #065f46; }
+.status-rejected { background: #fee2e2; color: #991b1b; }
+
+// Modal Styles
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid $border;
+  
+  h3 { margin: 0; font-size: 1.1rem; font-weight: 800; }
+  .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; }
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.detail-section {
+  margin-bottom: 1.5rem;
+  
+  h4 { margin: 0 0 0.75rem; font-size: 0.95rem; font-weight: 700; color: $text; }
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  
+  .label { font-size: 0.8rem; color: $muted; font-weight: 600; }
+  .value { font-weight: 600; }
+}
+
+.description-full {
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 10px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+// IA Analysis Styles
+.ai-analysis {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid #bae6fd;
+}
+
+.ai-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(14, 165, 233, 0.2);
+  
+  &:last-child { border-bottom: none; }
+  
+  .ai-label { font-size: 0.85rem; color: $muted; font-weight: 600; }
+  .ai-value { font-weight: 700; font-size: 0.9rem;
+    &.negatif { color: $danger; }
+    &.neutre { color: $warning; }
+    &.positif { color: $success; }
+  }
+}
+
+// Response Modal Styles
+.response-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid $border;
+  padding-bottom: 0.5rem;
+}
+
+.tab-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: $muted;
+  transition: 0.15s;
+  
+  &:hover { background: #f8fafc; color: $text; }
+  &.active { background: $primary; color: white; }
+}
+
+.response-content {
+  textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid $border;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    resize: vertical;
+    margin-bottom: 1rem;
+    &:focus { outline: none; border-color: $primary; }
+  }
+}
+
+.confidence-score {
+  font-size: 0.8rem;
+  color: $muted;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.response-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+// Anomalie Styles
+.alert-row {
+  &.haut .dot { background: $danger; }
+  &.moyen .dot { background: $warning; }
+  &.bas .dot { background: $success; }
+}
 .action-buttons {
   display: flex;
   gap: 0.5rem;

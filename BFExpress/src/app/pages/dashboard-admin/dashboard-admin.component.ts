@@ -60,6 +60,25 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   vehicules: Vehicule[] = [];
   manifests: any[] = [];
   reclamations: any[] = [];
+  reclamationsAnalysis: { [reclamationId: string]: any } = {};
+  anomaliesDetectees: any[] = [];
+  suggestedResponses: any[] = [];
+  
+  reclamationFilters = {
+    search: '',
+    statut: '',
+    type: '',
+    priorite: ''
+  };
+  
+  showReclamationDetail = false;
+  selectedReclamation: any = null;
+  selectedReclamationAnalysis: any = null;
+  adminCommentaire = '';
+  
+  showResponseModal = false;
+  activeResponseTab: 'FORMELLE' | 'EMPATHIQUE' | 'TECHNIQUE' = 'EMPATHIQUE';
+  responseText = '';
 
   toasts: ToastMessage[] = [];
   private toastIdCounter = 0;
@@ -1044,6 +1063,497 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     return client ? `${client.prenom} ${client.nom}` : 'Client inconnu';
   }
 
+  formatDate(dateString?: string): string {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  // ========== RECLAMATIONS AMÉLIORÉES ==========
+  
+  get filteredReclamations(): any[] {
+    let filtered = this.reclamations;
+    
+    if (this.reclamationFilters.search) {
+      const search = this.reclamationFilters.search.toLowerCase();
+      filtered = filtered.filter(rec => 
+        (rec.id && rec.id.toLowerCase().includes(search)) ||
+        (rec.description && rec.description.toLowerCase().includes(search)) ||
+        (rec.type && rec.type.toLowerCase().includes(search)) ||
+        (rec.objet && rec.objet.toLowerCase().includes(search))
+      );
+    }
+    
+    if (this.reclamationFilters.statut) {
+      filtered = filtered.filter(rec => rec.statut === this.reclamationFilters.statut);
+    }
+    
+    if (this.reclamationFilters.type) {
+      filtered = filtered.filter(rec => 
+        rec.type === this.reclamationFilters.type || rec.objet === this.reclamationFilters.type
+      );
+    }
+    
+    if (this.reclamationFilters.priorite) {
+      filtered = filtered.filter(rec => 
+        this.getReclamationPriority(rec) === this.reclamationFilters.priorite
+      );
+    }
+    
+    // Trier par priorité et date
+    return filtered.sort((a, b) => {
+      const priorityOrder = { 'URGENT': 0, 'NORMAL': 1, 'FAIBLE': 2 };
+      const priorityA = priorityOrder[this.getReclamationPriority(a)] || 99;
+      const priorityB = priorityOrder[this.getReclamationPriority(b)] || 99;
+      
+      if (priorityA !== priorityB) return priorityA - priorityB;
+      
+      const dateA = new Date(a.dateCreation || 0).getTime();
+      const dateB = new Date(b.dateCreation || 0).getTime();
+      return dateB - dateA;
+    });
+  }
+
+  getReclamationsByStatut(statut: string): any[] {
+    return this.reclamations.filter(rec => rec.statut === statut);
+  }
+
+  getReclamationTypes(): string[] {
+    const types = new Set<string>();
+    this.reclamations.forEach(rec => {
+      if (rec.type) types.add(rec.type);
+      if (rec.objet) types.add(rec.objet);
+    });
+    return Array.from(types);
+  }
+
+  getReclamationPriority(reclamation: any): string {
+    // Si analyse IA existe, utiliser la priorité IA
+    if (this.reclamationsAnalysis[reclamation.id]) {
+      return this.reclamationsAnalysis[reclamation.id].priorite || 'NORMAL';
+    }
+    
+    // Sinon, déterminer priorité basée sur règles
+    const statut = reclamation.statut || 'EN_ATTENTE';
+    const type = (reclamation.type || reclamation.objet || '').toLowerCase();
+    const daysSinceCreation = this.getDaysSince(reclamation.dateCreation);
+    
+    // Règles de priorité
+    if (type.includes('perdu') || type.includes('endommagé') || type.includes('paiement')) {
+      return 'URGENT';
+    }
+    
+    if (daysSinceCreation > 3 && statut === 'EN_ATTENTE') {
+      return 'URGENT';
+    }
+    
+    if (daysSinceCreation > 1 && statut === 'EN_ATTENTE') {
+      return 'NORMAL';
+    }
+    
+    return 'FAIBLE';
+  }
+
+  getReclamationPriorityClass(reclamation: any): string {
+    const priority = this.getReclamationPriority(reclamation);
+    switch (priority) {
+      case 'URGENT': return 'priority-urgent';
+      case 'NORMAL': return 'priority-normal';
+      case 'FAIBLE': return 'priority-faible';
+      default: return 'priority-default';
+    }
+  }
+
+  getReclamationPriorityLabel(reclamation: any): string {
+    const priority = this.getReclamationPriority(reclamation);
+    const labels = { 'URGENT': '🔴', 'NORMAL': '🟡', 'FAIBLE': '🟢' };
+    return labels[priority] || '⚪';
+  }
+
+  isReclamationUrgente(reclamation: any): boolean {
+    return this.getReclamationPriority(reclamation) === 'URGENT';
+  }
+
+  getTauxResolution(): number {
+    if (this.reclamations.length === 0) return 0;
+    const resolues = this.reclamations.filter(rec => rec.statut === 'RESOLUE').length;
+    return Math.round((resolues / this.reclamations.length) * 100);
+  }
+
+  getClientReclamationCount(clientId: string): number {
+    return this.reclamations.filter(rec => rec.clientId === clientId).length;
+  }
+
+  getDaysSince(dateString?: string): number {
+    if (!dateString) return 0;
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  }
+
+  resetReclamationFilters(): void {
+    this.reclamationFilters = {
+      search: '',
+      statut: '',
+      type: '',
+      priorite: ''
+    };
+  }
+
+  // ========== ANALYSE IA RECLAMATIONS ==========
+  
+  analyserReclamationsIA(): void {
+    this.showToast('Analyse IA en cours...', 'info');
+    
+    // Appel réel API pour détecter les anomalies
+    this.apiService.detecterAnomaliesReclamations(this.reclamations, 7).subscribe({
+      next: (response) => {
+        this.anomaliesDetectees = response.anomalies || [];
+        this.classifierReclamations();
+        this.showToast('Analyse IA terminée', 'success');
+      },
+      error: (err) => {
+        console.error('Erreur IA anomalies:', err);
+        // Fallback vers détection locale
+        this.detecterAnomalies();
+        this.classifierReclamations();
+        this.showToast('Analyse IA locale (erreur API)', 'info');
+      }
+    });
+  }
+
+  detecterAnomalies(): void {
+    // Fallback local si API IA indisponible
+    this.anomaliesDetectees = [];
+    
+    const recentReclamations = this.reclamations.filter(rec => 
+      this.getDaysSince(rec.dateCreation) <= 1
+    );
+    
+    if (recentReclamations.length > 5) {
+      this.anomaliesDetectees.push({
+        type: 'SPIKE_RECLAMATIONS',
+        niveau: 'HAUT',
+        description: `Pic de réclamations: ${recentReclamations.length} aujourd'hui`,
+        actionRecommandee: 'Investiguer la cause du pic'
+      });
+    }
+    
+    const clientCounts = this.getClientReclamationCounts();
+    const irriteClients = clientCounts.filter(c => c.count > 2);
+    
+    if (irriteClients.length > 0) {
+      this.anomaliesDetectees.push({
+        type: 'CLIENT_IRRITE',
+        niveau: 'MOYEN',
+        description: `${irriteClients.length} clients avec >2 réclamations`,
+        actionRecommandee: 'Contacter les clients prioritairement'
+      });
+    }
+    
+    const typeCounts = this.getTypeReclamationCounts();
+    const recurrentProblems = typeCounts.filter(t => t.count > 3);
+    
+    if (recurrentProblems.length > 0) {
+      const topProblem = recurrentProblems[0];
+      this.anomaliesDetectees.push({
+        type: 'PROBLEME_RECURRENT',
+        niveau: 'MOYEN',
+        description: `Problème récurrent: ${topProblem.type} (${topProblem.count}x)`,
+        actionRecommandee: 'Analyser et résoudre le problème système'
+      });
+    }
+  }
+
+  classifierReclamations(): void {
+    // Analyser chaque réclamation avec l'IA
+    this.reclamations.forEach(rec => {
+      if (!this.reclamationsAnalysis[rec.id]) {
+        this.analyserReclamationIA(rec);
+      }
+    });
+  }
+
+  analyserReclamationIA(reclamation: any): void {
+    // Appel API réel pour analyser une réclamation
+    this.apiService.analyserReclamation(
+      reclamation.id,
+      reclamation.description || '',
+      reclamation.type || reclamation.objet,
+      reclamation.clientId,
+      reclamation.commandeId,
+      reclamation.dateCreation
+    ).subscribe({
+      next: (analysis) => {
+        this.reclamationsAnalysis[reclamation.id] = analysis;
+      },
+      error: (err) => {
+        console.error('Erreur analyse réclamation:', err);
+        // Fallback vers analyse rule-based locale
+        this.reclamationsAnalysis[reclamation.id] = this.analyserReclamationRuleBased(reclamation);
+      }
+    });
+  }
+
+  analyserReclamationRuleBased(reclamation: any): any {
+    // Fallback rule-based local
+    const description = (reclamation.description || '').toLowerCase();
+    const type = (reclamation.type || reclamation.objet || '').toLowerCase();
+    
+    let sentiment = 'NEUTRE';
+    let problemeDetecte = 'Problème standard';
+    let suggestionAction = 'Réponse standard';
+    let tempsResolutionEstime = 24;
+    
+    if (description.includes('furieux') || description.includes('énervé') || 
+        description.includes('colère') || description.includes('inacceptable')) {
+      sentiment = 'NEGATIF';
+      tempsResolutionEstime = 4;
+    } else if (description.includes('merci') || description.includes('satisfait')) {
+      sentiment = 'POSITIF';
+    }
+    
+    if (type.includes('retard') || description.includes('retard')) {
+      problemeDetecte = 'Retard de livraison';
+      suggestionAction = 'Vérifier statut et proposer compensation';
+      tempsResolutionEstime = 8;
+    } else if (type.includes('perdu') || description.includes('perdu')) {
+      problemeDetecte = 'Colis perdu';
+      suggestionAction = 'Lancer enquête et proposer remboursement';
+      tempsResolutionEstime = 48;
+    } else if (type.includes('endommagé') || description.includes('cassé')) {
+      problemeDetecte = 'Colis endommagé';
+      suggestionAction = 'Demander photos et proposer remplacement';
+      tempsResolutionEstime = 24;
+    } else if (type.includes('paiement') || description.includes('paiement')) {
+      problemeDetecte = 'Problème paiement';
+      suggestionAction = 'Vérifier bordereau et régulariser';
+      tempsResolutionEstime = 12;
+    }
+    
+    return {
+      priorite: tempsResolutionEstime <= 8 ? 'URGENT' : (tempsResolutionEstime <= 24 ? 'NORMAL' : 'FAIBLE'),
+      sentiment,
+      problemeDetecte,
+      suggestionAction,
+      tempsResolutionEstime,
+      confidence: 0.6
+    };
+  }
+
+  getClientReclamationCounts(): { clientId: string; count: number }[] {
+    const counts: { [clientId: string]: number } = {};
+    this.reclamations.forEach(rec => {
+      if (rec.clientId) {
+        counts[rec.clientId] = (counts[rec.clientId] || 0) + 1;
+      }
+    });
+    return Object.entries(counts).map(([clientId, count]) => ({ clientId, count }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  getTypeReclamationCounts(): { type: string; count: number }[] {
+    const counts: { [type: string]: number } = {};
+    this.reclamations.forEach(rec => {
+      const type = rec.type || rec.objet || 'Autre';
+      counts[type] = (counts[type] || 0) + 1;
+    });
+    return Object.entries(counts).map(([type, count]) => ({ type, count }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  actionAnomalie(anomalie: any): void {
+    this.showToast(`Action: ${anomalie.actionRecommandee}`, 'info');
+    // Implémenter l'action selon le type d'anomalie
+  }
+
+  // ========== MODAL DÉTAIL RÉCLAMATION ==========
+  
+  voirDetailReclamation(reclamation: any): void {
+    this.selectedReclamation = reclamation;
+    this.selectedReclamationAnalysis = this.reclamationsAnalysis[reclamation.id] || this.analyserReclamationIA(reclamation);
+    this.adminCommentaire = reclamation.adminCommentaire || '';
+    this.showReclamationDetail = true;
+  }
+
+  closeReclamationDetail(): void {
+    this.showReclamationDetail = false;
+    this.selectedReclamation = null;
+    this.selectedReclamationAnalysis = null;
+    this.adminCommentaire = '';
+  }
+
+  ajouterCommentaireAdmin(): void {
+    if (!this.selectedReclamation || !this.adminCommentaire.trim()) return;
+    
+    this.apiService.updateReclamation(this.selectedReclamation.id, {
+      ...this.selectedReclamation,
+      adminCommentaire: this.adminCommentaire
+    }).subscribe({
+      next: () => {
+        this.showToast('Commentaire ajouté', 'success');
+        this.refreshData();
+        this.closeReclamationDetail();
+      },
+      error: (err) => {
+        console.error('Error adding comment:', err);
+        this.showToast('Erreur lors de l\'ajout du commentaire', 'error');
+      }
+    });
+  }
+
+  // ========== RÉPONSE IA ==========
+  
+  genererReponseIA(reclamation: any): void {
+    this.selectedReclamation = reclamation;
+    this.showResponseModal = true;
+    this.activeResponseTab = 'EMPATHIQUE';
+    
+    // Préparer le contexte pour l'IA
+    const contexte = {
+      client_name: this.getReclamationClientName(reclamation.clientId),
+      ref_commande: reclamation.commandeId || reclamation.codeBarre || 'N/A',
+      ref_reclamation: reclamation.id?.substring(0, 8) || 'N/A',
+      statut: reclamation.statut || 'EN_ATTENTE',
+      probleme: this.reclamationsAnalysis[reclamation.id]?.problemeDetecte || 'Problème signalé',
+      temps_estime: this.reclamationsAnalysis[reclamation.id]?.tempsResolutionEstime || 24
+    };
+    
+    // Générer les 3 types de réponses via API
+    this.suggestedResponses = [];
+    
+    // Générer réponse empathique par défaut
+    this.apiService.genererReponseReclamation(
+      reclamation.id,
+      'EMPATHIQUE',
+      contexte
+    ).subscribe({
+      next: (response) => {
+        this.suggestedResponses.push({
+          type: 'EMPATHIQUE',
+          texte: response.texte,
+          confidence: response.confidence
+        });
+        this.responseText = this.getActiveResponseText();
+      },
+      error: (err) => {
+        console.error('Erreur génération réponse empathique:', err);
+        // Fallback template
+        this.suggestedResponses.push({
+          type: 'EMPATHIQUE',
+          texte: this.genererReponseEmpathique(reclamation),
+          confidence: 0.75
+        });
+        this.responseText = this.getActiveResponseText();
+      }
+    });
+    
+    // Générer les autres types en arrière-plan
+    this.apiService.genererReponseReclamation(reclamation.id, 'FORMELLE', contexte).subscribe({
+      next: (response) => {
+        this.suggestedResponses.push({
+          type: 'FORMELLE',
+          texte: response.texte,
+          confidence: response.confidence
+        });
+      },
+      error: () => {
+        this.suggestedResponses.push({
+          type: 'FORMELLE',
+          texte: this.genererReponseFormelle(reclamation),
+          confidence: 0.75
+        });
+      }
+    });
+    
+    this.apiService.genererReponseReclamation(reclamation.id, 'TECHNIQUE', contexte).subscribe({
+      next: (response) => {
+        this.suggestedResponses.push({
+          type: 'TECHNIQUE',
+          texte: response.texte,
+          confidence: response.confidence
+        });
+      },
+      error: () => {
+        this.suggestedResponses.push({
+          type: 'TECHNIQUE',
+          texte: this.genererReponseTechnique(reclamation),
+          confidence: 0.75
+        });
+      }
+    });
+  }
+
+  genererReponseFormelle(reclamation: any): string {
+    const clientName = this.getReclamationClientName(reclamation.clientId);
+    const ref = reclamation.commandeId || reclamation.codeBarre || 'votre commande';
+    const probleme = this.reclamationsAnalysis[reclamation.id]?.problemeDetecte || 'votre réclamation';
+    
+    return `Madame, Monsieur ${clientName},\n\nNous accusons réception de votre réclamation concernant ${probleme} (Réf: ${ref}).\n\nVotre dossier a été enregistré sous la référence ${reclamation.id?.substring(0, 8)} et est actuellement en cours de traitement par notre service client.\n\nNous vous informerons de l'avancement de votre dossier dans les plus brefs délais.\n\nCordialement,\nLe service client BFExpress`;
+  }
+
+  genererReponseEmpathique(reclamation: any): string {
+    const clientName = this.getReclamationClientName(reclamation.clientId);
+    const ref = reclamation.commandeId || reclamation.codeBarre || 'votre commande';
+    
+    return `Cher/Chère ${clientName},\n\nNous sommes vraiment désolés d'apprendre votre mécontentement concernant votre commande ${ref}. Nous comprenons parfaitement votre situation et nous allons faire notre possible pour la résoudre rapidement.\n\nNotre équipe s'occupe personnellement de votre dossier (Réf: ${reclamation.id?.substring(0, 8)}) et vous recontactera dans les plus brefs délais.\n\nMerci de votre patience et de votre compréhension.\n\nBien cordialement,\nL'équipe BFExpress`;
+  }
+
+  genererReponseTechnique(reclamation: any): string {
+    const ref = reclamation.commandeId || reclamation.codeBarre || 'N/A';
+    const statut = reclamation.statut || 'EN_ATTENTE';
+    const probleme = this.reclamationsAnalysis[reclamation.id]?.problemeDetecte || 'Problème signalé';
+    
+    return `Suivi technique - Réclamation ${reclamation.id?.substring(0, 8)}\n\nCommande concernée: ${ref}\nStatut actuel: ${statut}\nProblème identifié: ${probleme}\n\nActions en cours:\n- Vérification du statut de la commande\n- Analyse du parcours de livraison\n- Contact avec le livreur si nécessaire\n\nDélai estimé de résolution: ${this.reclamationsAnalysis[reclamation.id]?.tempsResolutionEstime || 24}h\n\nVous serez notifié automatiquement de la résolution.`;
+  }
+
+  getActiveResponseText(): string {
+    const active = this.suggestedResponses.find(r => r.type === this.activeResponseTab);
+    return active?.texte || '';
+  }
+
+  getActiveResponseConfidence(): number {
+    const active = this.suggestedResponses.find(r => r.type === this.activeResponseTab);
+    return active ? Math.round(active.confidence * 100) : 0;
+  }
+
+  closeResponseModal(): void {
+    this.showResponseModal = false;
+    this.suggestedResponses = [];
+    this.responseText = '';
+    this.selectedReclamation = null;
+  }
+
+  envoyerReponse(): void {
+    if (!this.selectedReclamation || !this.responseText.trim()) return;
+    
+    // Ici vous pouvez implémenter l'envoi réel de la réponse
+    // Par email, notification, ou ajout comme commentaire
+    
+    this.apiService.updateReclamation(this.selectedReclamation.id, {
+      ...this.selectedReclamation,
+      adminCommentaire: `Réponse envoyée: ${this.responseText}`,
+      statut: 'EN_COURS'
+    }).subscribe({
+      next: () => {
+        this.showToast('Réponse envoyée avec succès', 'success');
+        this.refreshData();
+        this.closeResponseModal();
+      },
+      error: (err) => {
+        console.error('Error sending response:', err);
+        this.showToast('Erreur lors de l\'envoi de la réponse', 'error');
+      }
+    });
+  }
+
   getDepartVille(order: Commande): string {
     return order.adresseDepart?.ville || 'Tunis';
   }
@@ -1054,18 +1564,6 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
   getOrderStatusClass(order: Commande): string {
     return 'status-' + (order.statut || 'EN_ATTENTE').toLowerCase();
-  }
-
-  formatDate(dateString: string): string {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('fr-TN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   }
 
   logout(): void {

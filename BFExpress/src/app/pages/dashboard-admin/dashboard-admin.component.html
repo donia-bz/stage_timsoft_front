@@ -483,13 +483,77 @@
       <div class="page-header">
         <div>
           <h1>Réclamations</h1>
-          <p>Gérer les réclamations des clients</p>
+          <p>Gérer les réclamations des clients avec IA</p>
         </div>
         <div class="header-actions">
           <button class="btn btn-secondary" (click)="refreshData()">Actualiser</button>
+          <button class="btn btn-primary" (click)="analyserReclamationsIA()">🤖 Analyser avec IA</button>
         </div>
       </div>
 
+      <!-- KPIs Réclamations -->
+      <div class="kpi-grid kpi-4">
+        <div class="kpi-card">
+          <div class="kpi-label">Total réclamations</div>
+          <div class="kpi-value">{{ reclamations.length }}</div>
+        </div>
+        <div class="kpi-card highlight-warning">
+          <div class="kpi-label">En attente</div>
+          <div class="kpi-value">{{ getReclamationsByStatut('EN_ATTENTE').length }}</div>
+        </div>
+        <div class="kpi-card highlight-success">
+          <div class="kpi-label">Résolues</div>
+          <div class="kpi-value">{{ getReclamationsByStatut('RESOLUE').length }}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Taux résolution</div>
+          <div class="kpi-value">{{ getTauxResolution() }}%</div>
+        </div>
+      </div>
+
+      <!-- Alertes IA -->
+      <div class="card" *ngIf="anomaliesDetectees.length > 0">
+        <div class="card-header">
+          <h3>🤖 Alertes IA détectées</h3>
+        </div>
+        <div class="alert-list">
+          <div class="alert-row" *ngFor="let anomalie of anomaliesDetectees" [class]="anomalie.niveau.toLowerCase()">
+            <span class="dot" [class]="anomalie.niveau.toLowerCase()"></span>
+            <span>{{ anomalie.description }}</span>
+            <button class="btn-link" (click)="actionAnomalie(anomalie)">Voir</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtres avancés -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Filtres</h3>
+          <button class="btn-link" (click)="resetReclamationFilters()">Réinitialiser</button>
+        </div>
+        <div class="filter-grid">
+          <input class="search-input" [(ngModel)]="reclamationFilters.search" placeholder="Rechercher..." />
+          <select [(ngModel)]="reclamationFilters.statut" class="filter-select">
+            <option value="">Tous statuts</option>
+            <option value="EN_ATTENTE">En attente</option>
+            <option value="EN_COURS">En cours</option>
+            <option value="RESOLUE">Résolue</option>
+            <option value="REJETEE">Rejetée</option>
+          </select>
+          <select [(ngModel)]="reclamationFilters.type" class="filter-select">
+            <option value="">Tous types</option>
+            <option *ngFor="let type of getReclamationTypes()" [value]="type">{{ type }}</option>
+          </select>
+          <select [(ngModel)]="reclamationFilters.priorite" class="filter-select">
+            <option value="">Toutes priorités</option>
+            <option value="URGENT">🔴 Urgent</option>
+            <option value="NORMAL">🟡 Normal</option>
+            <option value="FAIBLE">🟢 Faible</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Tableau réclamations amélioré -->
       <div class="card">
         <div class="table-responsive">
           <table class="data-table">
@@ -501,18 +565,38 @@
                 <th>Type</th>
                 <th>Description</th>
                 <th>Date</th>
+                <th>Priorité IA</th>
                 <th>Statut</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let rec of reclamations">
+              <tr *ngFor="let rec of filteredReclamations" [class.urgent]="isReclamationUrgente(rec)">
                 <td class="mono">{{ rec.id?.substring(0, 8) || '—' }}</td>
-                <td>{{ getReclamationClientName(rec.clientId) }}</td>
+                <td>
+                  <div>
+                    <strong>{{ getReclamationClientName(rec.clientId) }}</strong>
+                    <div class="muted" *ngIf="getClientReclamationCount(rec.clientId) > 1">
+                      {{ getClientReclamationCount(rec.clientId) }} réclamations
+                    </div>
+                  </div>
+                </td>
                 <td class="mono">{{ rec.commandeId || rec.codeBarre || '—' }}</td>
                 <td>{{ rec.type || rec.objet || '—' }}</td>
-                <td>{{ rec.description?.substring(0, 50) || '—' }}{{ rec.description?.length > 50 ? '...' : '' }}</td>
+                <td>
+                  <div class="description-cell">
+                    {{ rec.description?.substring(0, 60) || '—' }}
+                    <button class="btn-link" *ngIf="rec.description?.length > 60" (click)="voirDetailReclamation(rec)">
+                      Voir plus
+                    </button>
+                  </div>
+                </td>
                 <td>{{ rec.dateCreation ? formatDate(rec.dateCreation) : '—' }}</td>
+                <td>
+                  <span class="priority-badge" [ngClass]="getReclamationPriorityClass(rec)">
+                    {{ getReclamationPriorityLabel(rec) }}
+                  </span>
+                </td>
                 <td>
                   <span class="status-pill" [ngClass]="getReclamationStatutClass(rec.statut)">
                     {{ rec.statut || 'EN_ATTENTE' }}
@@ -520,6 +604,8 @@
                 </td>
                 <td>
                   <div class="action-buttons">
+                    <button class="btn-icon" (click)="voirDetailReclamation(rec)" title="Détails">👁️</button>
+                    <button class="btn-icon" (click)="genererReponseIA(rec)" title="Réponse IA">🤖</button>
                     <select [(ngModel)]="rec.statut" (change)="updateReclamationStatus(rec.id, rec.statut)" class="status-select">
                       <option value="EN_ATTENTE">En attente</option>
                       <option value="EN_COURS">En cours</option>
@@ -530,11 +616,117 @@
                   </div>
                 </td>
               </tr>
-              <tr *ngIf="reclamations.length === 0">
-                <td colspan="8" class="empty">Aucune réclamation pour le moment.</td>
+              <tr *ngIf="filteredReclamations.length === 0">
+                <td colspan="9" class="empty">Aucune réclamation ne correspond aux filtres.</td>
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Modal Détail Réclamation -->
+      <div class="modal-overlay" *ngIf="showReclamationDetail" (click)="closeReclamationDetail()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>Détails de la réclamation</h3>
+            <button class="btn-icon" (click)="closeReclamationDetail()">✕</button>
+          </div>
+          <div class="modal-body" *ngIf="selectedReclamation">
+            <div class="detail-section">
+              <h4>Informations générales</h4>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="label">Référence</span>
+                  <span class="value mono">{{ selectedReclamation.id }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Client</span>
+                  <span class="value">{{ getReclamationClientName(selectedReclamation.clientId) }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Commande</span>
+                  <span class="value mono">{{ selectedReclamation.commandeId || selectedReclamation.codeBarre }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Date</span>
+                  <span class="value">{{ formatDate(selectedReclamation.dateCreation) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-section">
+              <h4>Description</h4>
+              <p class="description-full">{{ selectedReclamation.description }}</p>
+            </div>
+
+            <div class="detail-section" *ngIf="selectedReclamation.adminCommentaire">
+              <h4>Commentaire admin</h4>
+              <p>{{ selectedReclamation.adminCommentaire }}</p>
+            </div>
+
+            <div class="detail-section" *ngIf="selectedReclamationAnalysis">
+              <h4>🤖 Analyse IA</h4>
+              <div class="ai-analysis">
+                <div class="ai-item">
+                  <span class="ai-label">Sentiment</span>
+                  <span class="ai-value" [ngClass]="selectedReclamationAnalysis.sentiment.toLowerCase()">
+                    {{ selectedReclamationAnalysis.sentiment }}
+                  </span>
+                </div>
+                <div class="ai-item">
+                  <span class="ai-label">Problème détecté</span>
+                  <span class="ai-value">{{ selectedReclamationAnalysis.problemeDetecte }}</span>
+                </div>
+                <div class="ai-item">
+                  <span class="ai-label">Action suggérée</span>
+                  <span class="ai-value">{{ selectedReclamationAnalysis.suggestionAction }}</span>
+                </div>
+                <div class="ai-item">
+                  <span class="ai-label">Temps de résolution estimé</span>
+                  <span class="ai-value">{{ selectedReclamationAnalysis.tempsResolutionEstime }}h</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-section">
+              <h4>Ajouter un commentaire</h4>
+              <textarea [(ngModel)]="adminCommentaire" placeholder="Votre commentaire..." rows="3"></textarea>
+              <button class="btn btn-primary" (click)="ajouterCommentaireAdmin()">Enregistrer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Réponse IA -->
+      <div class="modal-overlay" *ngIf="showResponseModal" (click)="closeResponseModal()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>🤖 Réponse suggérée par IA</h3>
+            <button class="btn-icon" (click)="closeResponseModal()">✕</button>
+          </div>
+          <div class="modal-body" *ngIf="suggestedResponses">
+            <div class="response-tabs">
+              <button class="tab-btn" [class.active]="activeResponseTab === 'FORMELLE'" (click)="activeResponseTab = 'FORMELLE'">
+                Formelle
+              </button>
+              <button class="tab-btn" [class.active]="activeResponseTab === 'EMPATHIQUE'" (click)="activeResponseTab = 'EMPATHIQUE'">
+                Empathique
+              </button>
+              <button class="tab-btn" [class.active]="activeResponseTab === 'TECHNIQUE'" (click)="activeResponseTab = 'TECHNIQUE'">
+                Technique
+              </button>
+            </div>
+            <div class="response-content">
+              <div class="confidence-score">
+                Confiance: {{ getActiveResponseConfidence() }}%
+              </div>
+              <textarea [(ngModel)]="responseText" rows="6"></textarea>
+              <div class="response-actions">
+                <button class="btn btn-secondary" (click)="closeResponseModal()">Annuler</button>
+                <button class="btn btn-primary" (click)="envoyerReponse()">Envoyer</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
