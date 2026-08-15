@@ -1,0 +1,308 @@
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import List, Optional
+from dotenv import load_dotenv
+import uvicorn
+import os
+from datetime import datetime
+
+load_dotenv()
+
+app = FastAPI(title="BFExpress IA Service")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Models
+class Reclamation(BaseModel):
+    id: str
+    description: str
+    type: Optional[str] = None
+    objet: Optional[str] = None
+    clientId: Optional[str] = None
+    commandeId: Optional[str] = None
+    dateCreation: Optional[str] = None
+    statut: Optional[str] = None
+
+class AnomalyDetectionRequest(BaseModel):
+    reclamations: List[Reclamation]
+    days: int = 7
+
+class AnomalyDetectionResponse(BaseModel):
+    anomalies: List[dict]
+    totalReclamations: int
+    processedDate: str
+
+class ReclamationAnalysis(BaseModel):
+    priorite: str
+    sentiment: str
+    problemeDetecte: str
+    suggestionAction: str
+    tempsResolutionEstime: int
+    confidence: float
+
+# AI Service Simple (Rule-based avec logique avancée)
+class SimpleAIAnalyzer:
+    def __init__(self):
+        self.keywords_urgent = {
+            'perdu', 'cassé', 'endommagé', 'volé', 'disparu', 'accident', 'blessure',
+            'urgence', 'immédiat', 'danger', 'grave', 'sérieux', 'critique'
+        }
+        self.keywords_retard = {
+            'retard', 'en retard', 'tard', 'attendre', 'delai', 'attente', 'longtemps'
+        }
+        self.keywords_paiement = {
+            'paiement', 'facture', 'facturé', 'payer', 'coût', 'argent', 'prix',
+            'remboursement', 'rembourser', 'rembourse'
+        }
+        self.keywords_positive = {
+            'merci', 'satisfait', 'content', 'bravo', 'excellent', 'super', 'parfait',
+            'apprécie', 'remerciement', 'félicitations'
+        }
+        self.keywords_negatif = {
+            'mécontent', 'insatisfait', 'déçu', 'frustré', 'énervé', 'colère',
+            'fâché', 'horrible', 'mauvais', 'nul', 'décevant'
+        }
+
+    def analyze_sentiment(self, text: str) -> str:
+        text_lower = text.lower()
+        positive_count = sum(1 for kw in self.keywords_positive if kw in text_lower)
+        negative_count = sum(1 for kw in self.keywords_negatif if kw in text_lower)
+        
+        if positive_count > negative_count:
+            return 'POSITIF'
+        elif negative_count > positive_count:
+            return 'NEGATIF'
+        else:
+            return 'NEUTRE'
+
+    def detect_problem(self, text: str, type_r: str = None) -> str:
+        text_lower = text.lower()
+        type_lower = (type_r or '').lower()
+        
+        # Check urgent keywords
+        if any(kw in text_lower for kw in self.keywords_urgent):
+            return 'URGENT - Incident grave détecté'
+        
+        # Check delay keywords
+        if any(kw in text_lower for kw in self.keywords_retard):
+            return 'Problème de retard de livraison'
+        
+        # Check payment keywords
+        if any(kw in text_lower for kw in self.keywords_paiement):
+            return 'Problème de paiement/facturation'
+        
+        # Check type field
+        if type_lower:
+            if 'retard' in type_lower:
+                return 'Retard de livraison'
+            elif 'perdu' in type_lower:
+                return 'Colis perdu'
+            elif 'endommagé' in type_lower or 'cassé' in type_lower:
+                return 'Colis endommagé'
+        
+        return 'Problème général de livraison'
+
+    def get_resolution_time(self, problem: str) -> int:
+        problem_lower = problem.lower()
+        
+        if 'urgent' in problem_lower or 'grave' in problem_lower:
+            return 4  # 4 heures
+        elif 'perdu' in problem_lower:
+            return 48  # 2 jours
+        elif 'endommagé' in problem_lower or 'cassé' in problem_lower:
+            return 24  # 1 jour
+        elif 'retard' in problem_lower:
+            return 8  # 8 heures
+        elif 'paiement' in problem_lower:
+            return 12  # 12 heures
+        else:
+            return 24  # 1 jour par défaut
+
+    def get_priority(self, resolution_time: int) -> str:
+        if resolution_time <= 4:
+            return 'URGENT'
+        elif resolution_time <= 12:
+            return 'NORMAL'
+        else:
+            return 'FAIBLE'
+
+    def analyze_reclamation(self, reclamation: Reclamation) -> ReclamationAnalysis:
+        description = reclamation.description or ''
+        type_r = reclamation.type or reclamation.objet or ''
+        
+        sentiment = self.analyze_sentiment(description)
+        probleme = self.detect_problem(description, type_r)
+        resolution_time = self.get_resolution_time(probleme)
+        priority = self.get_priority(resolution_time)
+        
+        return ReclamationAnalysis(
+            priorite=priority,
+            sentiment=sentiment,
+            problemeDetecte=probleme,
+            suggestionAction=self.get_suggestion(probleme),
+            tempsResolutionEstime=resolution_time,
+            confidence=0.75
+        )
+
+    def get_suggestion(self, problem: str) -> str:
+        problem_lower = problem.lower()
+        
+        if 'perdu' in problem_lower:
+            return 'Lancer enquête immédiate et proposer remboursement'
+        elif 'endommagé' in problem_lower or 'cassé' in problem_lower:
+            return 'Demander photos et proposer remplacement'
+        elif 'retard' in problem_lower:
+            return 'Vérifier statut et proposer compensation'
+        elif 'paiement' in problem_lower:
+            return 'Vérifier bordereau et régulariser'
+        elif 'urgent' in problem_lower or 'grave' in problem_lower:
+            return 'Traitement prioritaire - contacter immédiatement'
+        else:
+            return 'Analyser et résoudre selon le contexte'
+
+ai_analyzer = SimpleAIAnalyzer()
+
+# API Endpoints
+@app.get("/")
+def root():
+    return {
+        "service": "BFExpress IA Service",
+        "version": "1.0.0",
+        "status": "running",
+        "endpoints": {
+            "/health": "Health check",
+            "/api/analyze-reclamation": "Analyser une réclamation",
+            "/api/detect-anomalies": "Détecter les anomalies"
+        }
+    }
+
+@app.get("/health")
+def health():
+    return {"status": "healthy"}
+
+@app.post("/api/analyze-reclamation")
+def analyze_reclamation(reclamation: Reclamation):
+    try:
+        analysis = ai_analyzer.analyze_reclamation(reclamation)
+        return analysis
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/detect-anomalies")
+def detect_anomalies(request: AnomalyDetectionRequest):
+    try:
+        reclamations = request.reclamations
+        anomalies = []
+        
+        # Détection des anomalies avec règles avancées
+        today = datetime.now()
+        
+        # 1. Pic de réclamations
+        recent_reclamations = []
+        for rec in reclamations:
+            if rec.dateCreation:
+                try:
+                    rec_date = datetime.fromisoformat(rec.dateCreation.replace('Z', '+00:00'))
+                    days_diff = (today - rec_date).days
+                    if days_diff <= 1:
+                        recent_reclamations.append(rec)
+                except:
+                    pass
+        
+        if len(recent_reclamations) > 5:
+            anomalies.append({
+                "type": "SPIKE_RECLAMATIONS",
+                "niveau": "HAUT",
+                "description": f"Pic de réclamations: {len(recent_reclamations)} aujourd'hui",
+                "actionRecommandee": "Investiguer la cause du pic (incident technique ?)"
+            })
+        
+        # 2. Clients irrités
+        client_counts = {}
+        for rec in reclamations:
+            if rec.clientId:
+                client_counts[rec.clientId] = client_counts.get(rec.clientId, 0) + 1
+        
+        irrite_clients = [cid for cid, count in client_counts.items() if count > 2]
+        if irrite_clients:
+            anomalies.append({
+                "type": "CLIENT_IRRITE",
+                "niveau": "MOYEN",
+                "description": f"{len(irrite_clients)} clients avec >2 réclamations",
+                "actionRecommandee": "Contacter les clients prioritairement"
+            })
+        
+        # 3. Problèmes récurrents
+        type_counts = {}
+        for rec in reclamations:
+            rec_type = rec.type or rec.objet or "Autre"
+            type_counts[rec_type] = type_counts.get(rec_type, 0) + 1
+        
+        recurrent_problems = [t for t, count in type_counts.items() if count > 3]
+        if recurrent_problems:
+            top_problem = max(recurrent_problems, key=lambda x: type_counts[x])
+            anomalies.append({
+                "type": "PROBLEME_RECURRENT",
+                "niveau": "MOYEN",
+                "description": f"Problème récurrent: {top_problem} ({type_counts[top_problem]}x)",
+                "actionRecommandee": "Analyser et résoudre le problème système"
+            })
+        
+        # 4. Réclamations urgentes en attente
+        urgent_pending = []
+        for rec in reclamations:
+            if rec.dateCreation and rec.statut == 'EN_ATTENTE':
+                try:
+                    rec_date = datetime.fromisoformat(rec.dateCreation.replace('Z', '+00:00'))
+                    days_diff = (today - rec_date).days
+                    if days_diff > 2:
+                        urgent_pending.append(rec)
+                except:
+                    pass
+        
+        if urgent_pending:
+            anomalies.append({
+                "type": "RECLAMATIONS_URGENTES",
+                "niveau": "HAUT",
+                "description": f"{len(urgent_pending)} réclamations urgentes en attente (>2 jours)",
+                "actionRecommandee": "Traiter prioritairement les réclamations en attente"
+            })
+        
+        # 5. Taux de résolution faible
+        resolved = len([r for r in reclamations if r.statut == 'RESOLUE'])
+        total = len(reclamations)
+        if total > 10:
+            resolution_rate = (resolved / total) * 100
+            if resolution_rate < 50:
+                anomalies.append({
+                    "type": "TAUX_RESOLUTION_FAIBLE",
+                    "niveau": "MOYEN",
+                    "description": f"Taux de résolution faible: {resolution_rate:.1f}%",
+                    "actionRecommandee": "Améliorer le processus de traitement"
+                })
+        
+        return AnomalyDetectionResponse(
+            anomalies=anomalies,
+            totalReclamations=len(reclamations),
+            processedDate=today.isoformat()
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8000))
+    host = os.getenv("HOST", "0.0.0.0")
+    reload = os.getenv("RELOAD", "False") == "True"
+    
+    if reload:
+        uvicorn.run("main:app", host=host, port=port, reload=True)
+    else:
+        uvicorn.run(app, host=host, port=port)
