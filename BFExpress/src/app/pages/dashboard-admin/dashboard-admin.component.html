@@ -200,7 +200,7 @@
             <tbody>
               <tr *ngFor="let order of filteredCommandes">
                 <td class="mono">#{{ order.id ? order.id.substring(order.id.length - 6) : 'N/A' }}</td>
-                <td>{{ order.dateCreation ? (order.dateCreation | date:'dd/MM/yy HH:mm') : '—' }}</td>
+                <td>{{ formatDateTime(order.dateCreation) }}</td>
                 <td>
                   <div class="path">
                     <span>{{ getDepartVille(order) }}</span>
@@ -219,7 +219,7 @@
                 </td>
                 <td>
                   <div class="dispatch" *ngIf="isOrderPending(order)">
-                    <select [(ngModel)]="selectedDrivers[order.id || '']">
+                    <select [ngModel]="getSelectedDriverForOrder(order.id)" (ngModelChange)="setSelectedDriverForOrder(order.id, $event)">
                       <option value="">Livreur...</option>
                       <option *ngFor="let l of getAvailableDrivers()" [value]="l.id">
                         {{ l.prenom }} {{ l.nom }} ({{ l.gouvernorat || '—' }})
@@ -271,8 +271,8 @@
           <button class="btn-link" (click)="resetManifestFilters()">Réinitialiser</button>
         </div>
         <div class="filter-grid">
-          <input class="search-input" [(ngModel)]="manifestFilters.search" placeholder="Rechercher référence, livreur..." />
-          <select [(ngModel)]="manifestFilters.statut" class="filter-select">
+          <input class="search-input" [ngModel]="manifestFilters.search" (ngModelChange)="manifestFilters.search = $event" placeholder="Rechercher référence, livreur..." />
+          <select [ngModel]="manifestFilters.statut" (ngModelChange)="manifestFilters.statut = $event" class="filter-select">
             <option value="">Tous statuts</option>
             <option value="IMPRIME">Imprimé</option>
             <option value="VALIDE">Validé</option>
@@ -280,13 +280,13 @@
             <option value="EN_LIVRAISON">En livraison</option>
             <option value="LIVRE">Livré</option>
           </select>
-          <select [(ngModel)]="manifestFilters.livreurId" class="filter-select">
+          <select [ngModel]="manifestFilters.livreurId" (ngModelChange)="manifestFilters.livreurId = $event" class="filter-select">
             <option value="">Tous livreurs</option>
             <option *ngFor="let l of livreurs" [value]="l.id">{{ l.prenom }} {{ l.nom }}</option>
           </select>
-          <input type="number" [(ngModel)]="manifestFilters.minColis" class="filter-input" placeholder="Min colis" />
-          <input type="date" [(ngModel)]="manifestFilters.dateDebut" class="filter-input" />
-          <input type="date" [(ngModel)]="manifestFilters.dateFin" class="filter-input" />
+          <input type="number" [ngModel]="manifestFilters.minColis" (ngModelChange)="manifestFilters.minColis = $event" class="filter-input" placeholder="Min colis" />
+          <input type="date" [ngModel]="manifestFilters.dateDebut" (ngModelChange)="manifestFilters.dateDebut = $event" class="filter-input" />
+          <input type="date" [ngModel]="manifestFilters.dateFin" (ngModelChange)="manifestFilters.dateFin = $event" class="filter-input" />
         </div>
       </div>
 
@@ -315,7 +315,7 @@
               <div class="muted">{{ getManifestColisCount(m) }} colis · {{ getManifestDate(m) }}</div>
             </div>
             <div class="row-actions">
-              <select [(ngModel)]="selectedDrivers[m.id || '']">
+              <select [ngModel]="getSelectedDriverForManifest(m.id)" (ngModelChange)="setSelectedDriverForManifest(m.id, $event)">
                 <option value="">Livreur...</option>
                 <option *ngFor="let l of getAvailableDrivers()" [value]="l.id">
                   {{ getDriverFullName(l) }}
@@ -738,11 +738,34 @@
     <!-- ========== CARTE ========== -->
     <div *ngIf="activeTab === 'carte'" class="tab-panel">
       <div class="card">
+        <div class="card-header">
+          <h3>Carte live temps réel</h3>
+          <div class="map-controls">
+            <button class="btn btn-secondary btn-sm" (click)="loadDepotsFromTracking()">🔄 Actualiser</button>
+            <button class="btn btn-secondary btn-sm" (click)="initializeWebSocket()">🔌 Reconnecter WebSocket</button>
+          </div>
+        </div>
+        
+        <!-- Filtres carte -->
+        <div class="map-filters">
+          <select [(ngModel)]="mapFilterStatut" class="filter-select" (change)="filterMapMarkers()">
+            <option value="">Tous statuts</option>
+            <option value="DISPONIBLE">Disponibles</option>
+            <option value="EN_COURSE">En course</option>
+            <option value="EN_PAUSE">En pause</option>
+          </select>
+          <select [(ngModel)]="mapFilterGouvernorat" class="filter-select" (change)="filterMapMarkers()">
+            <option value="">Tous gouvernorats</option>
+            <option *ngFor="let g of gouvernorats" [value]="g">{{ g }}</option>
+          </select>
+        </div>
+
         <div class="map-wrapper">
           <div id="admin-map" class="real-leaflet-map"></div>
           <div class="map-badges">
-            <span class="map-badge">{{ getAvailableDriversCount() }} disponibles</span>
-            <span class="map-badge">{{ getOrderCountByStatus('EN_LIVRAISON') }} en livraison</span>
+            <span class="map-badge badge-green">{{ getDriversDisponibles() }} disponibles</span>
+            <span class="map-badge badge-orange">{{ getDriversEnCourse() }} en course</span>
+            <span class="map-badge badge-purple">{{ getDepotsCount() }} dépôts</span>
           </div>
         </div>
       </div>
@@ -791,6 +814,32 @@
             <span class="dot" [class]="anomalie.niveau.toLowerCase()"></span>
             <span>{{ anomalie.description }}</span>
             <button class="btn-link" (click)="actionAnomalie(anomalie)">Voir</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Petit cadre IA (message) -->
+      <div class="ia-message-card" *ngIf="showIAModal">
+        <div class="ia-message-header">
+          <span class="ia-message-title">🤖 Analyse IA</span>
+          <button class="ia-close-btn" (click)="closeIAModal()">✕</button>
+        </div>
+        <div class="ia-message-body">
+          <div *ngIf="anomaliesDetectees.length === 0" class="ia-empty">
+            <p>Aucune anomalie détectée</p>
+          </div>
+          <div *ngIf="anomaliesDetectees.length > 0">
+            <div class="ia-summary">
+              <span class="ia-count">{{ anomaliesDetectees.length }} anomalie(s)</span>
+              <span class="ia-date">{{ getCurrentDateTime() }}</span>
+            </div>
+            <div class="ia-anomalies">
+              <div class="ia-anomaly-item" *ngFor="let anomalie of anomaliesDetectees" [class]="anomalie.niveau.toLowerCase()">
+                <span class="ia-anomaly-type">{{ anomalie.type }}</span>
+                <span class="ia-anomaly-desc">{{ anomalie.description }}</span>
+                <span class="ia-anomaly-action">{{ anomalie.actionRecommandee }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1142,7 +1191,7 @@
         <div><span class="icon">📦</span> Capacité (Kg) :</div>
         <div style="display: flex; align-items: center; gap: 0.5rem;">
           <input type="number" class="form-input" style="width: 80px; padding: 0.25rem 0.5rem;"
-                 [(ngModel)]="selectedVehicule.capaciteKg"
+                  [ngModel]="getVehicleCapacity()" (ngModelChange)="setVehicleCapacity($event)"
                  (change)="updateVehicleCapacity(selectedVehicule.id, selectedVehicule.capaciteKg)" />
         </div>
       </div>
@@ -1166,7 +1215,7 @@
 
     <div class="info-group">
       <h4>Gestion du Statut</h4>
-      <select class="w-full form-input" [(ngModel)]="selectedVehicule.statut" (change)="updateVehicleStatus(selectedVehicule.id, selectedVehicule.statut)">
+      <select class="w-full form-input" [ngModel]="getVehicleStatus()" (ngModelChange)="setVehicleStatus($event)" (change)="updateVehicleStatus(selectedVehicule.id, selectedVehicule.statut)">
         <option value="DISPONIBLE">Disponible (Au dépôt)</option>
         <option value="EN_SERVICE">En Service (Assigné)</option>
         <option value="EN_COURSE">En Course (Sur le terrain)</option>
@@ -1200,7 +1249,7 @@
       <div *ngIf="deliveriesHistory.length === 0" class="empty">Aucun historique</div>
       <div class="history-item" *ngFor="let h of deliveriesHistory">
         <div><strong>Livraison</strong> {{ h.livraison.id }}</div>
-        <div class="muted">{{ h.livraison.statut }} · {{ h.livraison.dateAffectation | date:'dd/MM/yyyy HH:mm' }}</div>
+        <div class="muted">{{ h.livraison.statut }} · {{ formatDateTime(h.livraison.dateAffectation) }}</div>
         <div *ngIf="h.positions?.length" class="muted">{{ h.positions.length }} positions GPS</div>
       </div>
     </div>

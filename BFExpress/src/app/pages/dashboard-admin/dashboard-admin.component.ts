@@ -4,6 +4,7 @@ import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService, Commande, Livreur } from '../../services/api.service';
 import { AuthService, UserProfile } from '../../services/auth.service';
+import { io, Socket } from 'socket.io-client';
 
 export interface Depot {
   id?: string;
@@ -83,6 +84,7 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   adminCommentaire = '';
   
   showResponseModal = false;
+  showIAModal = false;
   activeResponseTab: 'FORMELLE' | 'EMPATHIQUE' | 'TECHNIQUE' = 'EMPATHIQUE';
   responseText = '';
 
@@ -143,6 +145,13 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
   searchFilter = '';
   private adminMap: any = null;
+  private socket: Socket | null = null;
+  private trackingServiceUrl = 'http://localhost:8090';
+  private iaServiceUrl = 'http://localhost:8001';
+  private driverPositions: any[] = [];
+  private depotsPositions: any[] = [];
+  mapFilterStatut: string = '';
+  mapFilterGouvernorat: string = '';
 
   gouvernorats: string[] = [
     'Tunis', 'Ariana', 'Ben Arous', 'Manouba', 'Nabeul', 'Zaghouan',
@@ -189,6 +198,7 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.refreshData();
     this.startRealTimeUpdates();
+    this.initializeWebSocket();
   }
 
   ngOnDestroy(): void {
@@ -196,6 +206,7 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
       clearInterval(this.refreshInterval);
       this.refreshInterval = null;
     }
+    this.disconnectWebSocket();
   }
 
   private startRealTimeUpdates(): void {
@@ -323,6 +334,7 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   openCarteTab(): void {
     this.activeTab = 'carte';
     this.initMapAdmin();
+    this.loadDepotsFromTracking();
   }
 
   initMapAdmin(): void {
@@ -342,12 +354,8 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(this.adminMap);
 
-      this.livreurs.forEach(l => {
-        const lat = l.latitudeActuelle || 36.8065 + (Math.random() - 0.5) * 0.2;
-        const lon = l.longitudeActuelle || 10.1815 + (Math.random() - 0.5) * 0.2;
-        const popupText = `<b>${l.nom} ${l.prenom}</b><br>Statut: ${l.statut || 'DISPONIBLE'}<br>Gouvernorat: ${l.gouvernorat || 'Tunis'}`;
-        L.marker([lat, lon]).addTo(this.adminMap).bindPopup(popupText);
-      });
+      // Utiliser les données réelles du tracking service
+      this.updateMapWithRealData();
     }, 200);
   }
 
@@ -1014,10 +1022,6 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     return this.manifests.length === 0;
   }
 
-  getSelectedDriverForManifest(manifestId: string): string {
-    return this.selectedDrivers[manifestId || ''] || '';
-  }
-
   isManifestDriverSelected(manifestId: string): boolean {
     return !!this.selectedDrivers[manifestId || ''];
   }
@@ -1499,6 +1503,18 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     });
   }
 
+  formatDateTime(dateString: string): string {
+    return this.formatDate(dateString);
+  }
+
+  getDaysSince(dateString?: string): number {
+    if (!dateString) return 0;
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  }
+
   // ========== RECLAMATIONS AMÉLIORÉES ==========
   
   get filteredReclamations(): any[] {
@@ -1614,14 +1630,6 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     return this.reclamations.filter(rec => rec.clientId === clientId).length;
   }
 
-  getDaysSince(dateString?: string): number {
-    if (!dateString) return 0;
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  }
-
   resetReclamationFilters(): void {
     this.reclamationFilters = {
       search: '',
@@ -1634,54 +1642,87 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   // ========== ANALYSE IA RECLAMATIONS ==========
   
   analyserReclamationsIA(): void {
+    console.log('🔍 Début analyse IA - Réclamations:', this.reclamations.length);
     this.showToast('Analyse IA en cours...', 'info');
     
-    // Appel réel API pour détecter les anomalies
+    // Appel réel au service IA
     this.apiService.detecterAnomaliesReclamations(this.reclamations, 7).subscribe({
       next: (response) => {
+        console.log('🔍 Réponse IA reçue:', response);
         this.anomaliesDetectees = response.anomalies || [];
         this.classifierReclamations();
-        this.showToast('Analyse IA terminée', 'success');
+        
+        // Ouvrir le modal avec les résultats
+        this.showIAModal = true;
+        
+        if (this.anomaliesDetectees.length === 0) {
+          this.showToast('Aucune anomalie détectée', 'info');
+        } else {
+          this.showToast(`${this.anomaliesDetectees.length} anomalie(s) détectée(s)`, 'success');
+        }
       },
       error: (err) => {
         console.error('Erreur IA anomalies:', err);
         // Fallback vers détection locale
         this.detecterAnomalies();
         this.classifierReclamations();
-        this.showToast('Analyse IA locale (erreur API)', 'info');
+        
+        // Ouvrir le modal avec les résultats locaux
+        this.showIAModal = true;
+        
+        this.showToast('Analyse locale activée (service IA indisponible)', 'info');
       }
     });
   }
 
+  getCurrentDateTime(): string {
+    const now = new Date();
+    return now.toLocaleDateString('fr-FR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  closeIAModal(): void {
+    this.showIAModal = false;
+  }
+
   detecterAnomalies(): void {
-    // Fallback local si API IA indisponible
+    // Analyse locale améliorée avec règles avancées
     this.anomaliesDetectees = [];
     
     const recentReclamations = this.reclamations.filter(rec => 
       this.getDaysSince(rec.dateCreation) <= 1
     );
     
+    // 1. Pic de réclamations (>5 dans les 24h)
     if (recentReclamations.length > 5) {
       this.anomaliesDetectees.push({
         type: 'SPIKE_RECLAMATIONS',
         niveau: 'HAUT',
         description: `Pic de réclamations: ${recentReclamations.length} aujourd'hui`,
-        actionRecommandee: 'Investiguer la cause du pic'
+        actionRecommandee: 'Investiguer la cause du pic (incident technique ?)'
       });
     }
     
+    // 2. Clients irrités (>2 réclamations récentes)
     const clientCounts = this.getClientReclamationCounts();
     const irriteClients = clientCounts.filter(c => c.count > 2);
     
     if (irriteClients.length > 0) {
+      const topClient = irriteClients.sort((a, b) => b.count - a.count)[0];
       this.anomaliesDetectees.push({
         type: 'CLIENT_IRRITE',
         niveau: 'MOYEN',
-        description: `${irriteClients.length} clients avec >2 réclamations`,
-        actionRecommandee: 'Contacter les clients prioritairement'
+        description: `${irriteClients.length} clients avec >2 réclamations (max: ${topClient.count})`,
+        actionRecommandee: `Contacter prioritairement le client ${topClient.clientId}`
       });
     }
     
+    // 3. Problèmes récurrents (>3 fois le même type)
     const typeCounts = this.getTypeReclamationCounts();
     const recurrentProblems = typeCounts.filter(t => t.count > 3);
     
@@ -1694,36 +1735,49 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
         actionRecommandee: 'Analyser et résoudre le problème système'
       });
     }
+    
+    // 4. Réclamations urgentes en attente
+    const urgentPending = this.reclamations.filter(rec => 
+      rec.statut === 'EN_ATTENTE' && 
+      this.getDaysSince(rec.dateCreation) > 2
+    );
+    
+    if (urgentPending.length > 0) {
+      this.anomaliesDetectees.push({
+        type: 'RECLAMATIONS_URGENTES',
+        niveau: 'HAUT',
+        description: `${urgentPending.length} réclamations urgentes en attente (>2 jours)`,
+        actionRecommandee: 'Traiter prioritairement les réclamations en attente'
+      });
+    }
+    
+    // 5. Taux de résolution faible
+    const resolved = this.reclamations.filter(r => r.statut === 'RESOLUE').length;
+    const total = this.reclamations.length;
+    const resolutionRate = total > 0 ? (resolved / total) * 100 : 0;
+    
+    if (total > 10 && resolutionRate < 50) {
+      this.anomaliesDetectees.push({
+        type: 'TAUX_RESOLUTION_FAIBLE',
+        niveau: 'MOYEN',
+        description: `Taux de résolution faible: ${resolutionRate.toFixed(1)}%`,
+        actionRecommandee: 'Améliorer le processus de traitement des réclamations'
+      });
+    }
   }
 
   classifierReclamations(): void {
-    // Analyser chaque réclamation avec l'IA
+    // Analyser chaque réclamation avec l'analyse locale
     this.reclamations.forEach(rec => {
       if (!this.reclamationsAnalysis[rec.id]) {
-        this.analyserReclamationIA(rec);
+        this.reclamationsAnalysis[rec.id] = this.analyserReclamationRuleBased(rec);
       }
     });
   }
 
   analyserReclamationIA(reclamation: any): void {
-    // Appel API réel pour analyser une réclamation
-    this.apiService.analyserReclamation(
-      reclamation.id,
-      reclamation.description || '',
-      reclamation.type || reclamation.objet,
-      reclamation.clientId,
-      reclamation.commandeId,
-      reclamation.dateCreation
-    ).subscribe({
-      next: (analysis) => {
-        this.reclamationsAnalysis[reclamation.id] = analysis;
-      },
-      error: (err) => {
-        console.error('Erreur analyse réclamation:', err);
-        // Fallback vers analyse rule-based locale
-        this.reclamationsAnalysis[reclamation.id] = this.analyserReclamationRuleBased(reclamation);
-      }
-    });
+    // Utiliser directement l'analyse locale (sans appel API)
+    this.reclamationsAnalysis[reclamation.id] = this.analyserReclamationRuleBased(reclamation);
   }
 
   analyserReclamationRuleBased(reclamation: any): any {
@@ -1990,6 +2044,317 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     return 'status-' + (order.statut || 'EN_ATTENTE').toLowerCase();
   }
 
+  // ========== WEBSOCKET TRACKING ==========
+  initializeWebSocket(): void {
+    try {
+      this.socket = io(this.trackingServiceUrl);
+      
+      this.socket.on('connect', () => {
+        console.log('🔌 WebSocket connecté au tracking service');
+        this.socket.emit('subscribe-positions');
+        this.socket.emit('subscribe-admin-notifications');
+      });
+
+      this.socket.on('initial-positions', (positions: any[]) => {
+        console.log('📍 Positions initiales reçues:', positions.length);
+        this.driverPositions = positions;
+        if (this.activeTab === 'carte') {
+          this.updateMapWithRealData();
+        }
+      });
+
+      this.socket.on('position-update', (data: any) => {
+        console.log('🔄 Position mise à jour:', data.livreurId);
+        this.updateDriverPosition(data);
+        if (this.activeTab === 'carte') {
+          this.updateMarkerPosition(data);
+        }
+      });
+
+      this.socket.on('status-update', (data: any) => {
+        console.log('📊 Statut mis à jour:', data.livreurId, data.statut);
+        this.updateDriverStatus(data);
+        if (this.activeTab === 'carte') {
+          this.updateMarkerStatus(data);
+        }
+      });
+
+      this.socket.on('admin-alert', (alert: any) => {
+        console.log('🚨 Alerte admin:', alert);
+        this.showToast(alert.message, 'info');
+      });
+
+      this.socket.on('depot-added', (depot: any) => {
+        console.log('🏬 Nouveau dépôt:', depot.nom);
+        this.depotsPositions.push(depot);
+        if (this.activeTab === 'carte') {
+          this.addDepotToMap(depot);
+        }
+      });
+
+      this.socket.on('disconnect', () => {
+        console.log('🔌 WebSocket déconnecté');
+      });
+
+      this.socket.on('connect_error', (error) => {
+        console.error('❌ Erreur WebSocket:', error);
+      });
+
+    } catch (error) {
+      console.error('❌ Erreur initialisation WebSocket:', error);
+    }
+  }
+
+  disconnectWebSocket(): void {
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
+  }
+
+  updateDriverPosition(data: any): void {
+    const existingIndex = this.driverPositions.findIndex(d => d.livreurId === data.livreurId);
+    if (existingIndex >= 0) {
+      this.driverPositions[existingIndex] = { ...this.driverPositions[existingIndex], ...data };
+    } else {
+      this.driverPositions.push(data);
+    }
+  }
+
+  updateDriverStatus(data: any): void {
+    const driver = this.driverPositions.find(d => d.livreurId === data.livreurId);
+    if (driver) {
+      driver.statut = data.statut;
+    }
+  }
+
+  // ========== MAP REAL DATA ==========
+  updateMapWithRealData(): void {
+    if (!this.adminMap) return;
+
+    const L = (window as any).L;
+    
+    // Nettoyer les marqueurs existants
+    this.adminMap.eachLayer((layer: any) => {
+      if (layer instanceof L.Marker) {
+        this.adminMap.removeLayer(layer);
+      }
+    });
+
+    // Ajouter les marqueurs des livreurs avec couleurs par statut
+    this.driverPositions.forEach(driver => {
+      const lat = driver.position?.latitude || 36.8065;
+      const lon = driver.position?.longitude || 10.1815;
+      
+      const markerColor = this.getMarkerColorByStatus(driver.statut);
+      const markerIcon = L.divIcon({
+        className: 'custom-marker',
+        html: `<div style="background: ${markerColor}; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>`,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+      });
+
+      const popupText = `
+        <b>${driver.nom} ${driver.prenom}</b><br>
+        Statut: ${driver.statut || 'DISPONIBLE'}<br>
+        Gouvernorat: ${driver.gouvernorat || '—'}<br>
+        Vitesse: ${driver.position?.speed || 0} km/h<br>
+        Véhicule: ${driver.vehicule?.immatriculation || '—'}
+      `;
+
+      L.marker([lat, lon], { icon: markerIcon })
+        .addTo(this.adminMap)
+        .bindPopup(popupText);
+    });
+
+    // Ajouter les dépôts
+    this.depotsPositions.forEach(depot => {
+      const lat = depot.position?.latitude || 36.8065;
+      const lon = depot.position?.longitude || 10.1815;
+      
+      const depotIcon = L.divIcon({
+        className: 'depot-marker',
+        html: `<div style="background: #8b5cf6; width: 40px; height: 40px; border-radius: 8px; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 18px;">🏬</div>`,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20]
+      });
+
+      const depotPopup = `
+        <b>${depot.nom}</b><br>
+        Ville: ${depot.ville}<br>
+        Capacité: ${depot.capaciteActuelle || 0}/${depot.capacite}<br>
+        Statut: ${depot.statut}
+      `;
+
+      L.marker([lat, lon], { icon: depotIcon })
+        .addTo(this.adminMap)
+        .bindPopup(depotPopup);
+    });
+  }
+
+  updateMarkerPosition(data: any): void {
+    if (!this.adminMap) return;
+    const L = (window as any).L;
+    
+    // Trouver et mettre à jour le marqueur correspondant
+    this.adminMap.eachLayer((layer: any) => {
+      if (layer instanceof L.Marker) {
+        const popup = layer.getPopup();
+        if (popup && popup.getContent().includes(data.livreurId)) {
+          const lat = data.position?.latitude;
+          const lon = data.position?.longitude;
+          if (lat && lon) {
+            layer.setLatLng([lat, lon]);
+          }
+        }
+      }
+    });
+  }
+
+  updateMarkerStatus(data: any): void {
+    if (!this.adminMap) return;
+    const L = (window as any).L;
+    
+    this.adminMap.eachLayer((layer: any) => {
+      if (layer instanceof L.Marker) {
+        const popup = layer.getPopup();
+        if (popup && popup.getContent().includes(data.livreurId)) {
+          const markerColor = this.getMarkerColorByStatus(data.statut);
+          const newIcon = L.divIcon({
+            className: 'custom-marker',
+            html: `<div style="background: ${markerColor}; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>`,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+          });
+          layer.setIcon(newIcon);
+          
+          // Mettre à jour le popup
+          const popupContent = popup.getContent();
+          const updatedContent = popupContent.replace(/Statut: [^<]+/, `Statut: ${data.statut}`);
+          layer.setPopupContent(updatedContent);
+        }
+      }
+    });
+  }
+
+  addDepotToMap(depot: any): void {
+    if (!this.adminMap) return;
+    const L = (window as any).L;
+    
+    const lat = depot.position?.latitude || 36.8065;
+    const lon = depot.position?.longitude || 10.1815;
+    
+    const depotIcon = L.divIcon({
+      className: 'depot-marker',
+      html: `<div style="background: #8b5cf6; width: 40px; height: 40px; border-radius: 8px; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 18px;">🏬</div>`,
+      iconSize: [40, 40],
+      iconAnchor: [20, 20]
+    });
+
+    const depotPopup = `
+      <b>${depot.nom}</b><br>
+      Ville: ${depot.ville}<br>
+      Capacité: ${depot.capaciteActuelle || 0}/${depot.capacite}<br>
+      Statut: ${depot.statut}
+    `;
+
+    L.marker([lat, lon], { icon: depotIcon })
+      .addTo(this.adminMap)
+      .bindPopup(depotPopup);
+  }
+
+  getMarkerColorByStatus(statut: string): string {
+    switch (statut) {
+      case 'DISPONIBLE': return '#10b981'; // Vert
+      case 'EN_COURSE': return '#f59e0b'; // Orange
+      case 'EN_PAUSE': return '#64748b'; // Gris
+      case 'HORS_SERVICE': return '#ef4444'; // Rouge
+      default: return '#3b82f6'; // Bleu
+    }
+  }
+
+  filterMapMarkers(): void {
+    if (!this.adminMap) return;
+    const L = (window as any).L;
+    
+    // Nettoyer les marqueurs
+    this.adminMap.eachLayer((layer: any) => {
+      if (layer instanceof L.Marker) {
+        this.adminMap.removeLayer(layer);
+      }
+    });
+
+    // Filtrer et afficher les positions
+    const filteredPositions = this.driverPositions.filter(driver => {
+      if (this.mapFilterStatut && driver.statut !== this.mapFilterStatut) return false;
+      if (this.mapFilterGouvernorat && driver.gouvernorat !== this.mapFilterGouvernorat) return false;
+      return true;
+    });
+
+    // Réafficher les marqueurs filtrés
+    filteredPositions.forEach(driver => {
+      const lat = driver.position?.latitude || 36.8065;
+      const lon = driver.position?.longitude || 10.1815;
+      
+      const markerColor = this.getMarkerColorByStatus(driver.statut);
+      const markerIcon = L.divIcon({
+        className: 'custom-marker',
+        html: `<div style="background: ${markerColor}; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>`,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+      });
+
+      const popupText = `
+        <b>${driver.nom} ${driver.prenom}</b><br>
+        Statut: ${driver.statut || 'DISPONIBLE'}<br>
+        Gouvernorat: ${driver.gouvernorat || '—'}<br>
+        Vitesse: ${driver.position?.speed || 0} km/h<br>
+        Véhicule: ${driver.vehicule?.immatriculation || '—'}
+      `;
+
+      L.marker([lat, lon], { icon: markerIcon })
+        .addTo(this.adminMap)
+        .bindPopup(popupText);
+    });
+
+    // Toujours afficher les dépôts
+    this.depotsPositions.forEach(depot => {
+      const lat = depot.position?.latitude || 36.8065;
+      const lon = depot.position?.longitude || 10.1815;
+      
+      const depotIcon = L.divIcon({
+        className: 'depot-marker',
+        html: `<div style="background: #8b5cf6; width: 40px; height: 40px; border-radius: 8px; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 18px;">🏬</div>`,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20]
+      });
+
+      const depotPopup = `
+        <b>${depot.nom}</b><br>
+        Ville: ${depot.ville}<br>
+        Capacité: ${depot.capaciteActuelle || 0}/${depot.capacite}<br>
+        Statut: ${depot.statut}
+      `;
+
+      L.marker([lat, lon], { icon: depotIcon })
+        .addTo(this.adminMap)
+        .bindPopup(depotPopup);
+    });
+  }
+
+  async loadDepotsFromTracking(): Promise<void> {
+    try {
+      const response = await fetch(`${this.trackingServiceUrl}/api/depots`);
+      const depots = await response.json();
+      this.depotsPositions = depots;
+      if (this.activeTab === 'carte') {
+        this.updateMapWithRealData();
+      }
+    } catch (error) {
+      console.error('Erreur chargement dépôts:', error);
+    }
+  }
+
   // ========== VEHICULES ==========
   showVehiculePanel = false;
   selectedVehicule: any = null;
@@ -2001,6 +2366,52 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
   getVehiculesMaintenance(): number {
     return this.vehicules.filter(v => v.statut === 'MAINTENANCE').length;
+  }
+
+  // Map getters pour éviter les expressions complexes dans le template
+  getDriversDisponibles(): number {
+    return this.driverPositions.filter(d => d.statut === 'DISPONIBLE').length;
+  }
+
+  getDriversEnCourse(): number {
+    return this.driverPositions.filter(d => d.statut === 'EN_COURSE').length;
+  }
+
+  getDepotsCount(): number {
+    return this.depotsPositions.length;
+  }
+
+  // Helper methods pour les expressions complexes du template
+  getSelectedDriverForOrder(orderId: string): string {
+    return this.selectedDrivers[orderId || ''] || '';
+  }
+
+  setSelectedDriverForOrder(orderId: string, value: string): void {
+    this.selectedDrivers[orderId || ''] = value;
+  }
+
+  getSelectedDriverForManifest(manifestId: string): string {
+    return this.selectedDrivers[manifestId || ''] || '';
+  }
+
+  setSelectedDriverForManifest(manifestId: string, value: string): void {
+    this.selectedDrivers[manifestId || ''] = value;
+  }
+
+  setVehicleCapacity(value: number): void {
+    this.selectedVehicule.capaciteKg = value;
+  }
+
+  getVehicleCapacity(): number {
+    return this.selectedVehicule.capaciteKg || 0;
+  }
+
+  setVehicleStatus(value: string): void {
+    this.selectedVehicule.statut = value;
+  }
+
+  getVehicleStatus(): string {
+    return this.selectedVehicule.statut || '';
   }
 
   getCapaciteTotaleKg(): number {

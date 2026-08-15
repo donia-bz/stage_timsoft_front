@@ -623,9 +623,9 @@ export class ApiService {
   }
 
   detecterAnomaliesReclamations(reclamations: any[], periodeJours: number = 7): Observable<any> {
-    return this.http.post<any>(`${this.iaUrl}/api/ia/anomalies-reclamations`, {
+    return this.http.post<any>(`${this.iaUrl}/api/detect-anomalies`, {
       reclamations: reclamations,
-      periode_jours: periodeJours
+      days: periodeJours
     });
   }
 
