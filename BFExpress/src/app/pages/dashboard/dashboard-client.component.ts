@@ -5,6 +5,8 @@ import { RouterModule, Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ApiService, Commande } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+import { PdfService } from '../../services/pdf.service';
+import { io, Socket } from 'socket.io-client';
 
 export interface Reclamation {
   id?: string;
@@ -23,6 +25,13 @@ export interface TeamMember {
   photo?: string;
   rating?: number;
   bio?: string;
+  // Nouvelles propriétés pour profils enrichis
+  photoUrl?: string;
+  disponibility: 'DISPONIBLE' | 'EN_APPEL' | 'ABSENT' | 'DEJEUNE';
+  langues: string[];
+  specialisations: string[];
+  notes?: string;
+  isFavorite?: boolean;
 }
 
 @Component({
@@ -47,6 +56,39 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
   searchTerm = '';
   searchResult: Commande | null = null;
   showManifestHistory = false;
+
+  // Manifest view and filters
+  manifestViewMode: 'list' | 'grid' = 'list';
+  manifestFilters = {
+    governorate: '',
+    minCOD: 0,
+    maxCOD: 0,
+    serviceType: '',
+    search: ''
+  };
+  selectedColis: Set<string> = new Set();
+  clientInfo: any = null;
+
+  // Real-time tracking
+  private socket: Socket | null = null;
+  private trackingServiceUrl = 'http://localhost:8090';
+  manifestNotifications: any[] = [];
+  manifestStatusUpdates: any[] = [];
+
+  // Service Client enhancements
+  showMemberDetail = false;
+  selectedMember: TeamMember | null = null;
+  serviceStats = {
+    totalMembers: 0,
+    available: 0,
+    inCall: 0,
+    absent: 0,
+    avgResponseTime: '1h 30min'
+  };
+  showRdvModal = false;
+  memberNotes: string = '';
+  rdvDate = '';
+  rdvTime = '';
 
   loading = false;
   errorMessage = '';
@@ -93,7 +135,12 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
       poste: 'Responsable Service Client',
       tel: '+216 98 218 003',
       rating: 4.9,
-      bio: 'Spécialiste des réclamations et du suivi des livraisons.'
+      bio: 'Spécialiste des réclamations et du suivi des livraisons.',
+      photoUrl: 'https://randomuser.me/api/portraits/men/32.jpg',
+      disponibility: 'DISPONIBLE',
+      langues: ['Français', 'Arabe', 'Anglais'],
+      specialisations: ['Réclamations', 'Suivi livraisons', 'Facturation'],
+      isFavorite: true
     },
     {
       initials: 'DB',
@@ -101,7 +148,11 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
       poste: 'Service Client',
       tel: '+216 57 178 469',
       rating: 4.8,
-      bio: 'Accompagnement des clients professionnels et gestion des retours.'
+      bio: 'Accompagnement des clients professionnels et gestion des retours.',
+      photoUrl: 'https://randomuser.me/api/portraits/women/44.jpg',
+      disponibility: 'EN_APPEL',
+      langues: ['Français', 'Anglais'],
+      specialisations: ['Support technique', 'API', 'Intégration']
     },
     {
       initials: 'CB',
@@ -109,7 +160,11 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
       poste: 'Service Client',
       tel: '+216 57 178 491',
       rating: 4.7,
-      bio: 'Support technique et assistance pour les nouveaux clients.'
+      bio: 'Support technique et assistance pour les nouveaux clients.',
+      photoUrl: 'https://randomuser.me/api/portraits/women/28.jpg',
+      disponibility: 'ABSENT',
+      langues: ['Français', 'Arabe'],
+      specialisations: ['Support technique', 'Onboarding', 'Formation']
     }
   ];
 
@@ -132,7 +187,8 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private apiService: ApiService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private pdfService: PdfService
   ) {
     this.initForms();
   }
@@ -142,17 +198,67 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
     if (user) {
       this.clientName = `${user.prenom || ''} ${user.nom || ''}`.trim() || 'Client';
       this.clientId = user.id;
+      this.clientInfo = {
+        id: user.id,
+        name: this.clientName,
+        phone: ''
+      };
       this.loadClientCommandes();
       this.loadReclamations();
       this.loadManifests();
       this.startRealTimeUpdates();
+      this.initializeTrackingSocket();
+      this.updateServiceStats();
     }
   }
 
   ngOnDestroy(): void {
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
-      this.refreshInterval = null;
+    }
+    this.disconnectTrackingSocket();
+  }
+
+  private initializeTrackingSocket(): void {
+    try {
+      this.socket = io(this.trackingServiceUrl);
+
+      this.socket.on('connect', () => {
+        console.log('🔌 Socket tracking connecté');
+        // S'abonner aux notifications client
+        this.socket.emit('subscribe-client-notifications', this.clientId);
+      });
+
+      this.socket.on('manifest-status-update', (data: any) => {
+        console.log('📢 Mise à jour statut manifeste:', data);
+        this.manifestStatusUpdates.unshift({
+          ...data,
+          timestamp: new Date()
+        });
+        
+        // Mettre à jour le manifeste local si nécessaire
+        const manifestIndex = this.validatedManifests.findIndex(m => m.id === data.manifestId);
+        if (manifestIndex !== -1) {
+          this.validatedManifests[manifestIndex].statut = data.statut;
+        }
+      });
+
+      this.socket.on('disconnect', () => {
+        console.log('🔌 Socket tracking déconnecté');
+      });
+
+      this.socket.on('connect_error', (error: any) => {
+        console.error('❌ Erreur connexion socket tracking:', error);
+      });
+    } catch (error) {
+      console.error('❌ Erreur initialisation socket tracking:', error);
+    }
+  }
+
+  private disconnectTrackingSocket(): void {
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
     }
   }
 
@@ -536,11 +642,19 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
         this.apiService.validerManifeste(manifest.id).subscribe({
           next: () => {
             this.loading = false;
+            
+            // Enregistrer dans le tracking service
+            const totalCOD = this.calculateManifestTotal();
+            this.registerManifestTracking(manifest.id, totalCOD);
+            
             this.pendingCommandes = [];
             this.loadClientCommandes();
             this.loadManifests();
             this.errorMessage = '';
             this.successMessage = 'Manifeste validé avec succès!';
+            
+            // Générer le PDF du manifeste
+            this.pdfService.generateManifestPDF(manifest, [], this.clientInfo);
           },
           error: (err) => {
             this.loading = false;
@@ -561,12 +675,170 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
     this.pendingCommandes = this.pendingCommandes.filter(c => c.id !== cmd.id);
   }
 
-  imprimerEtiquette(cmd: Commande): void {
-    window.print();
+  private registerManifestTracking(manifestId: string, totalCOD: number): void {
+    if (!this.socket) return;
+
+    this.socket.emit('register-manifest', {
+      manifestId,
+      clientId: this.clientId,
+      clientName: this.clientName,
+      nombreColis: this.pendingCommandes.length,
+      totalCOD
+    });
   }
 
-  reprintManifest(manifest: any): void {
-    window.print();
+  // ========== MANIFEST VIEW & FILTERS ==========
+  toggleManifestView(): void {
+    this.manifestViewMode = this.manifestViewMode === 'list' ? 'grid' : 'list';
+  }
+
+  toggleColisSelection(colisId: string): void {
+    if (this.selectedColis.has(colisId)) {
+      this.selectedColis.delete(colisId);
+    } else {
+      this.selectedColis.add(colisId);
+    }
+  }
+
+  selectAllColis(): void {
+    this.pendingCommandes.forEach(cmd => {
+      if (cmd.id) {
+        this.selectedColis.add(cmd.id);
+      }
+    });
+  }
+
+  deselectAllColis(): void {
+    this.selectedColis.clear();
+  }
+
+  getFilteredPendingCommandes(): Commande[] {
+    let filtered = [...this.pendingCommandes];
+
+    // Search filter
+    if (this.manifestFilters.search) {
+      const search = this.manifestFilters.search.toLowerCase();
+      filtered = filtered.filter(cmd => 
+        (cmd.codeBarre || cmd.id || '').toLowerCase().includes(search) ||
+        (cmd.nomDestinataire || '').toLowerCase().includes(search) ||
+        (cmd.telephone || '').includes(search)
+      );
+    }
+
+    // Governorate filter (using adresseArrivee.gouvernorat)
+    if (this.manifestFilters.governorate) {
+      filtered = filtered.filter(cmd => 
+        cmd.adresseArrivee?.gouvernorat === this.manifestFilters.governorate
+      );
+    }
+
+    // Service type filter
+    if (this.manifestFilters.serviceType) {
+      filtered = filtered.filter(cmd => 
+        cmd.typeService === this.manifestFilters.serviceType
+      );
+    }
+
+    // COD range filter
+    if (this.manifestFilters.minCOD > 0) {
+      filtered = filtered.filter(cmd => 
+        (cmd.montantTotal || 0) >= this.manifestFilters.minCOD
+      );
+    }
+
+    if (this.manifestFilters.maxCOD > 0) {
+      filtered = filtered.filter(cmd => 
+        (cmd.montantTotal || 0) <= this.manifestFilters.maxCOD
+      );
+    }
+
+    return filtered;
+  }
+
+  resetManifestFilters(): void {
+    this.manifestFilters = {
+      governorate: '',
+      minCOD: 0,
+      maxCOD: 0,
+      serviceType: '',
+      search: ''
+    };
+    this.selectedColis.clear();
+  }
+
+  // ========== MANIFEST STATISTICS ==========
+  getManifestStats(): any {
+    const commandes = this.validatedManifests;
+    if (commandes.length === 0) {
+      return {
+        totalManifests: 0,
+        avgColisPerManifest: 0,
+        totalColis: 0,
+        totalCOD: 0
+      };
+    }
+
+    const totalColis = commandes.reduce((sum, m) => sum + (m.nombreColis || 0), 0);
+    const totalCOD = commandes.reduce((sum, m) => sum + (m.totalCOD || 0), 0);
+
+    return {
+      totalManifests: commandes.length,
+      avgColisPerManifest: Math.round(totalColis / commandes.length),
+      totalColis: totalColis,
+      totalCOD: totalCOD
+    };
+  }
+
+  formatDate(date: Date | string | undefined): string {
+    if (!date) return '—';
+    try {
+      const d = new Date(date);
+      return d.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return String(date);
+    }
+  }
+
+  async imprimerEtiquette(cmd: Commande): Promise<void> {
+    try {
+      await this.pdfService.generateShippingLabel(cmd, this.clientInfo);
+      this.successMessage = 'Étiquette générée avec succès';
+      setTimeout(() => this.successMessage = '', 3000);
+    } catch (error) {
+      console.error('Erreur génération étiquette:', error);
+      this.errorMessage = 'Erreur lors de la génération de l\'étiquette';
+      setTimeout(() => this.errorMessage = '', 3000);
+    }
+  }
+
+  async imprimerToutesEtiquettes(): Promise<void> {
+    try {
+      await this.pdfService.generateBulkShippingLabels(this.pendingCommandes, this.clientInfo);
+      this.successMessage = 'Étiquettes générées avec succès';
+      setTimeout(() => this.successMessage = '', 3000);
+    } catch (error) {
+      console.error('Erreur génération étiquettes:', error);
+      this.errorMessage = 'Erreur lors de la génération des étiquettes';
+      setTimeout(() => this.errorMessage = '', 3000);
+    }
+  }
+
+  async reprintManifest(manifest: any): Promise<void> {
+    try {
+      await this.pdfService.generateManifestPDF(manifest, manifest.colis || [], this.clientInfo);
+      this.successMessage = 'Manifeste réimprimé avec succès';
+      setTimeout(() => this.successMessage = '', 3000);
+    } catch (error) {
+      console.error('Erreur réimpression manifeste:', error);
+      this.errorMessage = 'Erreur lors de la réimpression du manifeste';
+      setTimeout(() => this.errorMessage = '', 3000);
+    }
   }
 
   // ========== RECHERCHE ==========
@@ -688,14 +960,74 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
     window.open(`tel:${member.tel}`, '_self');
   }
 
-  formatDate(date: Date | string | undefined): string {
-    if (!date) return '—';
-    return new Date(date).toLocaleDateString('fr-TN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  // ========== SERVICE CLIENT ENHANCEMENTS ==========
+  updateServiceStats(): void {
+    this.serviceStats.totalMembers = this.teamMembers.length;
+    this.serviceStats.available = this.teamMembers.filter(m => m.disponibility === 'DISPONIBLE').length;
+    this.serviceStats.inCall = this.teamMembers.filter(m => m.disponibility === 'EN_APPEL').length;
+    this.serviceStats.absent = this.teamMembers.filter(m => m.disponibility === 'ABSENT').length;
+  }
+
+  getAvailabilityClass(disponibility: string): string {
+    switch (disponibility) {
+      case 'DISPONIBLE': return 'available';
+      case 'EN_APPEL': return 'in-call';
+      case 'ABSENT': return 'absent';
+      case 'DEJEUNE': return 'away';
+      default: return 'unknown';
+    }
+  }
+
+  getAvailabilityLabel(disponibility: string): string {
+    switch (disponibility) {
+      case 'DISPONIBLE': return 'Disponible';
+      case 'EN_APPEL': return 'En appel';
+      case 'ABSENT': return 'Absent';
+      case 'DEJEUNE': return 'En pause';
+      default: return 'Inconnu';
+    }
+  }
+
+  toggleFavorite(member: TeamMember): void {
+    member.isFavorite = !member.isFavorite;
+    this.successMessage = member.isFavorite ? `${member.nom} ajouté aux favoris` : `${member.nom} retiré des favoris`;
+    setTimeout(() => this.successMessage = '', 3000);
+  }
+
+  openMemberDetail(member: TeamMember): void {
+    this.selectedMember = member;
+    this.showMemberDetail = true;
+    this.memberNotes = member.notes || '';
+  }
+
+  closeMemberDetail(): void {
+    this.showMemberDetail = false;
+    this.selectedMember = null;
+  }
+
+  saveMemberNotes(): void {
+    if (this.selectedMember) {
+      this.selectedMember.notes = this.memberNotes;
+      this.successMessage = 'Notes sauvegardées';
+      setTimeout(() => this.successMessage = '', 3000);
+    }
+  }
+
+  openRdvModal(member: TeamMember): void {
+    this.selectedMember = member;
+    this.showRdvModal = true;
+  }
+
+  closeRdvModal(): void {
+    this.showRdvModal = false;
+    this.selectedMember = null;
+  }
+
+  scheduleRdv(date: string, time: string): void {
+    if (this.selectedMember) {
+      this.successMessage = `RDV programmé avec ${this.selectedMember.nom} le ${date} à ${time}`;
+      this.closeRdvModal();
+      setTimeout(() => this.successMessage = '', 3000);
+    }
   }
 }

@@ -303,6 +303,13 @@
           <button class="btn btn-secondary" (click)="showManifestHistory = !showManifestHistory">
             {{ showManifestHistory ? 'En cours' : 'Historique' }}
           </button>
+          <button class="btn btn-secondary" (click)="toggleManifestView()">
+            {{ manifestViewMode === 'list' ? '📋 Liste' : '🔲 Grille' }}
+          </button>
+          <button class="btn btn-primary" (click)="imprimerToutesEtiquettes()" 
+                  [disabled]="pendingCommandes.length === 0" *ngIf="!showManifestHistory">
+            📄 Toutes étiquettes
+          </button>
           <button class="btn btn-primary" (click)="validerEtImprimerManifest()"
                   [disabled]="pendingCommandes.length === 0 || loading" *ngIf="!showManifestHistory">
             Valider le manifeste
@@ -311,6 +318,7 @@
       </div>
 
       <div *ngIf="!showManifestHistory">
+        <!-- KPIs -->
         <div class="kpi-grid kpi-grid-2">
           <div class="kpi-card">
             <div class="kpi-label">Colis en attente</div>
@@ -322,51 +330,154 @@
           </div>
         </div>
 
-        <div class="card">
+        <!-- Filtres avancés -->
+        <div class="card" *ngIf="pendingCommandes.length > 0">
+          <div class="card-header">
+            <h3>Filtres</h3>
+            <button class="btn-link" (click)="resetManifestFilters()">Réinitialiser</button>
+          </div>
+          <div class="filter-grid">
+            <input class="search-input" [(ngModel)]="manifestFilters.search" placeholder="Rechercher..." />
+            <select [(ngModel)]="manifestFilters.governorate" class="filter-select">
+              <option value="">Tous les gouvernorats</option>
+              <option *ngFor="let g of gouvernorats" [value]="g">{{ g }}</option>
+            </select>
+            <select [(ngModel)]="manifestFilters.serviceType" class="filter-select">
+              <option value="">Tous les services</option>
+              <option value="STANDARD">Standard</option>
+              <option value="EXPRESS">Express</option>
+            </select>
+            <input type="number" class="filter-input" [(ngModel)]="manifestFilters.minCOD" placeholder="COD min" />
+            <input type="number" class="filter-input" [(ngModel)]="manifestFilters.maxCOD" placeholder="COD max" />
+          </div>
+          <div class="selection-actions" *ngIf="selectedColis.size > 0">
+            <span class="selection-count">{{ selectedColis.size }} colis sélectionnés</span>
+            <button class="btn btn-secondary btn-sm" (click)="deselectAllColis()">Désélectionner</button>
+          </div>
+        </div>
+
+        <!-- Sélection actions -->
+        <div class="selection-bar" *ngIf="pendingCommandes.length > 0">
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="selectedColis.size === pendingCommandes.length" 
+                   (change)="selectedColis.size === pendingCommandes.length ? deselectAllColis() : selectAllColis()" />
+            Sélectionner tout
+          </label>
+        </div>
+
+        <!-- Liste view -->
+        <div class="card" *ngIf="manifestViewMode === 'list'">
           <div class="table-responsive">
             <table class="data-table">
               <thead>
                 <tr>
+                  <th width="40"><input type="checkbox" [checked]="selectedColis.size === pendingCommandes.length" 
+                       (change)="selectedColis.size === pendingCommandes.length ? deselectAllColis() : selectAllColis()" /></th>
                   <th>Code</th>
                   <th>Destinataire</th>
                   <th>Téléphone</th>
+                  <th>Gouvernorat</th>
                   <th>COD</th>
+                  <th>Service</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let cmd of pendingCommandes">
+                <tr *ngFor="let cmd of getFilteredPendingCommandes()">
+                  <td><input type="checkbox" [checked]="selectedColis.has(cmd.id)" (change)="toggleColisSelection(cmd.id)" /></td>
                   <td class="mono">{{ cmd.codeBarre || cmd.id?.substring(0, 8) }}</td>
                   <td>{{ cmd.nomDestinataire || '—' }}</td>
                   <td>{{ cmd.telephone || '—' }}</td>
+                  <td>{{ cmd.adresseArrivee?.gouvernorat || '—' }}</td>
                   <td>{{ cmd.montantTotal || 0 }} DT</td>
+                  <td><span class="service-badge" [class.express]="cmd.typeService === 'EXPRESS'">{{ cmd.typeService || 'STANDARD' }}</span></td>
                   <td class="actions">
                     <button class="btn-icon" title="Étiquette" (click)="imprimerEtiquette(cmd)">🏷️</button>
                     <button class="btn-icon" title="Retirer" (click)="removeFromManifest(cmd)">🗑️</button>
                   </td>
                 </tr>
-                <tr *ngIf="pendingCommandes.length === 0">
-                  <td colspan="5" class="empty">
-                    Aucun colis en attente.
-                    <button class="btn-link" (click)="setTab('nouvelle-commande')">Créer une commande</button>
+                <tr *ngIf="getFilteredPendingCommandes().length === 0">
+                  <td colspan="8" class="empty">
+                    Aucun colis trouvé avec ces filtres.
+                    <button class="btn-link" (click)="resetManifestFilters()">Réinitialiser les filtres</button>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
+
+        <!-- Grille view -->
+        <div class="colis-grid" *ngIf="manifestViewMode === 'grid'">
+          <div class="colis-card" *ngFor="let cmd of getFilteredPendingCommandes()" 
+               [class.selected]="selectedColis.has(cmd.id)">
+            <div class="colis-card-header">
+              <input type="checkbox" [checked]="selectedColis.has(cmd.id)" (change)="toggleColisSelection(cmd.id)" />
+              <span class="colis-code">{{ cmd.codeBarre || cmd.id?.substring(0, 8) }}</span>
+              <span class="service-badge" [class.express]="cmd.typeService === 'EXPRESS'">{{ cmd.typeService || 'STANDARD' }}</span>
+            </div>
+            <div class="colis-card-body">
+              <div class="colis-info">
+                <span class="label">Destinataire:</span>
+                <span class="value">{{ cmd.nomDestinataire || '—' }}</span>
+              </div>
+              <div class="colis-info">
+                <span class="label">Téléphone:</span>
+                <span class="value">{{ cmd.telephone || '—' }}</span>
+              </div>
+              <div class="colis-info">
+                <span class="label">Gouvernorat:</span>
+                <span class="value">{{ cmd.adresseArrivee?.gouvernorat || '—' }}</span>
+              </div>
+              <div class="colis-info">
+                <span class="label">COD:</span>
+                <span class="value highlight">{{ cmd.montantTotal || 0 }} DT</span>
+              </div>
+            </div>
+            <div class="colis-card-footer">
+              <button class="btn btn-sm btn-secondary" (click)="imprimerEtiquette(cmd)">🏷️ Étiquette</button>
+              <button class="btn btn-sm btn-danger" (click)="removeFromManifest(cmd)">🗑️ Retirer</button>
+            </div>
+          </div>
+          <div class="empty-grid" *ngIf="getFilteredPendingCommandes().length === 0">
+            <p>Aucun colis trouvé avec ces filtres.</p>
+            <button class="btn-link" (click)="resetManifestFilters()">Réinitialiser les filtres</button>
+          </div>
+        </div>
       </div>
 
-      <div *ngIf="showManifestHistory" class="card">
-        <div class="card-header"><h3>Historique des manifestes</h3></div>
-        <div *ngIf="validatedManifests.length === 0" class="empty">Aucun manifeste validé</div>
-        <div class="manifest-list" *ngIf="validatedManifests.length > 0">
-          <div class="manifest-item" *ngFor="let m of validatedManifests">
-            <div>
-              <strong>Manifeste #{{ m.id?.substring(0, 8) }}</strong>
-              <div class="muted">{{ m.dateCreation | date:'dd/MM/yyyy HH:mm' }} · {{ m.nombreColis }} colis</div>
+      <!-- Historique avec statistiques -->
+      <div *ngIf="showManifestHistory">
+        <div class="kpi-grid kpi-grid-4">
+          <div class="kpi-card">
+            <div class="kpi-label">Total manifestes</div>
+            <div class="kpi-value">{{ getManifestStats().totalManifests }}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Moyenne colis/manifeste</div>
+            <div class="kpi-value">{{ getManifestStats().avgColisPerManifest }}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Total colis</div>
+            <div class="kpi-value">{{ getManifestStats().totalColis }}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Total COD</div>
+            <div class="kpi-value">{{ getManifestStats().totalCOD }} <small>DT</small></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h3>Historique des manifestes</h3></div>
+          <div *ngIf="validatedManifests.length === 0" class="empty">Aucun manifeste validé</div>
+          <div class="manifest-list" *ngIf="validatedManifests.length > 0">
+            <div class="manifest-item" *ngFor="let m of validatedManifests">
+              <div>
+                <strong>Manifeste #{{ m.id?.substring(0, 8) }}</strong>
+                <div class="muted">{{ formatDate(m.dateCreation) }} · {{ m.nombreColis }} colis · {{ m.totalCOD || 0 }} DT</div>
+              </div>
+              <button class="btn btn-secondary btn-sm" (click)="reprintManifest(m)">📄 Réimprimer</button>
             </div>
-            <button class="btn btn-secondary btn-sm" (click)="reprintManifest(m)">Réimprimer</button>
           </div>
         </div>
       </div>
@@ -407,7 +518,7 @@
                 <td class="mono">{{ cmd.id?.substring(0, 10) }}</td>
                 <td>{{ cmd.nomDestinataire || cmd.adresseArriveeId || '—' }}</td>
                 <td><span class="status-pill" [ngClass]="getStatusClass(cmd.statut)">{{ getStatusLabel(cmd.statut || '') }}</span></td>
-                <td>{{ cmd.dateCreation | date:'dd/MM/yy' }}</td>
+                <td>{{ formatDate(cmd.dateCreation) }}</td>
                 <td>{{ cmd.montantTotal || 0 }} DT</td>
                 <td class="actions">
                   <button class="btn-icon" (click)="imprimerEtiquette(cmd)">🏷️</button>
@@ -443,7 +554,7 @@
         <div class="tracking-header">
           <div>
             <h3>Commande #{{ searchResult.id?.substring(0, 10) || 'N/A' }}</h3>
-            <p class="muted">Créée le {{ searchResult.dateCreation | date:'dd/MM/yyyy HH:mm' }}</p>
+            <p class="muted">Créée le {{ formatDate(searchResult.dateCreation) }}</p>
           </div>
           <span class="status-pill" [ngClass]="getStatusClass(searchResult.statut)">{{ getStatusLabel(searchResult.statut || '') }}</span>
         </div>
@@ -562,7 +673,7 @@
             <tbody>
               <tr *ngFor="let cmd of getCommandesReglement()">
                 <td class="mono">{{ cmd.id?.substring(0, 10) }}</td>
-                <td>{{ cmd.dateCreation | date:'dd/MM/yyyy' }}</td>
+                <td>{{ formatDate(cmd.dateCreation) }}</td>
                 <td>{{ cmd.nomDestinataire || '—' }}</td>
                 <td>{{ cmd.montantTotal || 0 }} DT</td>
                 <td>{{ getFraisForCommande(cmd) }} DT</td>
@@ -620,7 +731,7 @@
                 <td>{{ cmd.nomDestinataire || '—' }}</td>
                 <td>{{ cmd.montantTotal || 0 }} DT</td>
                 <td><span class="status-pill" [ngClass]="getStatusClass(cmd.statut)">{{ getStatusLabel(cmd.statut || '') }}</span></td>
-                <td>{{ cmd.dateCreation | date:'dd/MM/yyyy' }}</td>
+                <td>{{ formatDate(cmd.dateCreation) }}</td>
               </tr>
               <tr *ngIf="getRetourCommandes().length === 0">
                 <td colspan="5" class="empty">Aucun retour enregistré</td>
@@ -675,7 +786,7 @@
             <strong>{{ rec.objet }}</strong>
             <span class="status-pill status-en_attente">{{ rec.statut }}</span>
           </div>
-          <div class="muted">{{ rec.codeBarre }} · {{ rec.dateCreation | date:'dd/MM/yyyy' }}</div>
+          <div class="muted">{{ rec.codeBarre }} · {{ formatDate(rec.dateCreation) }}</div>
           <p *ngIf="rec.description">{{ rec.description }}</p>
         </div>
       </div>
@@ -720,27 +831,142 @@
         </div>
       </div>
 
+      <!-- Notifications Service -->
+      <div class="card notification-card" *ngIf="successMessage">
+        <div class="notification-content">
+          <span class="notification-icon">✅</span>
+          <span>{{ successMessage }}</span>
+        </div>
+      </div>
+
       <div class="card">
-        <div class="card-header"><h3>Notre Équipe</h3></div>
-        <div class="team-grid">
-          <div class="team-card" *ngFor="let member of teamMembers">
-            <div class="member-photo">
-              <div class="member-avatar">{{ member.initials }}</div>
-              <div class="rating-badge">⭐ {{ member.rating }}</div>
+        <div class="card-header">
+          <h3>Notre Équipe</h3>
+        </div>
+        <div class="team-grid-modern">
+          <div class="team-card-modern" *ngFor="let member of teamMembers" 
+               [class.favorite]="member.isFavorite" (click)="openMemberDetail(member)">
+            <div class="member-header">
+              <div class="member-avatar-modern">
+                <img [src]="member.photoUrl || ''" [alt]="member.nom" 
+                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                <div class="member-initials-fallback">{{ member.initials }}</div>
+                <div class="availability-badge" [class]="getAvailabilityClass(member.disponibility)">
+                  <div class="availability-dot"></div>
+                  <span>{{ getAvailabilityLabel(member.disponibility) }}</span>
+                </div>
+                <button class="favorite-btn" [class.active]="member.isFavorite" 
+                        (click)="$event.stopPropagation(); toggleFavorite(member)">
+                  {{ member.isFavorite ? '⭐' : '☆' }}
+                </button>
+              </div>
+              <div class="member-rating">
+                <span class="rating-stars">⭐ {{ member.rating }}</span>
+              </div>
             </div>
-            <div class="member-info">
+            
+            <div class="member-body">
               <h4>{{ member.nom }}</h4>
               <p class="member-role">{{ member.poste }}</p>
               <p class="member-bio">{{ member.bio }}</p>
-              <div class="member-contact">
+              
+              <div class="member-languages">
+                <span class="lang-label">Langues:</span>
+                <span class="lang-tag" *ngFor="let lang of member.langues">{{ lang }}</span>
+              </div>
+              
+              <div class="member-specializations">
+                <span class="spec-label">Spécialités:</span>
+                <span class="spec-tag" *ngFor="let spec of member.specialisations">{{ spec }}</span>
+              </div>
+              
+              <div class="member-contact-new">
                 <span class="contact-phone">📞 {{ member.tel }}</span>
               </div>
-              <button class="btn btn-primary btn-sm" (click)="callMember(member)">
-                <span>📞</span> Contacter
+            </div>
+            
+            <div class="member-actions">
+              <button class="action-btn call" (click)="$event.stopPropagation(); callMember(member)">
+                📞 Appeler
+              </button>
+              <button class="action-btn rdv" (click)="$event.stopPropagation(); openRdvModal(member)">
+                📅 RDV
               </button>
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Modal Détail Membre -->
+    <div class="modal-overlay" *ngIf="showMemberDetail" (click)="closeMemberDetail()"></div>
+    <div class="modal-card member-detail-modal" *ngIf="showMemberDetail" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Profil - {{ selectedMember?.nom }}</h3>
+        <button class="btn-icon" (click)="closeMemberDetail()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="member-detail-header">
+          <div class="detail-avatar">
+            <img [src]="selectedMember?.photoUrl || ''" [alt]="selectedMember?.nom">
+            <div class="detail-availability" [class]="getAvailabilityClass(selectedMember?.disponibility || '')">
+              {{ getAvailabilityLabel(selectedMember?.disponibility || '') }}
+            </div>
+          </div>
+          <div class="detail-info">
+            <h4>{{ selectedMember?.nom }}</h4>
+            <p>{{ selectedMember?.poste }}</p>
+            <div class="detail-rating">⭐ {{ selectedMember?.rating }}</div>
+          </div>
+        </div>
+        
+        <div class="detail-section">
+          <h5>Informations</h5>
+          <div class="detail-row">
+            <span>Téléphone:</span>
+            <strong>{{ selectedMember?.tel }}</strong>
+          </div>
+          <div class="detail-row">
+            <span>Langues:</span>
+            <strong>{{ selectedMember?.langues?.join(', ') }}</strong>
+          </div>
+          <div class="detail-row">
+            <span>Spécialités:</span>
+            <strong>{{ selectedMember?.specialisations?.join(', ') }}</strong>
+          </div>
+        </div>
+        
+        <div class="detail-section">
+          <h5>Mes Notes</h5>
+          <textarea [(ngModel)]="memberNotes" rows="3" placeholder="Ajouter des notes personnelles..."></textarea>
+          <button class="btn btn-primary btn-sm" (click)="saveMemberNotes()">Sauvegarder</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeMemberDetail()">Fermer</button>
+      </div>
+    </div>
+
+    <!-- Modal RDV -->
+    <div class="modal-overlay" *ngIf="showRdvModal" (click)="closeRdvModal()"></div>
+    <div class="modal-card rdv-modal" *ngIf="showRdvModal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>📅 Prendre RDV avec {{ selectedMember?.nom }}</h3>
+        <button class="btn-icon" (click)="closeRdvModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" [(ngModel)]="rdvDate">
+        </div>
+        <div class="form-group">
+          <label>Heure</label>
+          <input type="time" [(ngModel)]="rdvTime">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeRdvModal()">Annuler</button>
+        <button class="btn btn-primary" (click)="scheduleRdv(rdvDate, rdvTime)">Confirmer RDV</button>
       </div>
     </div>
 

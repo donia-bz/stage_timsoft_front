@@ -95,6 +95,44 @@ const depotSchema = new mongoose.Schema({
 
 const Depot = mongoose.model('Depot', depotSchema);
 
+// Schéma pour le suivi des manifestes
+const manifestTrackingSchema = new mongoose.Schema({
+  manifestId: { type: String, required: true, unique: true },
+  clientId: { type: String, required: true },
+  clientName: { type: String, required: true },
+  nombreColis: { type: Number, required: true },
+  totalCOD: { type: Number, default: 0 },
+  statut: { 
+    type: String, 
+    enum: ['EN_ATTENTE_RAMASSAGE', 'EN_COURS_RAMASSAGE', 'RAMASSE', 'AU_DEPOT', 'EN_DISTRIBUTION', 'LIVRE', 'ANNULE'],
+    default: 'EN_ATTENTE_RAMASSAGE'
+  },
+  livreurId: { type: String },
+  depotId: { type: String },
+  dateCreation: { type: Date, default: Date.now },
+  dateRamassage: { type: Date },
+  dateDepot: { type: Date },
+  dateDistribution: { type: Date },
+  dateLivraison: { type: Date },
+  positionsHistorique: [{
+    latitude: Number,
+    longitude: Number,
+    timestamp: { type: Date, default: Date.now },
+    statut: String,
+    livreurId: String
+  }],
+  notifications: [{
+    type: String,
+    message: String,
+    timestamp: { type: Date, default: Date.now },
+    lue: { type: Boolean, default: false }
+  }]
+}, {
+  timestamps: true
+});
+
+const ManifestTracking = mongoose.model('ManifestTracking', manifestTrackingSchema);
+
 // Socket.io pour temps réel
 io.on('connection', (socket) => {
   console.log('🔌 Client connecté:', socket.id);
@@ -114,6 +152,49 @@ io.on('connection', (socket) => {
   socket.on('subscribe-admin-notifications', () => {
     socket.join('admin-notifications');
     console.log('👤 Admin connecté:', socket.id);
+  });
+
+  // Abonnement aux notifications client spécifique
+  socket.on('subscribe-client-notifications', (clientId) => {
+    socket.join(`client-${clientId}`);
+    console.log('👤 Client abonné aux notifications:', clientId);
+  });
+
+  // Abonnement aux notifications d'un manifeste spécifique
+  socket.on('subscribe-manifest', (manifestId) => {
+    socket.join(`manifest-${manifestId}`);
+    console.log('👤 Client abonné au manifeste:', manifestId);
+  });
+
+  // Enregistrement d'un nouveau manifeste pour le tracking
+  socket.on('register-manifest', async (data) => {
+    try {
+      const { manifestId, clientId, clientName, nombreColis, totalCOD } = data;
+      
+      const manifestTracking = new ManifestTracking({
+        manifestId,
+        clientId,
+        clientName,
+        nombreColis,
+        totalCOD: totalCOD || 0,
+        statut: 'EN_ATTENTE_RAMASSAGE'
+      });
+
+      await manifestTracking.save();
+
+      // Notifier les clients abonnés
+      io.to('admin-notifications').emit('manifest-created', manifestTracking);
+      io.to(`client-${clientId}`).emit('manifest-status-update', {
+        manifestId,
+        statut: 'EN_ATTENTE_RAMASSAGE',
+        message: 'Manifeste créé et en attente de ramassage'
+      });
+
+      socket.emit('manifest-registered', { success: true, manifestId });
+    } catch (error) {
+      console.error('Erreur enregistrement manifeste:', error);
+      socket.emit('manifest-registered', { success: false, error: error.message });
+    }
   });
 
   socket.on('disconnect', () => {
@@ -287,6 +368,194 @@ app.get('/api/stats', async (req, res) => {
     };
 
     res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== MANIFEST TRACKING API ==========
+
+// Créer un nouveau suivi de manifeste
+app.post('/api/manifests', async (req, res) => {
+  try {
+    const { manifestId, clientId, clientName, nombreColis, totalCOD } = req.body;
+    
+    const manifestTracking = new ManifestTracking({
+      manifestId,
+      clientId,
+      clientName,
+      nombreColis,
+      totalCOD: totalCOD || 0,
+      statut: 'EN_ATTENTE_RAMASSAGE'
+    });
+
+    await manifestTracking.save();
+
+    // Notifier les clients abonnés
+    io.to('admin-notifications').emit('manifest-created', manifestTracking);
+    io.to(`client-${clientId}`).emit('manifest-status-update', {
+      manifestId,
+      statut: 'EN_ATTENTE_RAMASSAGE',
+      message: 'Manifeste créé et en attente de ramassage'
+    });
+
+    res.status(201).json(manifestTracking);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Obtenir le suivi d'un manifeste
+app.get('/api/manifests/:manifestId', async (req, res) => {
+  try {
+    const manifestTracking = await ManifestTracking.findOne({ manifestId: req.params.manifestId });
+    if (!manifestTracking) {
+      return res.status(404).json({ error: 'Manifeste non trouvé' });
+    }
+    res.json(manifestTracking);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Obtenir tous les manifestes d'un client
+app.get('/api/manifests/client/:clientId', async (req, res) => {
+  try {
+    const manifests = await ManifestTracking.find({ clientId: req.params.clientId })
+      .sort({ dateCreation: -1 });
+    res.json(manifests);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Mettre à jour le statut d'un manifeste
+app.put('/api/manifests/:manifestId/statut', async (req, res) => {
+  try {
+    const { statut, livreurId, depotId, position } = req.body;
+    
+    const updateData = { statut };
+    const timestamp = new Date();
+
+    // Mettre à jour les dates selon le statut
+    switch (statut) {
+      case 'EN_COURS_RAMASSAGE':
+        updateData.dateRamassage = timestamp;
+        updateData.livreurId = livreurId;
+        break;
+      case 'RAMASSE':
+        updateData.dateRamassage = timestamp;
+        break;
+      case 'AU_DEPOT':
+        updateData.dateDepot = timestamp;
+        updateData.depotId = depotId;
+        break;
+      case 'EN_DISTRIBUTION':
+        updateData.dateDistribution = timestamp;
+        updateData.livreurId = livreurId;
+        break;
+      case 'LIVRE':
+        updateData.dateLivraison = timestamp;
+        break;
+    }
+
+    // Ajouter position à l'historique si fournie
+    if (position && (position.latitude || position.longitude)) {
+      updateData.$push = {
+        positionsHistorique: {
+          latitude: position.latitude,
+          longitude: position.longitude,
+          timestamp,
+          statut,
+          livreurId: livreurId || null
+        }
+      };
+    }
+
+    const manifestTracking = await ManifestTracking.findOneAndUpdate(
+      { manifestId: req.params.manifestId },
+      updateData,
+      { new: true }
+    );
+
+    if (!manifestTracking) {
+      return res.status(404).json({ error: 'Manifeste non trouvé' });
+    }
+
+    // Ajouter notification
+    const notification = {
+      type: 'STATUS_UPDATE',
+      message: `Statut du manifeste mis à jour: ${statut}`,
+      timestamp,
+      lue: false
+    };
+    manifestTracking.notifications.push(notification);
+    await manifestTracking.save();
+
+    // Diffuser la mise à jour en temps réel
+    io.to('admin-notifications').emit('manifest-status-update', {
+      manifestId: req.params.manifestId,
+      statut,
+      livreurId,
+      depotId,
+      timestamp
+    });
+
+    io.to(`client-${manifestTracking.clientId}`).emit('manifest-status-update', {
+      manifestId: req.params.manifestId,
+      statut,
+      message: notification.message
+    });
+
+    res.json(manifestTracking);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Obtenir les notifications non lues d'un client
+app.get('/api/manifests/:manifestId/notifications', async (req, res) => {
+  try {
+    const manifest = await ManifestTracking.findOne({ manifestId: req.params.manifestId });
+    if (!manifest) {
+      return res.status(404).json({ error: 'Manifeste non trouvé' });
+    }
+
+    const unreadNotifications = manifest.notifications.filter(n => !n.lue);
+    res.json(unreadNotifications);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Marquer les notifications comme lues
+app.put('/api/manifests/:manifestId/notifications/read', async (req, res) => {
+  try {
+    const manifest = await ManifestTracking.findOneAndUpdate(
+      { manifestId: req.params.manifestId },
+      { $set: { 'notifications.$[].lue': true } },
+      { new: true }
+    );
+
+    if (!manifest) {
+      return res.status(404).json({ error: 'Manifeste non trouvé' });
+    }
+
+    res.json({ success: true, message: 'Notifications marquées comme lues' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Obtenir l'historique des positions d'un manifeste
+app.get('/api/manifests/:manifestId/positions', async (req, res) => {
+  try {
+    const manifest = await ManifestTracking.findOne({ manifestId: req.params.manifestId });
+    if (!manifest) {
+      return res.status(404).json({ error: 'Manifeste non trouvé' });
+    }
+
+    res.json(manifest.positionsHistorique || []);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
