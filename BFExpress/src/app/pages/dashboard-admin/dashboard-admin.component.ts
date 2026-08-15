@@ -57,7 +57,6 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     | 'depots'
     | 'inscriptions'
     | 'reclamations'
-    | 'analytics'
     | 'parametres' = 'stats';
 
   commandes: Commande[] = [];
@@ -103,6 +102,32 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     successRate: 0,
     satisfactionRate: 0,
     satisfactionScore: 0
+  };
+
+  // ========== MANIFESTS UI ==========
+  showManifestPanel = false;
+  selectedManifest: any = null;
+  selectedManifestCommandes: Commande[] = [];
+  selectedManifestHistory: any[] = [];
+  
+  manifestFilters = {
+    search: '',
+    statut: '',
+    livreurId: '',
+    gouvernorat: '',
+    minColis: 0,
+    dateDebut: '',
+    dateFin: ''
+  };
+  
+  selectedManifestIds: Set<string> = new Set();
+  bulkDriverId: string = '';
+  
+  manifestStats: any = {
+    totalToday: 0,
+    completionRate: 0,
+    lateManifests: 0,
+    totalColis: 0
   };
 
   showUserPanel = false;
@@ -225,6 +250,7 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     });
 
     this.chargerManifests();
+    this.computeManifestStats();
 
     // Charger les réclamations
     this.apiService.getAllReclamations().subscribe({
@@ -963,9 +989,11 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
             m.statut === 'EN_LIVRAISON' ||
             m.statut === 'VALIDE'
         );
+        this.computeManifestStats();
       },
       error: () => {
         this.manifests = [];
+        this.computeManifestStats();
       }
     });
   }
@@ -1059,6 +1087,258 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   getDriverNameForManifest(livreurId: string): string {
     const driver = this.livreurs.find(l => l.id === livreurId);
     return driver ? `${driver.prenom} ${driver.nom}` : 'Non assigné';
+  }
+
+  // ========== MANIFESTS DETAIL PANEL ==========
+  openManifestPanel(manifest: any): void {
+    this.selectedManifest = manifest;
+    this.selectedManifestCommandes = this.getManifestCommandes(manifest);
+    this.selectedManifestHistory = this.getManifestHistory(manifest);
+    this.showManifestPanel = true;
+  }
+
+  closeManifestPanel(): void {
+    this.showManifestPanel = false;
+    setTimeout(() => {
+      this.selectedManifest = null;
+      this.selectedManifestCommandes = [];
+      this.selectedManifestHistory = [];
+    }, 300);
+  }
+
+  getManifestCommandes(manifest: any): Commande[] {
+    if (!manifest || !manifest.commandeIds) return [];
+    return this.commandes.filter(c => manifest.commandeIds.includes(c.id));
+  }
+
+  getManifestHistory(manifest: any): any[] {
+    // Simuler un historique - dans une vraie app, cela viendrait du backend
+    const history = [
+      {
+        date: manifest.dateCreation,
+        action: 'Création',
+        utilisateur: 'Système',
+        details: 'Manifeste créé automatiquement'
+      }
+    ];
+
+    if (manifest.livreurId) {
+      const driver = this.livreurs.find(l => l.id === manifest.livreurId);
+      history.push({
+        date: manifest.dateAffectation || new Date().toISOString(),
+        action: 'Affectation',
+        utilisateur: 'Admin',
+        details: `Affecté à ${driver ? `${driver.prenom} ${driver.nom}` : 'Livreur inconnu'}`
+      });
+    }
+
+    if (manifest.statut === 'EN_LIVRAISON') {
+      history.push({
+        date: manifest.dateRetrait || new Date().toISOString(),
+        action: 'Retrait validé',
+        utilisateur: 'Admin',
+        details: 'Retrait du dépôt validé'
+      });
+    }
+
+    return history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }
+
+  getAssignedDriver(manifest: any): Livreur | null {
+    if (!manifest.livreurId) return null;
+    return this.livreurs.find(l => l.id === manifest.livreurId) || null;
+  }
+
+  getDriverVehicle(manifest: any): Vehicule | null {
+    const driver = this.getAssignedDriver(manifest);
+    if (!driver) return null;
+    return this.vehicules.find(v => v.livreurId === driver.id) || null;
+  }
+
+  // ========== MANIFESTS FILTERS ==========
+  get filteredManifests(): any[] {
+    let result = this.manifests;
+
+    // Filtre par recherche
+    if (this.manifestFilters.search.trim()) {
+      const q = this.manifestFilters.search.toLowerCase();
+      result = result.filter(m => 
+        (m.id && m.id.toLowerCase().includes(q)) ||
+        (m.livreurId && this.getDriverNameForManifest(m.livreurId).toLowerCase().includes(q))
+      );
+    }
+
+    // Filtre par statut
+    if (this.manifestFilters.statut) {
+      result = result.filter(m => m.statut === this.manifestFilters.statut);
+    }
+
+    // Filtre par livreur
+    if (this.manifestFilters.livreurId) {
+      result = result.filter(m => m.livreurId === this.manifestFilters.livreurId);
+    }
+
+    // Filtre par nombre de colis minimum
+    if (this.manifestFilters.minColis > 0) {
+      result = result.filter(m => this.getManifestColisCount(m) >= this.manifestFilters.minColis);
+    }
+
+    // Filtre par date
+    if (this.manifestFilters.dateDebut) {
+      result = result.filter(m => new Date(m.dateCreation) >= new Date(this.manifestFilters.dateDebut));
+    }
+    if (this.manifestFilters.dateFin) {
+      result = result.filter(m => new Date(m.dateCreation) <= new Date(this.manifestFilters.dateFin));
+    }
+
+    return result;
+  }
+
+  resetManifestFilters(): void {
+    this.manifestFilters = {
+      search: '',
+      statut: '',
+      livreurId: '',
+      gouvernorat: '',
+      minColis: 0,
+      dateDebut: '',
+      dateFin: ''
+    };
+  }
+
+  // ========== MANIFESTS KPIs ==========
+  computeManifestStats(): void {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    this.manifestStats.totalToday = this.manifests.filter(m => 
+      new Date(m.dateCreation) >= today
+    ).length;
+
+    const completed = this.manifests.filter(m => 
+      m.statut === 'LIVRE' || m.statut === 'LIVRE_PAYE'
+    ).length;
+    this.manifestStats.completionRate = this.manifests.length > 0 
+      ? Math.round((completed / this.manifests.length) * 100) 
+      : 0;
+
+    // Manifestes en retard (plus de 24h sans retrait pour ceux en A_ENLEVER)
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    this.manifestStats.lateManifests = this.manifests.filter(m => 
+      m.statut === 'A_ENLEVER' && new Date(m.dateAffectation || m.dateCreation) < yesterday
+    ).length;
+
+    this.manifestStats.totalColis = this.manifests.reduce((sum, m) => 
+      sum + this.getManifestColisCount(m), 0
+    );
+  }
+
+  // ========== MANIFESTS BULK ACTIONS ==========
+  toggleManifestSelection(manifestId: string): void {
+    if (this.selectedManifestIds.has(manifestId)) {
+      this.selectedManifestIds.delete(manifestId);
+    } else {
+      this.selectedManifestIds.add(manifestId);
+    }
+  }
+
+  selectAllManifests(manifests: any[]): void {
+    if (this.selectedManifestIds.size === manifests.length) {
+      this.selectedManifestIds.clear();
+    } else {
+      manifests.forEach(m => this.selectedManifestIds.add(m.id));
+    }
+  }
+
+  isManifestSelected(manifestId: string): boolean {
+    return this.selectedManifestIds.has(manifestId);
+  }
+
+  bulkAssignDriver(): void {
+    if (!this.bulkDriverId) {
+      this.showToast('Sélectionnez un livreur', 'error');
+      return;
+    }
+
+    if (this.selectedManifestIds.size === 0) {
+      this.showToast('Sélectionnez au moins un manifeste', 'error');
+      return;
+    }
+
+    const livreur = this.livreurs.find(l => l.id === this.bulkDriverId);
+    if (!livreur) return;
+
+    let successCount = 0;
+    this.selectedManifestIds.forEach(manifestId => {
+      const manifest = this.manifests.find(m => m.id === manifestId);
+      if (manifest) {
+        manifest.livreurId = this.bulkDriverId;
+        manifest.statut = 'A_ENLEVER';
+        this.apiService.updateManifeste(manifestId, manifest).subscribe({
+          next: () => successCount++,
+          error: () => {}
+        });
+      }
+    });
+
+    this.showToast(`${successCount} manifeste(s) affecté(s) à ${livreur.prenom} ${livreur.nom}`, 'success');
+    this.selectedManifestIds.clear();
+    this.bulkDriverId = '';
+    this.refreshData();
+  }
+
+  bulkCancel(): void {
+    if (this.selectedManifestIds.size === 0) {
+      this.showToast('Sélectionnez au moins un manifeste', 'error');
+      return;
+    }
+
+    if (!confirm(`Annuler ${this.selectedManifestIds.size} manifeste(s) ?`)) return;
+
+    let successCount = 0;
+    this.selectedManifestIds.forEach(manifestId => {
+      const manifest = this.manifests.find(m => m.id === manifestId);
+      if (manifest && manifest.statut === 'A_ENLEVER') {
+        manifest.livreurId = null;
+        manifest.statut = 'VALIDE';
+        this.apiService.updateManifeste(manifestId, manifest).subscribe({
+          next: () => successCount++,
+          error: () => {}
+        });
+      }
+    });
+
+    this.showToast(`${successCount} manifeste(s) annulé(s)`, 'success');
+    this.selectedManifestIds.clear();
+    this.refreshData();
+  }
+
+  bulkExport(): void {
+    if (this.selectedManifestIds.size === 0) {
+      this.showToast('Sélectionnez au moins un manifeste', 'error');
+      return;
+    }
+
+    // Créer un CSV simple
+    const selectedManifests = this.manifests.filter(m => this.selectedManifestIds.has(m.id));
+    let csv = 'ID,Date,Statut,Livreur,Nombre de colis\n';
+    
+    selectedManifests.forEach(m => {
+      const driverName = this.getDriverNameForManifest(m.livreurId || '');
+      csv += `${m.id},${this.formatDate(m.dateCreation)},${m.statut},${driverName},${this.getManifestColisCount(m)}\n`;
+    });
+
+    // Télécharger le fichier
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `manifestes_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+
+    this.showToast('Export CSV généré', 'success');
   }
 
   // ========== STATS ==========

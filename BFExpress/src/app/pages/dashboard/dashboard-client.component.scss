@@ -13,9 +13,32 @@ $shadow: 0 4px 20px rgba(14, 165, 233, 0.08);
 
 .client-dashboard {
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
   background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f5f3ff 100%);
   font-family: Inter, system-ui, sans-serif;
+}
+
+.client-topbar {
+  width: 100%;
+  height: 70px;
+  background: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 50%, #8b5cf6 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  padding: 0 2rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
 }
 
 .dashboard-sidebar {
@@ -24,7 +47,7 @@ $shadow: 0 4px 20px rgba(14, 165, 233, 0.08);
   background: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 50%, #8b5cf6 100%);
   border-right: 1px solid rgba(255, 255, 255, 0.2);
   position: fixed;
-  top: 0; left: 0; bottom: 0;
+  top: 70px; left: 0; bottom: 0;
   display: flex;
   flex-direction: column;
   padding: 1.5rem 1.25rem;
@@ -138,29 +161,13 @@ $shadow: 0 4px 20px rgba(14, 165, 233, 0.08);
   }
 }
 
-.btn-logout {
-  width: 100%;
-  padding: 0.85rem;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s;
-  backdrop-filter: blur(10px);
-  &:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: translateY(-2px);
-  }
-}
-
 // ===== MAIN =====
 .dashboard-main {
   flex: 1;
   margin-left: $sidebar-w;
+  margin-top: 70px;
   padding: 1.75rem 2rem 2.5rem;
-  min-height: 100vh;
+  min-height: calc(100vh - 70px);
 }
 
 .page-header {
@@ -704,7 +711,7 @@ $shadow: 0 4px 20px rgba(14, 165, 233, 0.08);
   .dashboard-grid, .support-grid, .info-grid, .team-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 900px) {
-  .dashboard-sidebar { transform: translateX(-100%); }
+  .dashboard-sidebar { transform: translateX(-100%); top: 70px; height: calc(100vh - 70px); }
   .dashboard-main { margin-left: 0; padding: 1.25rem; }
   .form-grid { grid-template-columns: 1fr; }
   .page-header { flex-direction: column; }

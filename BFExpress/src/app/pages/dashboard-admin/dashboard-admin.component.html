@@ -1,24 +1,19 @@
 <div class="admin-dashboard">
 
+  <!-- TOP HORIZONTAL BAR -->
+  <header class="admin-topbar">
+    <div class="topbar-brand">
+      <div class="brand-logo">⚡</div>
+      <div class="brand-info">
+        <span class="brand-text">BFExpress</span>
+        <span class="brand-sub">Administration</span>
+      </div>
+    </div>
+  </header>
+
   <!-- SIDEBAR -->
   <aside class="admin-sidebar">
     <div class="sidebar-top">
-      <div class="brand">
-        <div class="brand-logo">⚡</div>
-        <div class="brand-info">
-          <span class="brand-text">BFExpress</span>
-          <span class="brand-sub">Administration</span>
-        </div>
-      </div>
-
-      <div class="user-card">
-        <div class="user-avatar">A</div>
-        <div class="user-info">
-          <div class="user-name">Administrateur</div>
-          <div class="user-role">Super Admin</div>
-        </div>
-      </div>
-
       <nav class="sidebar-nav">
         <div class="nav-group">
           <div class="nav-label">Principal</div>
@@ -63,15 +58,8 @@
           <a class="nav-item" [class.active]="activeTab === 'carte'" (click)="openCarteTab()">
             <span class="nav-icon">🗺️</span> Carte live
           </a>
-          <a class="nav-item" [class.active]="activeTab === 'analytics'" (click)="activeTab = 'analytics'">
-            <span class="nav-icon">📈</span> Analytics
-          </a>
         </div>
       </nav>
-    </div>
-
-    <div class="sidebar-footer">
-      <button class="btn-logout" (click)="logout()">Déconnexion</button>
     </div>
   </aside>
 
@@ -90,7 +78,6 @@
         <h1 *ngIf="activeTab === 'inscriptions'">Utilisateurs</h1>
         <h1 *ngIf="activeTab === 'reclamations'">Réclamations</h1>
         <h1 *ngIf="activeTab === 'carte'">Carte live</h1>
-        <h1 *ngIf="activeTab === 'analytics'">Analytics</h1>
         <p>Centre de contrôle BFExpress — First Delivery / Navex</p>
       </div>
       <div class="header-actions">
@@ -256,11 +243,74 @@
 
     <!-- ========== MANIFESTES ========== -->
     <div *ngIf="activeTab === 'manifests'" class="tab-panel">
+      
+      <!-- KPIs Dashboard pour Manifestes -->
+      <div class="kpi-grid kpi-4 mb-20">
+        <div class="kpi-card">
+          <div class="kpi-label">Total aujourd'hui</div>
+          <div class="kpi-value">{{ manifestStats.totalToday }}</div>
+        </div>
+        <div class="kpi-card highlight-success">
+          <div class="kpi-label">Taux complétion</div>
+          <div class="kpi-value">{{ manifestStats.completionRate }}%</div>
+        </div>
+        <div class="kpi-card highlight-warning" *ngIf="manifestStats.lateManifests > 0">
+          <div class="kpi-label">En retard</div>
+          <div class="kpi-value">{{ manifestStats.lateManifests }}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Colis totaux</div>
+          <div class="kpi-value">{{ manifestStats.totalColis }}</div>
+        </div>
+      </div>
+
+      <!-- Filtres avancés -->
+      <div class="card mb-20">
+        <div class="card-header">
+          <h3>Filtres avancés</h3>
+          <button class="btn-link" (click)="resetManifestFilters()">Réinitialiser</button>
+        </div>
+        <div class="filter-grid">
+          <input class="search-input" [(ngModel)]="manifestFilters.search" placeholder="Rechercher référence, livreur..." />
+          <select [(ngModel)]="manifestFilters.statut" class="filter-select">
+            <option value="">Tous statuts</option>
+            <option value="IMPRIME">Imprimé</option>
+            <option value="VALIDE">Validé</option>
+            <option value="A_ENLEVER">À enlever</option>
+            <option value="EN_LIVRAISON">En livraison</option>
+            <option value="LIVRE">Livré</option>
+          </select>
+          <select [(ngModel)]="manifestFilters.livreurId" class="filter-select">
+            <option value="">Tous livreurs</option>
+            <option *ngFor="let l of livreurs" [value]="l.id">{{ l.prenom }} {{ l.nom }}</option>
+          </select>
+          <input type="number" [(ngModel)]="manifestFilters.minColis" class="filter-input" placeholder="Min colis" />
+          <input type="date" [(ngModel)]="manifestFilters.dateDebut" class="filter-input" />
+          <input type="date" [(ngModel)]="manifestFilters.dateFin" class="filter-input" />
+        </div>
+      </div>
+
+      <!-- Actions groupées -->
+      <div class="bulk-action-bar" *ngIf="selectedManifestIds.size > 0">
+        <span>{{ selectedManifestIds.size }} manifeste(s) sélectionné(s)</span>
+        <div class="bulk-actions">
+          <select [(ngModel)]="bulkDriverId" class="small-select">
+            <option value="">Livreur...</option>
+            <option *ngFor="let l of livreurs" [value]="l.id">{{ l.prenom }} {{ l.nom }}</option>
+          </select>
+          <button class="btn btn-primary btn-sm" (click)="bulkAssignDriver()" [disabled]="!bulkDriverId">Affecter</button>
+          <button class="btn btn-secondary btn-sm" (click)="bulkCancel()">Annuler</button>
+          <button class="btn btn-secondary btn-sm" (click)="bulkExport()">Export CSV</button>
+        </div>
+      </div>
       <div class="card" *ngIf="getPendingManifests().length > 0">
         <div class="card-header"><h3>En attente d’affectation</h3></div>
         <div class="list-stack">
-          <div class="list-item" *ngFor="let m of getPendingManifests()">
-            <div>
+          <div class="list-item" *ngFor="let m of getPendingManifests()" [class.selected]="isManifestSelected(m.id)">
+            <div class="manifest-checkbox">
+              <input type="checkbox" [checked]="isManifestSelected(m.id)" (change)="toggleManifestSelection(m.id)" />
+            </div>
+            <div class="manifest-info" (click)="openManifestPanel(m)">
               <strong>{{ getManifestId(m) }}</strong>
               <div class="muted">{{ getManifestColisCount(m) }} colis · {{ getManifestDate(m) }}</div>
             </div>
@@ -284,8 +334,11 @@
       <div class="card">
         <div class="card-header"><h3>En cours</h3></div>
         <div class="list-stack" *ngIf="getInProgressManifests().length > 0">
-          <div class="list-item" *ngFor="let m of getInProgressManifests()">
-            <div>
+          <div class="list-item" *ngFor="let m of getInProgressManifests()" [class.selected]="isManifestSelected(m.id)">
+            <div class="manifest-checkbox">
+              <input type="checkbox" [checked]="isManifestSelected(m.id)" (change)="toggleManifestSelection(m.id)" />
+            </div>
+            <div class="manifest-info" (click)="openManifestPanel(m)">
               <strong>{{ getManifestId(m) }}</strong>
               <div class="muted">Livreur : {{ getDriverNameForManifest(m.livreurId || '') }}</div>
             </div>
@@ -297,6 +350,105 @@
           </div>
         </div>
         <div class="empty" *ngIf="hasNoManifests()">Aucun manifeste</div>
+      </div>
+
+      <!-- Panneau latéral de détails -->
+      <div class="side-panel" *ngIf="showManifestPanel" [class.open]="showManifestPanel">
+        <div class="side-panel-header">
+          <h3>Détails du manifeste</h3>
+          <button class="btn-icon" (click)="closeManifestPanel()">✕</button>
+        </div>
+        <div class="side-panel-content" *ngIf="selectedManifest">
+          
+          <!-- Informations générales -->
+          <div class="detail-section">
+            <h4>Informations générales</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">Référence</span>
+                <span class="value mono">{{ getManifestId(selectedManifest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Statut</span>
+                <span class="value status-pill" [ngClass]="'status-' + getManifestStatus(selectedManifest).toLowerCase()">
+                  {{ getManifestStatus(selectedManifest) }}
+                </span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Date création</span>
+                <span class="value">{{ getManifestDate(selectedManifest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Nombre de colis</span>
+                <span class="value">{{ getManifestColisCount(selectedManifest) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Livreur assigné -->
+          <div class="detail-section" *ngIf="getAssignedDriver(selectedManifest)">
+            <h4>Livreur assigné</h4>
+            <div class="driver-card">
+              <div class="driver-avatar">
+                {{ getAssignedDriver(selectedManifest)?.prenom?.[0] }}{{ getAssignedDriver(selectedManifest)?.nom?.[0] }}
+              </div>
+              <div class="driver-info">
+                <strong>{{ getAssignedDriver(selectedManifest)?.prenom }} {{ getAssignedDriver(selectedManifest)?.nom }}</strong>
+                <div class="muted">{{ getAssignedDriver(selectedManifest)?.telephone }}</div>
+                <div class="muted">{{ getAssignedDriver(selectedManifest)?.gouvernorat }}</div>
+              </div>
+              <div class="driver-status">
+                <span class="status-pill" [ngClass]="'status-' + (getAssignedDriver(selectedManifest)?.statut || 'disponible').toLowerCase()">
+                  {{ getAssignedDriver(selectedManifest)?.statut || 'DISPONIBLE' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Véhicule -->
+            <div class="vehicle-info" *ngIf="getDriverVehicle(selectedManifest)">
+              <div class="vehicle-card">
+                <span class="icon">🚗</span>
+                <div>
+                  <strong>{{ getDriverVehicle(selectedManifest)?.immatriculation }}</strong>
+                  <div class="muted">{{ getDriverVehicle(selectedManifest)?.modele }} • {{ getDriverVehicle(selectedManifest)?.type }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Commandes incluses -->
+          <div class="detail-section">
+            <h4>Commandes incluses ({{ selectedManifestCommandes.length }})</h4>
+            <div class="orders-list">
+              <div class="order-item" *ngFor="let cmd of selectedManifestCommandes">
+                <span class="order-ref">#{{ cmd.id?.substring(cmd.id.length - 6) || 'N/A' }}</span>
+                <span class="order-dest">{{ getArriveeVille(cmd) }}</span>
+                <span class="order-status status-pill" [ngClass]="'status-' + (cmd.statut || 'en_attente').toLowerCase()">
+                  {{ cmd.statut }}
+                </span>
+              </div>
+              <div class="empty" *ngIf="selectedManifestCommandes.length === 0">
+                Aucune commande trouvée
+              </div>
+            </div>
+          </div>
+
+          <!-- Historique -->
+          <div class="detail-section">
+            <h4>Historique des changements</h4>
+            <div class="history-timeline">
+              <div class="history-item" *ngFor="let h of selectedManifestHistory">
+                <div class="history-date">{{ formatDate(h.date) }}</div>
+                <div class="history-content">
+                  <strong>{{ h.action }}</strong>
+                  <div class="muted">{{ h.utilisateur }}</div>
+                  <div class="muted">{{ h.details }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
 
@@ -845,28 +997,6 @@
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ========== ANALYTICS ========== -->
-    <div *ngIf="activeTab === 'analytics'" class="tab-panel">
-      <div class="kpi-grid">
-        <div class="kpi-card">
-          <div class="kpi-label">Temps moyen</div>
-          <div class="kpi-value">{{ getStatsAvgDelivery() }} <small>min</small></div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Réussite</div>
-          <div class="kpi-value">{{ getStatsSuccessRate() }}%</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Satisfaction</div>
-          <div class="kpi-value">⭐ {{ getStatsSatisfaction() }}</div>
-        </div>
-        <div class="kpi-card highlight">
-          <div class="kpi-label">CA</div>
-          <div class="kpi-value">{{ getTotalRevenue() | number:'1.0-0' }} <small>DT</small></div>
         </div>
       </div>
     </div>

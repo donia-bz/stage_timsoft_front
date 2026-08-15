@@ -1,16 +1,19 @@
 <div class="client-dashboard">
 
+  <!-- TOP HORIZONTAL BAR -->
+  <header class="client-topbar">
+    <div class="topbar-brand">
+      <div class="brand-logo">⚡</div>
+      <div class="brand-info">
+        <span class="brand-text">BFExpress</span>
+        <span class="brand-sub">Espace expéditeur</span>
+      </div>
+    </div>
+  </header>
+
   <!-- SIDEBAR -->
   <aside class="dashboard-sidebar">
     <div class="sidebar-top">
-      <div class="brand">
-        <div class="brand-logo">⚡</div>
-        <div class="brand-info">
-          <span class="brand-text">BFExpress</span>
-          <span class="brand-sub">Espace expéditeur</span>
-        </div>
-      </div>
-
       <div class="user-card">
         <div class="user-avatar">{{ clientName.charAt(0) }}</div>
         <div class="user-info">
@@ -60,10 +63,6 @@
           </a>
         </div>
       </nav>
-    </div>
-
-    <div class="sidebar-footer">
-      <button class="btn-logout" (click)="logout()">Déconnexion</button>
     </div>
   </aside>
 
