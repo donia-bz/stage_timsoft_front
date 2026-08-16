@@ -30,10 +30,6 @@
 
         <div class="nav-group">
           <div class="nav-label">Équipe</div>
-          <a class="nav-item" [class.active]="activeTab === 'livreurs'" (click)="activeTab = 'livreurs'">
-            <span class="nav-icon">🚚</span> Livreurs
-            <span class="badge" *ngIf="getPendingRegistrations().length > 0">{{ getPendingRegistrations().length }}</span>
-          </a>
           <a class="nav-item" [class.active]="activeTab === 'vehicules'" (click)="activeTab = 'vehicules'">
             <span class="nav-icon">🚗</span> Flotte
           </a>
@@ -71,7 +67,6 @@
       <div>
         <h1 *ngIf="activeTab === 'stats'">Tableau de bord</h1>
         <h1 *ngIf="activeTab === 'commandes'">Commandes</h1>
-        <h1 *ngIf="activeTab === 'livreurs'">Livreurs</h1>
         <h1 *ngIf="activeTab === 'manifests'">Manifestes</h1>
         <h1 *ngIf="activeTab === 'vehicules'">Flotte</h1>
         <h1 *ngIf="activeTab === 'depots'">Dépôts</h1>
@@ -228,7 +223,7 @@
                     <button class="btn btn-primary btn-sm" (click)="assignDriverManually(order)">Affecter</button>
                     <button class="btn btn-secondary btn-sm" (click)="assignDriverAI(order)">IA</button>
                   </div>
-                  <div *ngIf="!isOrderPending(order)" class="muted">Affectée</div>
+                  <div *ngIf="!isOrderPending(order)" class="muted">Affectée à <strong>{{ getAssignedDriverNameForOrder(order.id) }}</strong></div>
                   <button class="btn-link" (click)="openHistory(order)">Historique</button>
                 </td>
               </tr>
@@ -452,80 +447,6 @@
       </div>
     </div>
 
-    <!-- ========== LIVREURS ========== -->
-    <div *ngIf="activeTab === 'livreurs'" class="tab-panel">
-      <div class="card" *ngIf="getPendingRegistrations().length > 0">
-        <div class="card-header">
-          <h3>Inscriptions en attente ({{ getPendingRegistrations().length }})</h3>
-        </div>
-        <div class="list-stack">
-          <div class="list-item" *ngFor="let l of getPendingRegistrations()">
-            <div>
-              <strong>{{ l.prenom }} {{ l.nom }}</strong>
-              <div class="muted">{{ l.email || l.telephone || '—' }}</div>
-            </div>
-            <div class="row-actions">
-              <select [(ngModel)]="l.gouvernorat">
-                <option value="">Gouvernorat...</option>
-                <option *ngFor="let g of gouvernorats" [value]="g">{{ g }}</option>
-              </select>
-              <button class="btn btn-primary btn-sm" (click)="affecterGouvernoratEtValider(l)" [disabled]="!l.gouvernorat">
-                Valider
-              </button>
-              <button class="btn btn-secondary btn-sm" (click)="supprimerLivreur(l.id || '')">Refuser</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header"><h3>Ajouter un livreur</h3></div>
-        <div class="form-row">
-          <input [(ngModel)]="nouveauLivreur.nom" placeholder="Nom" />
-          <input [(ngModel)]="nouveauLivreur.prenom" placeholder="Prénom" />
-          <input [(ngModel)]="nouveauLivreur.telephone" placeholder="Téléphone" />
-          <select [(ngModel)]="nouveauLivreur.gouvernorat">
-            <option value="">Gouvernorat...</option>
-            <option *ngFor="let g of gouvernorats" [value]="g">{{ g }}</option>
-          </select>
-          <button class="btn btn-primary" (click)="enregistrerLivreur()">Enregistrer</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="table-responsive">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Livreur</th>
-                <th>Gouvernorat</th>
-                <th>Statut</th>
-                <th>Note</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let l of livreurs">
-                <td>
-                  <strong>{{ l.prenom }} {{ l.nom }}</strong>
-                  <div class="muted">{{ l.email || l.telephone }}</div>
-                </td>
-                <td>{{ getLivreurGouvernorat(l) }}</td>
-                <td><span class="status-pill" [ngClass]="'status-' + (l.statut || 'disponible').toLowerCase()">{{ l.statut || 'DISPONIBLE' }}</span></td>
-                <td>⭐ {{ getLivreurNote(l) }}</td>
-                <td class="actions">
-                  <button class="btn-icon" (click)="voirDetailsLivreur(l)" title="Détails">👁️</button>
-                  <button class="btn-icon" (click)="toggleDriverStatus(l)" title="Statut">⚡</button>
-                  <button class="btn-icon" *ngIf="l.statut !== 'SUSPENDU'" (click)="suspendreLivreur(l.id || '')" title="Suspendre">⏸️</button>
-                  <button class="btn-icon" *ngIf="l.statut === 'SUSPENDU'" (click)="reactiverLivreur(l.id || '')" title="Réactiver">▶️</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
     <!-- ========== UTILISATEURS ========== -->
     <div *ngIf="activeTab === 'inscriptions'" class="tab-panel">
       <!-- Filtres et Actions de masse -->
@@ -552,6 +473,19 @@
         <div class="bulk-actions">
           <button class="btn btn-primary btn-sm" (click)="bulkApprove()">Approuver</button>
           <button class="btn btn-secondary btn-sm" (click)="bulkSuspend()">Suspendre</button>
+        </div>
+      </div>
+
+      <div class="bulk-action-bar">
+        <span></span>
+        <div class="bulk-actions">
+          <button class="btn btn-primary" (click)="openAddLivreurModal()">➕ Ajouter Livreur</button>
+          <button class="btn btn-primary" (click)="openAddClientModal()">➕ Ajouter Client</button>
+          <button class="btn btn-secondary" (click)="openLivreursListSidebar()">📋 Liste Livreurs</button>
+          <button class="btn btn-warning" [class.btn-primary]="getPendingRegistrations().length === 0" [class.btn-warning]="getPendingRegistrations().length > 0" (click)="openPendingLivreurSidebar()">
+            📋 Liste d'attente
+            <span class="badge" *ngIf="getPendingRegistrations().length > 0">{{ getPendingRegistrations().length }}</span>
+          </button>
         </div>
       </div>
 
@@ -1205,10 +1139,10 @@
       <div class="info-row">
         <span class="icon">👤</span> Livreur : {{ getDriverForVehicule(selectedVehicule) }}
       </div>
-      <div class="mt-10" *ngIf="!selectedVehicule.livreurId">
+      <div class="mt-10">
         <select class="w-full form-input" (change)="assignerLivreurVehicule(selectedVehicule, $event)">
-          <option value="">Sélectionner un livreur disponible...</option>
-          <option *ngFor="let l of livreurs" [value]="l.id">{{ l.prenom }} {{ l.nom }}</option>
+          <option value="">Aucun livreur assigné</option>
+          <option *ngFor="let l of livreurs" [value]="l.id" [selected]="selectedVehicule.livreurId === l.id">{{ l.prenom }} {{ l.nom }}</option>
         </select>
       </div>
     </div>
@@ -1255,6 +1189,113 @@
     </div>
   </div>
 </div>
+
+<!-- ========== SIDEBAR LISTE D'ATTENTE LIVREURS ========== -->
+<div class="side-panel" *ngIf="showPendingLivreurSidebar" [class.open]="showPendingLivreurSidebar">
+  <div class="side-panel-header">
+    <h3>Inscriptions en attente ({{ getPendingRegistrations().length }})</h3>
+    <button class="btn-icon" (click)="closePendingLivreurSidebar()">✕</button>
+  </div>
+  <div class="side-panel-content">
+    <div *ngIf="getPendingRegistrations().length === 0" class="empty">
+      Aucune inscription en attente
+    </div>
+    <div class="list-stack" *ngIf="getPendingRegistrations().length > 0">
+      <div class="list-item" *ngFor="let l of getPendingRegistrations()">
+        <div class="livreur-info">
+          <div class="livreur-header">
+            <strong>{{ l.prenom }} {{ l.nom }}</strong>
+            <span class="status-pill status-inscription">INSCRIPTION</span>
+          </div>
+          <div class="livreur-details">
+            <div class="detail-row">
+              <span class="label">📧 Email:</span>
+              <span class="value">{{ l.email || '—' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">📱 Téléphone:</span>
+              <span class="value">{{ l.telephone || '—' }}</span>
+            </div>
+            <div class="detail-row" *ngIf="l.gouvernorat">
+              <span class="label">📍 Gouvernorat:</span>
+              <span class="value">{{ l.gouvernorat }}</span>
+            </div>
+            <div class="detail-row" *ngIf="l.adresse">
+              <span class="label">🏠 Adresse:</span>
+              <span class="value">{{ l.adresse }}</span>
+            </div>
+            <div class="detail-row" *ngIf="l.ville">
+              <span class="label">🏙️ Ville:</span>
+              <span class="value">{{ l.ville }}</span>
+            </div>
+            <div class="detail-row" *ngIf="l.dateNaissance">
+              <span class="label">🎂 Date de naissance:</span>
+              <span class="value">{{ formatDate(l.dateNaissance) }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="row-actions">
+          <select [(ngModel)]="l.gouvernorat" class="gouvernorat-select">
+            <option value="">Gouvernorat...</option>
+            <option *ngFor="let g of gouvernorats" [value]="g">{{ g }}</option>
+          </select>
+          <button class="btn btn-primary btn-sm" (click)="affecterGouvernoratEtValider(l)" [disabled]="!l.gouvernorat">
+            ✅ Valider
+          </button>
+          <button class="btn btn-danger btn-sm" (click)="supprimerLivreur(l.id || '')">
+            ❌ Refuser
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SIDEBAR LISTE DES LIVREURS ========== -->
+<div class="side-panel" *ngIf="showLivreursListSidebar" [class.open]="showLivreursListSidebar">
+  <div class="side-panel-header">
+    <h3>Liste des Livreurs ({{ getLivreurUsers().length }})</h3>
+    <button class="btn-icon" (click)="closeLivreursListSidebar()">✕</button>
+  </div>
+  <div class="side-panel-content">
+    <div *ngIf="getLivreurUsers().length === 0" class="empty">
+      Aucun livreur enregistré
+    </div>
+    <div class="list-stack" *ngIf="getLivreurUsers().length > 0">
+      <div class="list-item" *ngFor="let l of getLivreurUsers()">
+        <div class="livreur-info">
+          <div class="livreur-header">
+            <strong>{{ l.prenom }} {{ l.nom }}</strong>
+            <span class="status-pill" [ngClass]="'status-' + (l.statut || 'disponible').toLowerCase()">{{ l.statut || 'DISPONIBLE' }}</span>
+          </div>
+          <div class="livreur-details">
+            <div class="detail-row">
+              <span class="label">📧 Email:</span>
+              <span class="value">{{ l.email || '—' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">📱 Téléphone:</span>
+              <span class="value">{{ l.telephone || '—' }}</span>
+            </div>
+            <div class="detail-row" *ngIf="l.gouvernorat">
+              <span class="label">📍 Gouvernorat:</span>
+              <span class="value">{{ l.gouvernorat }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">� Statut:</span>
+              <span class="value">{{ l.statut || 'DISPONIBLE' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="row-actions">
+          <button class="btn btn-primary btn-sm" (click)="deleteUser(l)">👁️ Détails</button>
+          <button class="btn btn-danger btn-sm" (click)="deleteUser(l)">🗑️ Supprimer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <!-- Toasts -->
 <div class="toast-container">

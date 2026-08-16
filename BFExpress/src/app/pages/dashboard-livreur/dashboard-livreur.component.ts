@@ -204,25 +204,38 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
       .map(l => l.colisId)
       .filter((id): id is string => !!id && !this.colisMap[id]);
 
-    if (colisIds.length === 0) return;
-
-    colisIds.forEach(id => {
-      this.apiService.getColisById(id).subscribe({
-        next: (colis) => {
-          this.colisMap[id] = colis;
-          this.updateCurrentDelivery();
-          this.calculateEarnings();
-        },
-        error: (err) => {
-          console.error('Error loading colis', id, err);
-          this.colisMap[id] = {
-            id: id,
-            statut: 'EN_ATTENTE',
-            poids: 0
-          };
-        }
+    if (colisIds.length > 0) {
+      colisIds.forEach(id => {
+        // 1. Fetch Colis
+        this.apiService.getColisById(id).subscribe({
+          next: (colis) => {
+            this.colisMap[id] = colis;
+            this.updateCurrentDelivery();
+            this.calculateEarnings();
+          },
+          error: (err) => {
+            console.error('Error loading colis', id, err);
+            this.colisMap[id] = { id: id, statut: 'EN_ATTENTE', poids: 0 };
+          }
+        });
       });
-    });
+    }
+
+    // 2. Fetch Commandes pour avoir les vraies destinations et clients
+    const commandeIds = this.livraisons
+      .map(l => this.getLinkedCommandeId(l))
+      .filter((id): id is string => !!id && !this.commandesMap[id]);
+
+    if (commandeIds.length > 0) {
+      commandeIds.forEach(id => {
+        this.apiService.getCommandeById(id).subscribe({
+          next: (cmd) => {
+            this.commandesMap[id] = cmd;
+          },
+          error: (err) => console.error('Error loading commande', id, err)
+        });
+      });
+    }
   }
 
   private getLinkedCommandeId(livraison: Livraison): string {

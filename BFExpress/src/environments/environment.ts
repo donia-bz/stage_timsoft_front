@@ -5,6 +5,7 @@ export const environment = {
   trackingUrl: 'http://localhost:8083/api',
   livreursUrl: 'http://localhost:8084/api',
   iaUrl: 'http://localhost:8001',  // Nouveau microservice IA FastAPI
+  iaJavaUrl: 'http://localhost:8085/api/ia', // Ancien service IA Java
   adressesUrl: 'http://localhost:8082/api/adresses',
   vehiclesUrl: 'http://localhost:8086/api',
   depotsUrl: 'http://localhost:8087/api',

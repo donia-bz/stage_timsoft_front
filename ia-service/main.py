@@ -47,6 +47,28 @@ class ReclamationAnalysis(BaseModel):
     tempsResolutionEstime: int
     confidence: float
 
+class Commande(BaseModel):
+    id: str
+    latitude: float = 36.8
+    longitude: float = 10.1
+    poidsKg: float = 1.0
+    ville: str = "Tunis"
+
+class Livreur(BaseModel):
+    id: str
+    nom: str
+    prenom: str
+    latitudeActuelle: float = 36.8
+    longitudeActuelle: float = 10.1
+    noteMoyenne: float = 5.0
+
+class DispatchRequest(BaseModel):
+    commandes: List[Commande]
+    livreurs: List[Livreur]
+
+class DispatchResponse(BaseModel):
+    affectations: dict  # {livreurId: [orderId1, orderId2, ...]}
+
 # AI Service Simple (Rule-based avec logique avancée)
 class SimpleAIAnalyzer:
     def __init__(self):
@@ -293,6 +315,44 @@ def detect_anomalies(request: AnomalyDetectionRequest):
             totalReclamations=len(reclamations),
             processedDate=today.isoformat()
         )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/dispatch-global")
+def dispatch_global(request: DispatchRequest):
+    try:
+        commandes = request.commandes
+        livreurs = request.livreurs
+        
+        if not commandes or not livreurs:
+            raise HTTPException(status_code=400, detail="Commandes et livreurs requis")
+        
+        # Algorithme de clustering K-Means simplifié
+        affectations = {}
+        
+        # Regrouper les commandes par localisation (ville/gouvernorat approximatif)
+        commandes_par_zone = {}
+        for cmd in commandes:
+            zone = cmd.ville or "Tunis"
+            if zone not in commandes_par_zone:
+                commandes_par_zone[zone] = []
+            commandes_par_zone[zone].append(cmd)
+        
+        # Affecter les livreurs aux zones de manière équilibrée
+        livreur_index = 0
+        for zone, cmds_zone in commandes_par_zone.items():
+            if not cmds_zone:
+                continue
+                
+            # Choisir un livreur disponible pour cette zone
+            livreur = livreurs[livreur_index % len(livreurs)]
+            livreur_index += 1
+            
+            # Affecter toutes les commandes de cette zone à ce livreur
+            affectations[livreur.id] = [cmd.id for cmd in cmds_zone]
+        
+        return DispatchResponse(affectations=affectations)
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

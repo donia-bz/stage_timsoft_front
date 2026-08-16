@@ -95,6 +95,9 @@ export interface Livreur {
   noteMoyenne?: number;
   nombreLivraisons?: number;
   dateInscription?: string;
+  adresse?: string;
+  ville?: string;
+  dateNaissance?: string;
 }
 
 export interface Livraison {
@@ -192,6 +195,7 @@ export class ApiService {
   private livreursUrl = environment.livreursUrl;
   private trackingUrl = environment.trackingUrl;
   private iaUrl = environment.iaUrl;
+  private iaJavaUrl = (environment as any).iaJavaUrl || 'http://localhost:8085/api/ia';
   private adressesUrl = environment.adressesUrl;
   private vehiclesUrl = environment.vehiclesUrl;
   private depotsUrl = environment.depotsUrl;
@@ -239,9 +243,7 @@ export class ApiService {
   }
 
   updateCommandeStatut(id: string, statut: string): Observable<Commande> {
-    return this.http.patch<Commande>(`${this.commandesUrl}/commandes/${id}/statut`, null, {
-      params: new HttpParams().set('statut', statut)
-    });
+    return this.http.patch<Commande>(`${this.commandesUrl}/commandes/${id}/statut`, { statut });
   }
 
   deleteCommande(id: string): Observable<void> {
@@ -383,13 +385,17 @@ export class ApiService {
   }
 
   updateLivreurStatut(id: string, statut: string): Observable<Livreur> {
-    return this.http.patch<Livreur>(`${this.livreursUrl}/livreurs/${id}/statut`, null, {
-      params: new HttpParams().set('statut', statut)
-    });
+    return this.http.patch<Livreur>(`${this.livreursUrl}/livreurs/${id}/statut`, { statut });
   }
 
   updateLivreur(id: string, livreur: Partial<Livreur>): Observable<Livreur> {
     return this.http.put<Livreur>(`${this.livreursUrl}/livreurs/${id}`, livreur);
+  }
+
+  assignerGouvernoratLivreur(id: string, gouvernorat: string): Observable<Livreur> {
+    return this.http.patch<Livreur>(`${this.livreursUrl}/livreurs/${id}/gouvernorat`, null, {
+      params: new HttpParams().set('gouvernorat', gouvernorat)
+    });
   }
 
   deleteLivreur(id: string): Observable<void> {
@@ -494,10 +500,11 @@ export class ApiService {
     const payload = {
       commandes: commandes.map(c => ({
         id: c.id,
-        latitude: c.latDepart || 36.8,
-        longitude: c.longDepart || 10.1,
+        latitude: c.latDepart || c.adresseArrivee?.latitude || 36.8,
+        longitude: c.longDepart || c.adresseArrivee?.longitude || 10.1,
         poidsKg: c.poidsKg || 1.0,
-        ville: c.gouvernoratDepart || c.villeDepart
+        ville: c.gouvernoratDepart || c.villeDepart || "Tunis",
+        gouvernorat: c.adresseArrivee?.gouvernorat || "Tunis"
       })),
       livreurs: livreurs.map(l => ({
         id: l.id,
@@ -505,7 +512,8 @@ export class ApiService {
         prenom: l.prenom,
         latitudeActuelle: l.latitudeActuelle || 36.8,
         longitudeActuelle: l.longitudeActuelle || 10.1,
-        noteMoyenne: l.noteMoyenne || 5.0
+        noteMoyenne: l.noteMoyenne || 5.0,
+        gouvernorat: l.gouvernorat || "Tunis"
       }))
     };
     return this.http.post<any>(`${this.iaUrl}/dispatch-global`, payload);

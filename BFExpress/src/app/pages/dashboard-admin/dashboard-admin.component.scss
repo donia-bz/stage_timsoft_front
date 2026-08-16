@@ -230,10 +230,64 @@ $sidebar-w: 280px;
   border: none; cursor: pointer;
   &.btn-primary { background: $primary; color: white; &:hover { background: #0284c7; } }
   &.btn-secondary { background: white; color: $text; border: 1px solid $border; }
+  &.btn-warning { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; &:hover { background: linear-gradient(135deg, #d97706, #b45309); } }
+  &.btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; &:hover { background: linear-gradient(135deg, #dc2626, #b91c1c); } }
   &.btn-sm { padding: 0.4rem 0.75rem; font-size: 0.8rem; }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 .btn-link { background: none; border: none; color: $primary; font-weight: 700; cursor: pointer; font-size: 0.82rem; }
+
+.badge {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 800;
+  margin-left: 0.5rem;
+}
+
+.gouvernorat-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  .gouvernorat-select {
+    padding: 0.3rem 0.5rem;
+    border: 1px solid $border;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    min-width: 120px;
+  }
+}
+
+.status-select {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid $border;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  min-width: 130px;
+}
+
+.rating-stars {
+  display: flex;
+  gap: 0.2rem;
+  cursor: pointer;
+  
+  span {
+    color: #d1d5db;
+    font-size: 1.2rem;
+    transition: color 0.2s;
+    
+    &.active {
+      color: #f59e0b;
+    }
+    
+    &:hover {
+      color: #f59e0b;
+    }
+  }
+}
 .btn-icon {
   width: 32px; height: 32px; border-radius: 8px; border: 1px solid $border;
   background: white; cursor: pointer;
@@ -1097,6 +1151,81 @@ tr.selected td {
     padding: 1.5rem;
     overflow-y: auto;
     flex: 1;
+  }
+  
+  // Styles spécifiques pour la sidebar liste d'attente livreurs
+  .livreur-info {
+    flex: 1;
+    
+    .livreur-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      
+      strong {
+        font-size: 1rem;
+        color: $text;
+      }
+    }
+    
+    .livreur-details {
+      .detail-row {
+        display: flex;
+        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+        
+        .label {
+          color: $muted;
+          min-width: 120px;
+          font-weight: 500;
+        }
+        
+        .value {
+          color: $text;
+          font-weight: 400;
+        }
+      }
+    }
+  }
+  
+  .status-inscription {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+  }
+  
+  .row-actions {
+    flex-direction: column;
+    width: 100%;
+    margin-top: 1rem;
+    
+    .gouvernorat-select {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid $border;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+    
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+  
+  .list-item {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem;
+    border: 1px solid $border;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    background: white;
   }
 }
 

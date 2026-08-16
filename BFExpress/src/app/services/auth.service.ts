@@ -25,6 +25,10 @@ export interface UserProfile {
   adressesRamassageIds?: string[];
   approuve?: boolean;
   statut?: string;
+  gouvernorat?: string;
+  adresse?: string;
+  ville?: string;
+  dateNaissance?: string;
 }
 
 @Injectable({

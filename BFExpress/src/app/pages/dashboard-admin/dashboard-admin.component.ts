@@ -139,6 +139,183 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   userRoleFilter = '';
   userStatusFilter = '';
 
+  livraisonsMap: { [orderId: string]: string } = {}; // orderId -> livreurId
+  editingGouvernorat: { [livreurId: string]: boolean } = {}; // Pour l'édition inline du gouvernorat
+  editingStatus: { [livreurId: string]: boolean } = {}; // Pour l'édition inline du statut
+
+  getAssignedDriverNameForOrder(orderId?: string): string {
+    if (!orderId) return '';
+    const livreurId = this.livraisonsMap[orderId];
+    if (!livreurId) return '';
+    const livreur = this.livreurs.find(l => l.id === livreurId);
+    return livreur ? `${livreur.prenom} ${livreur.nom}` : 'Livreur inconnu';
+  }
+
+  startEditGouvernorat(livreurId: string): void {
+    this.editingGouvernorat[livreurId] = true;
+  }
+
+  cancelEditGouvernorat(livreurId: string): void {
+    this.editingGouvernorat[livreurId] = false;
+  }
+
+  startEditStatus(livreurId: string): void {
+    this.editingStatus[livreurId] = true;
+  }
+
+  cancelEditStatus(livreurId: string): void {
+    this.editingStatus[livreurId] = false;
+  }
+
+  saveStatus(livreur: Livreur): void {
+    if (!livreur.statut) {
+      this.showToast('Veuillez choisir un statut', 'error');
+      return;
+    }
+
+    console.log('=== MISE À JOUR STATUT ===');
+    console.log('Livreur ID:', livreur.id);
+    console.log('Nouveau statut:', livreur.statut);
+
+    this.apiService.updateLivreurStatut(livreur.id || '', livreur.statut).subscribe({
+      next: () => {
+        console.log('Succès: Statut mis à jour');
+        this.showToast('Statut mis à jour avec succès', 'success');
+        this.editingStatus[livreur.id || ''] = false;
+        this.refreshData();
+      },
+      error: (err: any) => {
+        console.error('Erreur mise à jour statut:', err);
+        console.error('Type:', err?.name);
+        console.error('Status:', err?.status);
+        console.error('StatusText:', err?.statusText);
+        console.error('Message:', err?.message);
+        
+        let errorMsg = 'Erreur inconnue';
+        if (err?.status === 404) {
+          errorMsg = 'Livreur non trouvé - créez-le d\'abord';
+        } else if (err?.status === 500) {
+          errorMsg = 'Erreur serveur';
+        } else if (err?.name === 'HttpErrorResponse') {
+          errorMsg = 'Erreur de connexion';
+        } else if (err?.message) {
+          errorMsg = err.message;
+        }
+        this.showToast('Erreur: ' + errorMsg, 'error');
+      }
+    });
+  }
+
+  saveGouvernorat(livreur: Livreur): void {
+    if (!livreur.gouvernorat) {
+      this.showToast('Veuillez choisir un gouvernorat', 'error');
+      return;
+    }
+
+    console.log('=== MISE À JOUR GOUVERNORAT ===');
+    console.log('Livreur ID:', livreur.id);
+    console.log('Nouveau gouvernorat:', livreur.gouvernorat);
+    console.log('Service livreurs URL:', this.apiService['livreursUrl']);
+
+    // Étape 1 : Essayer de mettre à jour le gouvernorat directement
+    this.apiService.assignerGouvernoratLivreur(livreur.id || '', livreur.gouvernorat).subscribe({
+      next: () => {
+        console.log('Succès: Gouvernorat mis à jour via PATCH');
+        this.showToast('Gouvernorat mis à jour avec succès', 'success');
+        this.editingGouvernorat[livreur.id || ''] = false;
+        this.refreshData();
+      },
+      error: (err: any) => {
+        console.error('Erreur PATCH gouvernorat:', err);
+        console.error('Status:', err?.status);
+        
+        // Étape 2 : Si 404, créer le livreur d'abord
+        if (err?.status === 404) {
+          console.log('Livreur non trouvé (404) - création en cours...');
+          const nouveauLivreur: Livreur = {
+            id: livreur.id,
+            nom: livreur.nom,
+            prenom: livreur.prenom,
+            email: livreur.email,
+            telephone: livreur.telephone,
+            gouvernorat: livreur.gouvernorat,
+            statut: livreur.statut || 'DISPONIBLE',
+            noteMoyenne: livreur.noteMoyenne || 5.0,
+            nombreLivraisons: livreur.nombreLivraisons || 0,
+            dateInscription: livreur.dateInscription || new Date().toISOString()
+          };
+
+          this.apiService.creerLivreur(nouveauLivreur).subscribe({
+            next: () => {
+              console.log('Succès: Livreur créé dans le service livreurs');
+              this.showToast('Livreur créé avec gouvernorat assigné', 'success');
+              this.editingGouvernorat[livreur.id || ''] = false;
+              this.refreshData();
+            },
+            error: (creationErr: any) => {
+              console.error('Erreur création livreur:', creationErr);
+              console.error('Status création:', creationErr?.status);
+              
+              // Étape 3 : Si création échoue à cause de conflit (409), essayer PUT
+              if (creationErr?.status === 409) {
+                console.log('Conflit (409) - tentative de mise à jour via PUT');
+                this.apiService.updateLivreur(livreur.id || '', { gouvernorat: livreur.gouvernorat }).subscribe({
+                  next: () => {
+                    console.log('Succès: Livreur mis à jour via PUT');
+                    this.showToast('Gouvernorat mis à jour avec succès', 'success');
+                    this.editingGouvernorat[livreur.id || ''] = false;
+                    this.refreshData();
+                  },
+                  error: (putErr: any) => {
+                    console.error('Erreur PUT:', putErr);
+                    this.showToast('Erreur lors de la mise à jour', 'error');
+                  }
+                });
+              } else {
+                this.showToast('Erreur lors de la création du livreur', 'error');
+              }
+            }
+          });
+        } else {
+          let errorMsg = `Erreur HTTP ${err?.status}` || 'Erreur inconnue';
+          if (!err?.status && err?.name === 'HttpErrorResponse') {
+            errorMsg = 'Erreur de connexion ou CORS';
+          }
+          console.error('Erreur non gérée:', errorMsg);
+          console.error('Type:', err?.name);
+          console.error('StatusText:', err?.statusText);
+          this.showToast('Erreur: ' + errorMsg, 'error');
+        }
+      }
+    });
+  }
+
+  noterLivreur(livreur: Livreur, event: MouseEvent): void {
+    const rect = (event.target as HTMLElement).getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const starWidth = rect.width / 5;
+    const note = Math.ceil(clickX / starWidth);
+    
+    // Mettre à jour localement d'abord pour feedback immédiat
+    livreur.noteMoyenne = note;
+    
+    this.apiService.updateLivreur(livreur.id || '', { noteMoyenne: note }).subscribe({
+      next: () => {
+        this.showToast(`Note mise à jour: ${note}/5`, 'success');
+        this.refreshData();
+      },
+      error: (err: any) => {
+        console.error('Erreur mise à jour note:', err);
+        this.showToast('Erreur lors de la mise à jour de la note', 'error');
+        // Revenir à l'ancienne note en cas d'erreur
+        livreur.noteMoyenne = this.getLivreurNote(livreur);
+      }
+    });
+  }
+
+  showPendingLivreurSidebar = false;
+  showLivreursListSidebar = false;
+
   selectedDrivers: { [key: string]: string } = {};
   aiPredictions: { [key: string]: { driverName: string; score: number } } = {};
   assignmentPanelOrderId: string | null = null;
@@ -238,6 +415,18 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
       error: (err) => console.error('Error fetching orders:', err)
     });
 
+    this.apiService.getAllLivraisons().subscribe({
+      next: (res) => {
+        const livs = res || [];
+        this.livraisonsMap = {};
+        livs.forEach(l => {
+           if (l.colisId) this.livraisonsMap[l.colisId] = l.livreurId;
+           if (l.commandeId) this.livraisonsMap[l.commandeId] = l.livreurId;
+        });
+      },
+      error: (err) => console.error('Error fetching livraisons:', err)
+    });
+
     this.authService.getAllUsers().subscribe({
       next: (res) => {
         this.usersList = res || [];
@@ -250,13 +439,16 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
     this.apiService.getAllLivreurs().subscribe({
       next: (res) => {
+        console.log('=== DONNÉES LIVREURS DU SERVICE LIVREURS ===');
+        console.log('Nombre de livreurs reçus:', res?.length || 0);
+        console.log('Livreurs:', res);
         this.livreurs = res || [];
-        this.mergePendingLivreurUsers();
+        // this.mergePendingLivreurUsers(); // Désactivé - utilise uniquement les livreurs du service livreurs
         this.computeStats();
       },
       error: (err) => {
         console.error('Error fetching drivers:', err);
-        this.mergePendingLivreurUsers();
+        // this.mergePendingLivreurUsers(); // Désactivé - utilise uniquement les livreurs du service livreurs
       }
     });
 
@@ -296,27 +488,10 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   }
 
   mergePendingLivreurUsers(): void {
-    const pendingUsers = this.usersList.filter(u =>
-      u.role === 'LIVREUR' && (u.statut === 'INSCRIPTION' || u.approuve === false)
-    );
-
-    pendingUsers.forEach(u => {
-      const exists = this.livreurs.some(l => l.email === u.email || l.id === u.id);
-      if (!exists) {
-        this.livreurs.push({
-          id: u.id,
-          nom: u.nom,
-          prenom: u.prenom,
-          email: u.email,
-          telephone: u.telephone,
-          gouvernorat: (u as any).gouvernorat || '',
-          statut: 'INSCRIPTION',
-          noteMoyenne: 5.0,
-          nombreLivraisons: 0,
-          dateInscription: new Date().toISOString()
-        } as Livreur);
-      }
-    });
+    // NE PLUS fusionner automatiquement - afficher SEULEMENT les livreurs du service livreurs
+    // Les livreurs sont créés dans le service livreurs lors de la validation
+    // Supprimer cette fonction pour éviter les doublons
+    console.log('mergePendingLivreurUsers désactivé - livreurs viennent uniquement du service livreurs');
   }
 
   get filteredCommandes(): Commande[] {
@@ -486,13 +661,9 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
         this.showToast('Utilisateur approuvé', 'success');
         this.refreshData();
       },
-      error: () => {
-        const user = this.usersList.find(u => u.id === userId);
-        if (user) {
-          user.approuve = true;
-          user.statut = 'ACTIF';
-        }
-        this.showToast('Utilisateur approuvé (mode local)', 'info');
+      error: (err) => {
+        console.error('Erreur approbation utilisateur:', err);
+        this.showToast('Erreur lors de l\'approbation de l\'utilisateur', 'error');
       }
     });
   }
@@ -500,14 +671,35 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   deleteUser(user: UserProfile): void {
     if (!confirm(`Supprimer définitivement ${user.prenom} ${user.nom} ?`)) return;
 
+    console.log('Suppression utilisateur complète - ID:', user.id, 'Role:', user.role);
+    
+    // Supprimer du service auth
     this.authService.supprimerUtilisateur(user.id).subscribe({
       next: () => {
+        console.log('Utilisateur supprimé du service auth');
+        
+        // Si c'est un livreur, supprimer aussi du service livreurs (silencieusement)
+        if (user.role === 'LIVREUR') {
+          console.log('C\'est un livreur - tentative suppression du service livreurs');
+          this.apiService.deleteLivreur(user.id).subscribe({
+            next: () => {
+              console.log('Livreur supprimé du service livreurs');
+              this.livreurs = this.livreurs.filter(l => l.id !== user.id);
+            },
+            error: (livreurErr: any) => {
+              console.error('Erreur suppression service livreurs (ignorée):', livreurErr?.status);
+              // Toujours supprimer de la liste locale, peu importe l'erreur
+              this.livreurs = this.livreurs.filter(l => l.id !== user.id);
+            }
+          });
+        }
+        
         this.showToast('Utilisateur supprimé', 'success');
         this.refreshData();
       },
-      error: () => {
-        this.usersList = this.usersList.filter(u => u.id !== user.id);
-        this.showToast('Utilisateur supprimé (mode local)', 'info');
+      error: (err: any) => {
+        console.error('Erreur suppression auth:', err);
+        this.showToast('Erreur lors de la suppression de l\'utilisateur', 'error');
       }
     });
   }
@@ -520,6 +712,35 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   closeUserPanel(): void {
     this.showUserPanel = false;
     this.selectedUser = null;
+  }
+
+  // ========== SIDEBAR LISTE D'ATTENTE LIVREURS ==========
+  openPendingLivreurSidebar(): void {
+    this.showPendingLivreurSidebar = true;
+  }
+
+  closePendingLivreurSidebar(): void {
+    this.showPendingLivreurSidebar = false;
+  }
+
+  openLivreursListSidebar(): void {
+    this.showLivreursListSidebar = true;
+  }
+
+  closeLivreursListSidebar(): void {
+    this.showLivreursListSidebar = false;
+  }
+
+  openAddLivreurModal(): void {
+    // Utiliser le formulaire existant pour ajouter un livreur
+    this.activeTab = 'inscriptions';
+    this.showToast('Formulaire d\'ajout de livreur à implémenter', 'info');
+  }
+
+  openAddClientModal(): void {
+    // Utiliser le formulaire existant pour ajouter un client
+    this.activeTab = 'inscriptions';
+    this.showToast('Formulaire d\'ajout de client à implémenter', 'info');
   }
 
   getUserRole(user: UserProfile): string {
@@ -570,13 +791,33 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     if (ids.length === 0) return;
     if (!confirm(`Approuver ${ids.length} utilisateurs ?`)) return;
 
+    console.log('=== APPROBATION EN MASSE ===');
+    console.log('IDs à approuver:', ids);
+
     this.authService.bulkApprouverUtilisateurs(ids).subscribe({
       next: () => {
+        console.log('Succès: Utilisateurs approuvés');
         this.showToast(`${ids.length} utilisateurs approuvés`, 'success');
         this.selectedUserIds.clear();
         this.refreshData();
       },
-      error: () => this.showToast('Erreur lors de l\'approbation en masse', 'error')
+      error: (err: any) => {
+        console.error('Erreur approbation en masse:', err);
+        console.error('Type:', err?.name);
+        console.error('Status:', err?.status);
+        console.error('StatusText:', err?.statusText);
+        console.error('Message:', err?.message);
+        
+        let errorMsg = 'Erreur inconnue';
+        if (err?.status === 500) {
+          errorMsg = 'Erreur serveur';
+        } else if (err?.name === 'HttpErrorResponse') {
+          errorMsg = 'Erreur de connexion';
+        } else if (err?.message) {
+          errorMsg = err.message;
+        }
+        this.showToast('Erreur: ' + errorMsg, 'error');
+      }
     });
   }
 
@@ -613,7 +854,10 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
   // ========== COMMANDES / DISPATCH ==========
   isOrderPending(order: Commande): boolean {
-    return ['EN_ATTENTE', 'MANIFESTE', 'A_ENLEVER'].includes(order.statut || 'EN_ATTENTE');
+    // Une commande est en attente de dispatch si elle n'a pas encore de livreur affecté
+    const hasLivreur = this.livraisonsMap[order.id || ''];
+    const isWaitingStatut = ['EN_ATTENTE', 'MANIFESTE', 'A_ENLEVER'].includes(order.statut || 'EN_ATTENTE');
+    return isWaitingStatut && !hasLivreur;
   }
 
   assignDriverManually(order: Commande): void {
@@ -624,28 +868,21 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     }
 
     const orderId = order.id || '';
+    console.log('Affectation manuelle - Commande:', orderId, 'Livreur:', driverId);
+    
+    // Flux simplifié : seulement créer la livraison, le backend gérera les statuts
     this.apiService.creerLivraison(orderId, driverId).subscribe({
       next: () => {
-        this.apiService.updateCommandeStatut(orderId, 'EN_LIVRAISON').subscribe({
-          next: () => {
-            this.apiService.updateLivreurStatut(driverId, 'EN_COURSE').subscribe({
-              next: () => {
-                this.showToast('Livreur affecté avec succès', 'success');
-                this.refreshData();
-              },
-              error: () => {
-                this.showToast('Affectation OK (statut livreur local)', 'info');
-                this.refreshData();
-              }
-            });
-          },
-          error: () => {
-            this.showToast('Livraison créée, statut commande non mis à jour', 'info');
-            this.refreshData();
-          }
-        });
+        console.log('Livraison créée avec succès');
+        // Mettre à jour la carte des livraisons pour afficher le livreur affecté
+        this.livraisonsMap[orderId] = driverId;
+        this.showToast('Livreur affecté avec succès', 'success');
+        this.refreshData();
       },
-      error: (err) => this.showToast('Erreur d’affectation : ' + (err.message || ''), 'error')
+      error: (err: any) => {
+        console.error('Erreur création livraison:', err);
+        this.showToast('Erreur d\'affectation: ' + (err?.message || 'Erreur inconnue'), 'error');
+      }
     });
   }
 
@@ -653,9 +890,10 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     const orderId = order.id || '';
     if (!orderId) return;
 
-    const availableDrivers = this.livreurs.filter(l => l.statut === 'DISPONIBLE');
+    // Utiliser les livreurs du service auth au lieu du service livreurs
+    const availableDrivers = this.getLivreurUsers().filter(l => l.statut === 'DISPONIBLE' || l.statut === 'ACTIF');
     if (availableDrivers.length === 0) {
-      this.showToast('Aucun livreur disponible', 'info');
+      this.showToast('Aucun livreur disponible. Approuvez des livreurs d\'abord.', 'error');
       return;
     }
 
@@ -691,20 +929,27 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   }
 
   dispatchGlobalIA(): void {
-    const pendingOrders = this.commandes.filter(c => c.statut === 'EN_ATTENTE');
+    const pendingOrders = this.commandes.filter(c => c.statut === 'A_ENLEVER');
     if (pendingOrders.length === 0) {
-      this.showToast('Aucune commande en attente pour le dispatching.', 'info');
+      this.showToast('Aucune commande à enlever pour le dispatching.', 'info');
       return;
     }
-    const availableDrivers = this.livreurs.filter(l => l.statut === 'DISPONIBLE');
+    // Utiliser les livreurs du service auth
+    const availableDrivers = this.getLivreurUsers().filter(l => l.statut === 'DISPONIBLE' || l.statut === 'ACTIF');
     if (availableDrivers.length === 0) {
-      this.showToast('Aucun livreur disponible pour le dispatching.', 'info');
+      this.showToast('Aucun livreur disponible. Approuvez des livreurs d\'abord.', 'error');
       return;
     }
 
     this.showToast('Algorithme de Clustering IA en cours...', 'info');
+    
+    console.log('Commandes à dispatcher:', pendingOrders.length);
+    console.log('Livreurs disponibles:', availableDrivers.length);
+    console.log('URL IA:', this.iaServiceUrl);
+    
     this.apiService.dispatchGlobal(pendingOrders, availableDrivers).subscribe({
       next: (res: any) => {
+        console.log('Réponse IA dispatch:', res);
         const affectations = res.affectations;
         let count = 0;
         let totalAssigned = 0;
@@ -716,18 +961,26 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
           for (const orderId of listIds) {
             this.apiService.creerLivraison(orderId, livreurId).subscribe({
               next: () => {
-                this.apiService.updateCommandeStatut(orderId, 'A_ENLEVER').subscribe({
+                // Mettre à jour la carte des livraisons pour afficher le livreur affecté
+                this.livraisonsMap[orderId] = livreurId;
+                
+                this.apiService.updateCommandeStatut(orderId, 'EN_LIVRAISON').subscribe({
                   next: () => {
-                    count++;
-                    if (count === totalAssigned) {
-                       this.showToast(`Dispatch terminé ! ${totalAssigned} commandes affectées (Clustering K-Means).`, 'success');
-                       this.refreshData();
-                    }
+                    this.apiService.updateLivreurStatut(livreurId, 'EN_COURSE').subscribe({
+                      next: () => {
+                        count++;
+                        if (count === totalAssigned) {
+                           this.showToast(`Dispatch terminé ! ${totalAssigned} commandes affectées (Clustering K-Means).`, 'success');
+                           this.refreshData();
+                        }
+                      },
+                      error: (err) => console.error('Erreur mise à jour statut livreur:', err)
+                    });
                   },
-                  error: () => count++ // Ignore error
+                  error: (err) => console.error('Erreur mise à jour statut commande:', err)
                 });
               },
-              error: () => count++ // Ignore error
+              error: (err) => console.error('Erreur création livraison:', err)
             });
           }
         }
@@ -736,7 +989,25 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
             this.showToast('L\'IA n\'a pu assigner aucune commande.', 'info');
         }
       },
-      error: (err) => this.showToast('Erreur IA Dispatch : ' + (err.message || ''), 'error')
+      error: (err: any) => {
+        console.error('Erreur IA Dispatch complète:', err);
+        console.error('Type erreur:', err?.name);
+        console.error('Status:', err?.status);
+        console.error('StatusText:', err?.statusText);
+        console.error('Message:', err?.message);
+        console.error('URL:', err?.url);
+        console.error('Error object:', JSON.stringify(err?.error));
+        console.error('Stack:', err?.stack);
+        
+        let errorMsg = err?.message || 'Erreur inconnue';
+        if (err?.status) {
+          errorMsg = `Erreur HTTP ${err.status}: ${errorMsg}`;
+        } else if (err?.name === 'HttpErrorResponse') {
+          errorMsg = 'Erreur de connexion au service IA';
+        }
+        
+        this.showToast('Erreur IA Dispatch : ' + errorMsg, 'error');
+      }
     });
   }
 
@@ -804,10 +1075,9 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
         this.showToast('Livreur enregistré', 'success');
         this.refreshData();
       },
-      error: () => {
-        this.livreurs.push(payload);
-        this.resetLivreurForm();
-        this.showToast('Livreur enregistré (mode local)', 'info');
+      error: (err) => {
+        console.error('Erreur création livreur:', err);
+        this.showToast('Erreur lors de la création du livreur', 'error');
       }
     });
   }
@@ -835,8 +1105,27 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
         this.showToast(`Livreur ${livreur.prenom} ${livreur.nom} validé`, 'success');
         this.refreshData();
       },
-      error: () => {
-        this.showToast('Livreur validé (mode local)', 'info');
+      error: (err: any) => {
+        console.error('Erreur validation livreur complète:', err);
+        console.error('Status:', err?.status);
+        console.error('Status Text:', err?.statusText);
+        console.error('Message:', err?.message);
+        console.error('Error object:', err?.error);
+        console.error('URL appelée:', `${this.apiService['livreursUrl']}/livreurs/${livreurId}/statut`);
+        
+        let errorMessage = 'Erreur inconnue';
+        if (err?.status === 500) {
+          errorMessage = 'Erreur serveur 500 - Contactez l\'administrateur';
+          console.error('Détails erreur serveur:', JSON.stringify(err?.error));
+        } else if (err?.status) {
+          errorMessage = `Erreur HTTP ${err.status}`;
+        } else if (err?.message) {
+          errorMessage = err.message;
+        } else if (typeof err === 'string') {
+          errorMessage = err;
+        }
+        
+        this.showToast(`Erreur: ${errorMessage}`, 'error');
       }
     });
   }
@@ -847,9 +1136,69 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.apiService.updateLivreur(livreur.id, { gouvernorat: livreur.gouvernorat }).subscribe({
-      next: () => this.validerLivreur(livreur.id),
-      error: () => this.validerLivreur(livreur.id)
+    console.log('Tentative de validation pour livreur:', livreur.id);
+    console.log('URL service livreurs:', this.apiService['livreursUrl']);
+
+    // Créer ou mettre à jour le livreur avec le gouvernorat
+    const livreurPayload: Livreur = {
+      id: livreur.id,
+      nom: livreur.nom,
+      prenom: livreur.prenom,
+      email: livreur.email,
+      telephone: livreur.telephone,
+      gouvernorat: livreur.gouvernorat,
+      statut: 'DISPONIBLE',
+      noteMoyenne: 5.0,
+      nombreLivraisons: 0,
+      dateInscription: new Date().toISOString()
+    };
+
+    this.apiService.creerLivreur(livreurPayload).subscribe({
+      next: (createdLivreur) => {
+        console.log('Livreur créé/mis à jour avec succès:', createdLivreur);
+        this.showToast('Livreur validé avec succès', 'success');
+        this.refreshData();
+      },
+      error: (err: any) => {
+        console.error('Erreur création/mise à jour livreur:', err);
+        console.error('Status:', err?.status);
+        console.error('Message:', err?.message);
+        console.error('Error details:', JSON.stringify(err?.error));
+        
+        let errorMsg = 'Erreur inconnue';
+        if (err?.status === 409) {
+          errorMsg = 'Livreur existe déjà - mise à jour en cours';
+          // Si conflit (livreur existe), essayer de mettre à jour le gouvernorat via PATCH
+          this.apiService.assignerGouvernoratLivreur(livreur.id, livreur.gouvernorat).subscribe({
+            next: () => {
+              // Puis mettre à jour le statut
+              this.apiService.updateLivreurStatut(livreur.id, 'DISPONIBLE').subscribe({
+                next: () => {
+                  this.showToast('Livreur mis à jour avec succès', 'success');
+                  this.refreshData();
+                },
+                error: (statutErr: any) => {
+                  console.error('Erreur mise à jour statut:', statutErr);
+                  this.showToast('Livreur mis à jour (statut non changé)', 'info');
+                  this.refreshData();
+                }
+              });
+            },
+            error: (updateErr: any) => {
+              console.error('Erreur mise à jour gouvernorat:', updateErr);
+              this.showToast(`Erreur mise à jour: ${updateErr?.status || 'inconnue'}`, 'error');
+            }
+          });
+        } else if (err?.status) {
+          errorMsg = `Erreur HTTP ${err.status}`;
+        } else if (err?.message) {
+          errorMsg = err.message;
+        }
+        
+        if (err?.status !== 409) {
+          this.showToast(`Erreur: ${errorMsg}`, 'error');
+        }
+      }
     });
   }
 
@@ -857,10 +1206,15 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     const livreur = this.livreurs.find(l => l.id === livreurId);
     if (!livreur) return;
 
-    livreur.gouvernorat = gouvernorat;
     this.apiService.updateLivreur(livreurId, { gouvernorat }).subscribe({
-      next: () => this.showToast(`Affecté à ${gouvernorat}`, 'success'),
-      error: () => this.showToast('Affectation locale enregistrée', 'info')
+      next: () => {
+        livreur.gouvernorat = gouvernorat;
+        this.showToast(`Affecté à ${gouvernorat}`, 'success');
+      },
+      error: (err) => {
+        console.error('Erreur affectation gouvernorat:', err);
+        this.showToast('Erreur lors de l\'affectation du gouvernorat', 'error');
+      }
     });
   }
 
@@ -874,7 +1228,10 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
         this.showToast('Livreur suspendu', 'success');
         this.refreshData();
       },
-      error: () => this.showToast('Livreur suspendu (mode local)', 'info')
+      error: (err) => {
+        console.error('Erreur suspension livreur:', err);
+        this.showToast('Erreur lors de la suspension du livreur', 'error');
+      }
     });
   }
 
@@ -882,13 +1239,16 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     const livreur = this.livreurs.find(l => l.id === livreurId);
     if (!livreur) return;
 
-    livreur.statut = 'DISPONIBLE';
     this.apiService.updateLivreurStatut(livreurId, 'DISPONIBLE').subscribe({
       next: () => {
+        livreur.statut = 'DISPONIBLE';
         this.showToast('Livreur réactivé', 'success');
         this.refreshData();
       },
-      error: () => this.showToast('Livreur réactivé (mode local)', 'info')
+      error: (err) => {
+        console.error('Erreur réactivation livreur:', err);
+        this.showToast('Erreur lors de la réactivation du livreur', 'error');
+      }
     });
   }
 
@@ -907,18 +1267,106 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   }
 
   supprimerLivreur(lId: string): void {
-    const l = this.livreurs.find(liv => liv.id === lId);
-    if (!l) return;
-    if (!confirm(`Supprimer le livreur ${l.prenom} ${l.nom} ?`)) return;
+    console.log('=== SUPPRESSION LIVREUR APPELÉE ===');
+    console.log('Livreur ID reçu:', lId);
+    console.log('Type de lId:', typeof lId);
+    console.log('lId est vide?', !lId);
+    
+    // Si l'ID est vide, chercher par email
+    if (!lId) {
+      console.error('ID vide - impossible de supprimer');
+      this.showToast('Erreur: ID du livreur manquant', 'error');
+      return;
+    }
+    
+    const l = this.livreurs.find(liv => liv.id === lId || liv.email === lId);
+    if (!l) {
+      console.error('Livreur non trouvé dans la liste locale');
+      console.log('Liste des livreurs:', this.livreurs.map(liv => ({ id: liv.id, email: liv.email, nom: liv.nom })));
+      return;
+    }
+    
+    console.log('Livreur trouvé:', l.prenom, l.nom, 'ID:', l.id, 'Email:', l.email);
+    
+    if (!confirm(`Supprimer définitivement le livreur ${l.prenom} ${l.nom} ?\n\nCette action le supprimera du système entier (livreurs + auth).`)) {
+      console.log('Suppression annulée par l\'utilisateur');
+      return;
+    }
 
+    console.log('Suppression complète du livreur:', lId);
+
+    // Supprimer du service livreurs
     this.apiService.deleteLivreur(lId).subscribe({
       next: () => {
-        this.showToast('Livreur supprimé', 'success');
-        this.refreshData();
+        console.log('Livreur supprimé du service livreurs');
+        
+        // Supprimer aussi du service auth
+        this.authService.supprimerUtilisateur(lId).subscribe({
+          next: () => {
+            console.log('Livreur supprimé du service auth');
+            this.showToast('Livreur supprimé définitivement', 'success');
+            this.refreshData();
+          },
+          error: (authErr: any) => {
+            console.error('Erreur suppression service auth:', authErr);
+            console.error('Status auth:', authErr?.status);
+            
+            // Si suppression auth échoue, on continue quand même (livreur déjà supprimé de livreurs)
+            if (authErr?.status === 404) {
+              console.log('Livreur non trouvé dans service auth - OK (déjà supprimé)');
+              this.showToast('Livreur supprimé (auth non trouvé)', 'info');
+              this.refreshData();
+            } else {
+              let errorMsg = 'Erreur inconnue';
+              if (authErr?.status === 500) {
+                errorMsg = 'Erreur serveur auth';
+              } else if (authErr?.message) {
+                errorMsg = authErr.message;
+              }
+              this.showToast('Livreur supprimé (erreur auth): ' + errorMsg, 'info');
+              this.refreshData();
+            }
+          }
+        });
       },
-      error: () => {
-        this.livreurs = this.livreurs.filter(liv => liv.id !== lId);
-        this.showToast('Livreur supprimé (mode local)', 'info');
+      error: (livreurErr: any) => {
+        console.error('=== ERREUR SUPPRESSION LIVREUR COMPLÈTE ===');
+        console.error('Livreur ID:', lId);
+        console.error('Erreur service livreurs:', livreurErr);
+        console.error('Type:', livreurErr?.name);
+        console.error('Status:', livreurErr?.status);
+        console.error('StatusText:', livreurErr?.statusText);
+        console.error('Message:', livreurErr?.message);
+        console.error('URL:', livreurErr?.url);
+        console.error('Error object:', JSON.stringify(livreurErr?.error));
+        
+        // Si suppression livreurs échoue avec 404 (déjà supprimé de la base), supprimer localement
+        if (livreurErr?.status === 404) {
+          console.log('Livreur non trouvé dans livreurs (déjà supprimé de la base) - suppression locale uniquement');
+          this.livreurs = this.livreurs.filter(liv => liv.id !== lId);
+          this.showToast('Livreur supprimé de la liste (déjà supprimé de la base)', 'success');
+          
+          // Essayer quand même de supprimer du service auth
+          this.authService.supprimerUtilisateur(lId).subscribe({
+            next: () => {
+              console.log('Livreur supprimé du service auth');
+            },
+            error: (authErr: any) => {
+              console.error('Erreur suppression auth:', authErr);
+              // Ignorer l'erreur auth car le livreur est déjà supprimé localement
+            }
+          });
+        } else {
+          let errorMsg = 'Erreur inconnue';
+          if (livreurErr?.status === 500) {
+            errorMsg = 'Erreur serveur livreurs';
+          } else if (livreurErr?.name === 'HttpErrorResponse') {
+            errorMsg = 'Erreur de connexion';
+          } else if (livreurErr?.message) {
+            errorMsg = livreurErr.message;
+          }
+          this.showToast('Erreur: ' + errorMsg, 'error');
+        }
       }
     });
   }
@@ -931,8 +1379,12 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     );
   }
 
-  getPendingRegistrations(): Livreur[] {
-    return this.livreurs.filter(l => l.statut === 'INSCRIPTION');
+  getPendingRegistrations(): any[] {
+    return this.usersList.filter(u => u.role === 'LIVREUR' && (!u.approuve || u.statut === 'INSCRIPTION'));
+  }
+
+  getLivreurUsers(): any[] {
+    return this.usersList.filter(u => u.role === 'LIVREUR');
   }
 
   getAvailableDrivers(): Livreur[] {
@@ -951,8 +1403,8 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     return livreur.gouvernorat || 'Non assigné';
   }
 
-  getLivreurNote(livreur: Livreur): string {
-    return String(livreur.noteMoyenne ?? 4.8);
+  getLivreurNote(livreur: Livreur): number {
+    return livreur.noteMoyenne ?? 5.0;
   }
 
   getDriverFullName(driver: Livreur): string {
@@ -1044,8 +1496,9 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
         this.showToast(`Manifeste affecté à ${livreur.prenom} ${livreur.nom}`, 'success');
         this.refreshData();
       },
-      error: () => {
-        this.showToast('Affectation enregistrée localement', 'info');
+      error: (err) => {
+        console.error('Erreur affectation manifeste:', err);
+        this.showToast('Erreur lors de l\'affectation du manifeste', 'error');
       }
     });
   }
@@ -1054,13 +1507,16 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     const manifest = this.manifests.find(m => m.id === manifestId);
     if (!manifest) return;
 
-    manifest.statut = 'EN_LIVRAISON';
     this.apiService.updateManifeste(manifestId, manifest).subscribe({
       next: () => {
+        manifest.statut = 'EN_LIVRAISON';
         this.showToast('Retrait validé — en livraison', 'success');
         this.refreshData();
       },
-      error: () => this.showToast('Validation locale', 'info')
+      error: (err) => {
+        console.error('Erreur validation retrait manifeste:', err);
+        this.showToast('Erreur lors de la validation du retrait', 'error');
+      }
     });
   }
 
@@ -2441,9 +2897,9 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
         vehicule.statut = res.statut || newStatus;
         this.showToast(`Statut véhicule mis à jour`, 'success');
       },
-      error: () => {
-        vehicule.statut = newStatus;
-        this.showToast('Mode local : Statut mis à jour', 'info');
+      error: (err) => {
+        console.error('Erreur mise à jour véhicule:', err);
+        this.showToast('Erreur lors de la mise à jour du véhicule', 'error');
       }
     });
   }
@@ -2452,10 +2908,15 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     const livreurId = event.target.value;
     if (!livreurId) return;
 
-    vehicule.livreurId = livreurId;
     this.apiService.affecterVehicule(livreurId, vehicule.id).subscribe({
-      next: () => this.showToast('Livreur assigné', 'success'),
-      error: () => this.showToast('Assignation locale', 'info')
+      next: () => {
+        vehicule.livreurId = livreurId;
+        this.showToast('Livreur assigné', 'success');
+      },
+      error: (err) => {
+        console.error('Erreur assignation véhicule:', err);
+        this.showToast('Erreur lors de l\'assignation du véhicule', 'error');
+      }
     });
   }
 
