@@ -277,7 +277,7 @@
           </select>
           <select [ngModel]="manifestFilters.livreurId" (ngModelChange)="manifestFilters.livreurId = $event" class="filter-select">
             <option value="">Tous livreurs</option>
-            <option *ngFor="let l of livreurs" [value]="l.id">{{ l.prenom }} {{ l.nom }}</option>
+            <option *ngFor="let l of getLivreurUsers()" [value]="l.id">{{ l.prenom }} {{ l.nom }}</option>
           </select>
           <input type="number" [ngModel]="manifestFilters.minColis" (ngModelChange)="manifestFilters.minColis = $event" class="filter-input" placeholder="Min colis" />
           <input type="date" [ngModel]="manifestFilters.dateDebut" (ngModelChange)="manifestFilters.dateDebut = $event" class="filter-input" />
@@ -291,7 +291,7 @@
         <div class="bulk-actions">
           <select [(ngModel)]="bulkDriverId" class="small-select">
             <option value="">Livreur...</option>
-            <option *ngFor="let l of livreurs" [value]="l.id">{{ l.prenom }} {{ l.nom }}</option>
+            <option *ngFor="let l of getLivreurUsers()" [value]="l.id">{{ l.prenom }} {{ l.nom }}</option>
           </select>
           <button class="btn btn-primary btn-sm" (click)="bulkAssignDriver()" [disabled]="!bulkDriverId">Affecter</button>
           <button class="btn btn-secondary btn-sm" (click)="bulkCancel()">Annuler</button>
@@ -660,7 +660,7 @@
             </div>
             <select *ngIf="!v.livreurId" class="small-select" (change)="assignerLivreurVehicule(v, $event)">
               <option value="">Assigner...</option>
-              <option *ngFor="let l of livreurs" [value]="l.id">{{ l.prenom }} {{ l.nom }}</option>
+              <option *ngFor="let l of getLivreurUsers()" [value]="l.id">{{ l.prenom }} {{ l.nom }} ({{ l.gouvernorat || '—' }})</option>
             </select>
           </div>
         </div>
@@ -1142,7 +1142,7 @@
       <div class="mt-10">
         <select class="w-full form-input" (change)="assignerLivreurVehicule(selectedVehicule, $event)">
           <option value="">Aucun livreur assigné</option>
-          <option *ngFor="let l of livreurs" [value]="l.id" [selected]="selectedVehicule.livreurId === l.id">{{ l.prenom }} {{ l.nom }}</option>
+          <option *ngFor="let l of getLivreurUsers()" [value]="l.id" [selected]="selectedVehicule.livreurId === l.id">{{ l.prenom }} {{ l.nom }}</option>
         </select>
       </div>
     </div>

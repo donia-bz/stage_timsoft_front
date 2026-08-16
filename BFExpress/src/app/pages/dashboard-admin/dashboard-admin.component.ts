@@ -1384,19 +1384,34 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   }
 
   getLivreurUsers(): any[] {
-    return this.usersList.filter(u => u.role === 'LIVREUR');
+    // Retourne SEULEMENT les livreurs approuvés du service auth
+    return this.usersList.filter(u => u.role === 'LIVREUR' && u.approuve && u.statut !== 'INSCRIPTION');
   }
 
-  getAvailableDrivers(): Livreur[] {
-    return this.livreurs.filter(l => l.statut === 'DISPONIBLE');
+  getAvailableDrivers(): any[] {
+    // Utiliser les livreurs approuvés du service auth
+    return this.getLivreurUsers().filter(l => l.statut === 'DISPONIBLE');
   }
 
   getActiveDriversCount(): number {
-    return this.livreurs.filter(l => l.statut === 'DISPONIBLE' || l.statut === 'EN_COURSE').length;
+    // Utiliser les livreurs approuvés du service auth
+    // Inclut DISPONIBLE, EN_COURSE, ACTIF, et tout statut actif
+    return this.getLivreurUsers().filter(l =>
+      l.statut === 'DISPONIBLE' ||
+      l.statut === 'EN_COURSE' ||
+      l.statut === 'ACTIF' ||
+      (!l.statut || l.statut !== 'INSCRIPTION' && l.statut !== 'SUSPENDU')
+    ).length;
   }
 
   getAvailableDriversCount(): number {
-    return this.livreurs.filter(l => l.statut === 'DISPONIBLE').length;
+    // Utiliser les livreurs approuvés du service auth
+    // Livreurs disponibles pour prendre des commandes
+    return this.getLivreurUsers().filter(l =>
+      l.statut === 'DISPONIBLE' ||
+      l.statut === 'ACTIF' ||
+      (!l.statut || l.statut !== 'INSCRIPTION' && l.statut !== 'SUSPENDU' && l.statut !== 'EN_COURSE')
+    ).length;
   }
 
   getLivreurGouvernorat(livreur: Livreur): string {
@@ -1818,7 +1833,9 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     this.stats.successRate =
       totalFinished > 0 ? Math.round((livree / totalFinished) * 1000) / 10 : 0;
 
-    const notes = this.livreurs
+    // Utiliser les livreurs approuvés du service auth pour les statistiques
+    const approvedDrivers = this.getLivreurUsers();
+    const notes = approvedDrivers
       .filter(l => l.noteMoyenne && l.noteMoyenne > 0)
       .map(l => l.noteMoyenne!);
     this.stats.satisfactionScore = notes.length
@@ -2876,7 +2893,8 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
   getDriverForVehicule(vehicule: any): string {
     if (!vehicule.livreurId) return 'Aucun livreur assigné';
-    const driver = this.livreurs.find(l => l.id === vehicule.livreurId);
+    // Chercher dans les livreurs approuvés du service auth
+    const driver = this.getLivreurUsers().find(l => l.id === vehicule.livreurId);
     return driver ? `${driver.prenom} ${driver.nom}` : 'Livreur inconnu';
   }
 
@@ -2908,10 +2926,17 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     const livreurId = event.target.value;
     if (!livreurId) return;
 
+    // Vérifier que le livreur existe dans les livreurs approuvés
+    const livreur = this.getLivreurUsers().find(l => l.id === livreurId);
+    if (!livreur) {
+      this.showToast('Livreur introuvable ou non approuvé', 'error');
+      return;
+    }
+
     this.apiService.affecterVehicule(livreurId, vehicule.id).subscribe({
       next: () => {
         vehicule.livreurId = livreurId;
-        this.showToast('Livreur assigné', 'success');
+        this.showToast(`Véhicule assigné à ${livreur.prenom} ${livreur.nom}`, 'success');
       },
       error: (err) => {
         console.error('Erreur assignation véhicule:', err);
