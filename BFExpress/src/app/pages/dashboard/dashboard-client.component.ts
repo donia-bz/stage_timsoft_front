@@ -6,7 +6,9 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ApiService, Commande } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { PdfService } from '../../services/pdf.service';
+import { WebSocketService } from '../../services/websocket.service';
 import { io, Socket } from 'socket.io-client';
+import { Subscription } from 'rxjs';
 
 export interface Reclamation {
   id?: string;
@@ -34,6 +36,12 @@ export interface TeamMember {
   isFavorite?: boolean;
 }
 
+export interface ToastMessage {
+  id: number;
+  message: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+}
+
 @Component({
   selector: 'app-dashboard-client',
   standalone: true,
@@ -50,7 +58,7 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
   commandes: Commande[] = [];
   pendingCommandes: Commande[] = [];
   validatedManifests: any[] = [];
-  reclamationsList: Reclamation[] = [];
+  reclamationsList: any[] = [];
   colisList: any[] = []; // Ajouté pour stocker les colis
 
   searchTerm = '';
@@ -90,12 +98,23 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
   rdvDate = '';
   rdvTime = '';
 
+  // Reclamations filters
+  reclamationFilter = 'ALL'; // ALL, EN_ATTENTE, EN_COURS, RESOLUE
+
+  // Reclamation details sidebar
+  showReclamationDetails = false;
+  selectedReclamation: any = null;
+
   loading = false;
   errorMessage = '';
   successMessage = '';
   reclamationSuccessMsg = '';
 
   private refreshInterval: any = null;
+  private wsSubscription: Subscription | null = null;
+
+  toasts: ToastMessage[] = [];
+  private toastIdCounter = 0;
 
   month = 'Août';
   year = '2026';
@@ -188,7 +207,8 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
     private apiService: ApiService,
     private authService: AuthService,
     private router: Router,
-    private pdfService: PdfService
+    private pdfService: PdfService,
+    private webSocketService: WebSocketService
   ) {
     this.initForms();
   }
@@ -209,6 +229,24 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
       this.startRealTimeUpdates();
       this.initializeTrackingSocket();
       this.updateServiceStats();
+
+      // Connecter WebSocket pour les mises à jour de réclamations
+      this.webSocketService.connect(this.clientId);
+      this.wsSubscription = this.webSocketService.getReclamationUpdates().subscribe({
+        next: (update) => {
+          console.log('📩 Mise à jour réclamation reçue:', update);
+          if (update.type === 'NEW_RESPONSE') {
+            this.showToast('💬 Nouvelle réponse du support pour votre réclamation !', 'success');
+            this.loadReclamations(); // Recharger les réclamations
+          } else if (update.type === 'STATUS_UPDATE') {
+            this.showToast('🔄 Statut de votre réclamation mis à jour', 'info');
+            this.loadReclamations();
+          }
+        },
+        error: (err) => {
+          console.error('❌ Erreur WebSocket:', err);
+        }
+      });
     }
   }
 
@@ -217,6 +255,12 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
       clearInterval(this.refreshInterval);
     }
     this.disconnectTrackingSocket();
+
+    // Déconnecter WebSocket
+    if (this.wsSubscription) {
+      this.wsSubscription.unsubscribe();
+    }
+    this.webSocketService.disconnect();
   }
 
   private initializeTrackingSocket(): void {
@@ -371,18 +415,37 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
   loadReclamations(): void {
     if (!this.clientId) return;
 
+    console.log('📝 Chargement des réclamations pour client:', this.clientId);
+
     this.apiService.getReclamationsByClient(this.clientId).subscribe({
       next: (reclamations) => {
-        this.reclamationsList = (reclamations || []).map((r: any) => ({
-          id: r.id,
-          objet: r.type || r.objet,
-          codeBarre: r.commandeId || r.codeBarre,
-          description: r.description,
-          dateCreation: r.dateCreation,
-          statut: r.statut
-        }));
+        console.log('📝 Réclamations reçues (brutes):', reclamations);
+
+        this.reclamationsList = (reclamations || []).map((r: any) => {
+          const mapped = {
+            id: r.id,
+            objet: r.type || r.objet,
+            codeBarre: r.commandeId || r.codeBarre,
+            description: r.description,
+            dateCreation: r.dateCreation,
+            statut: r.statut,
+            reponseAdmin: r.reponseAdmin,  // Réponse de l'admin visible par le client
+            dateReponse: r.dateReponse  // Date de la réponse
+          };
+
+          console.log(`📝 Réclamation ${r.id} mappée:`, mapped);
+          console.log(`📝 Réponse admin pour ${r.id}:`, r.reponseAdmin);
+
+          return mapped;
+        });
+
+        console.log('📝 Liste des réclamations mappée:', this.reclamationsList);
+        console.log('📝 Réclamations avec réponse:', this.reclamationsList.filter(r => r.reponseAdmin));
       },
-      error: (err) => console.error('Erreur chargement réclamations:', err)
+      error: (err) => {
+        console.error('❌ Erreur chargement réclamations:', err);
+        this.reclamationsList = [];
+      }
     });
   }
 
@@ -951,6 +1014,53 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
     });
   }
 
+  getClaimIcon(objet: string): string {
+    const iconMap: { [key: string]: string } = {
+      'Colis perdu': '📦',
+      'Colis endommagé': '🔨',
+      'Retard de livraison': '⏰',
+      'Erreur de livraison': '🚫',
+      'Problème de paiement': '💳',
+      'Autre': '❓'
+    };
+    return iconMap[objet] || '📝';
+  }
+
+  getReclamationStatusLabel(statut: string): string {
+    const labelMap: { [key: string]: string } = {
+      'EN_ATTENTE': '⏳ En attente',
+      'EN_COURS': '🔄 En cours',
+      'RESOLUE': '✅ Résolue',
+      'FERMEE': '🔒 Fermée'
+    };
+    return labelMap[statut] || statut;
+  }
+
+  getResolvedReclamationsCount(): number {
+    return this.reclamationsList.filter(r => r.statut === 'RESOLUE').length;
+  }
+
+  getFilteredReclamations(): any[] {
+    if (this.reclamationFilter === 'ALL') {
+      return this.reclamationsList;
+    }
+    return this.reclamationsList.filter(r => r.statut === this.reclamationFilter);
+  }
+
+  setReclamationFilter(filter: string): void {
+    this.reclamationFilter = filter;
+  }
+
+  openReclamationDetails(reclamation: any): void {
+    this.selectedReclamation = reclamation;
+    this.showReclamationDetails = true;
+  }
+
+  closeReclamationDetails(): void {
+    this.showReclamationDetails = false;
+    this.selectedReclamation = null;
+  }
+
   // ========== SERVICE CLIENT ==========
   contactMember(member: TeamMember): void {
     console.log('Contacter', member.nom, member.tel);
@@ -1029,5 +1139,17 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
       this.closeRdvModal();
       setTimeout(() => this.successMessage = '', 3000);
     }
+  }
+
+  showToast(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info'): void {
+    const toast: ToastMessage = {
+      id: this.toastIdCounter++,
+      message,
+      type
+    };
+    this.toasts.push(toast);
+    setTimeout(() => {
+      this.toasts = this.toasts.filter(t => t.id !== toast.id);
+    }, 5000);
   }
 }

@@ -2484,22 +2484,27 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
   envoyerReponse(): void {
     if (!this.selectedReclamation || !this.responseText.trim()) return;
-    
-    // Ici vous pouvez implémenter l'envoi réel de la réponse
-    // Par email, notification, ou ajout comme commentaire
-    
-    this.apiService.updateReclamation(this.selectedReclamation.id, {
+
+    const payload = {
       ...this.selectedReclamation,
-      adminCommentaire: `Réponse envoyée: ${this.responseText}`,
-      statut: 'EN_COURS'
-    }).subscribe({
-      next: () => {
-        this.showToast('Réponse envoyée avec succès', 'success');
+      reponseAdmin: this.responseText,  // Réponse visible par le client
+      adminCommentaire: `Réponse envoyée via IA: ${this.responseText}`,  // Pour l'historique admin
+      statut: 'EN_COURS',
+      dateReponse: new Date().toISOString()
+    };
+
+    console.log('📤 Envoi de la réponse admin:', payload);
+
+    // Envoyer la réponse IA/admin qui sera visible par le client
+    this.apiService.updateReclamation(this.selectedReclamation.id, payload).subscribe({
+      next: (response) => {
+        console.log('✅ Réponse envoyée avec succès:', response);
+        this.showToast('Réponse envoyée au client avec succès', 'success');
         this.refreshData();
         this.closeResponseModal();
       },
       error: (err) => {
-        console.error('Error sending response:', err);
+        console.error('❌ Erreur envoi réponse:', err);
         this.showToast('Erreur lors de l\'envoi de la réponse', 'error');
       }
     });

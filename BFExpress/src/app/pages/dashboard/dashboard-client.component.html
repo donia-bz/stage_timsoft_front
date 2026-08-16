@@ -742,52 +742,214 @@
       </div>
     </div>
 
-    <!-- ========== RÉCLAMATIONS ========== -->
+    <!-- ========== RÉCLAMATIONS (AMELIORÉ) ========== -->
     <div *ngIf="activeTab === 'reclamations'" class="tab-panel">
-      <div class="page-header">
-        <div>
-          <h1>Réclamations</h1>
-          <p>Signaler un problème sur un colis</p>
+      <div class="page-header modern-header">
+        <div class="header-content">
+          <div class="header-icon-wrapper">
+            <span class="header-icon">📝</span>
+          </div>
+          <div>
+            <h1>Centre de Réclamations</h1>
+            <p class="header-subtitle">Signalez un problème et suivez vos réclamations en temps réel</p>
+          </div>
+        </div>
+        <div class="header-stats">
+          <div class="stat-badge">
+            <span class="stat-value">{{ reclamationsList.length }}</span>
+            <span class="stat-label">Total</span>
+          </div>
+          <div class="stat-badge success">
+            <span class="stat-value">{{ getResolvedReclamationsCount() }}</span>
+            <span class="stat-label">Résolues</span>
+          </div>
         </div>
       </div>
 
-      <div class="card">
-        <h3>Nouvelle réclamation</h3>
-        <form [formGroup]="reclamationForm" (ngSubmit)="ajouterReclamation()">
-          <div class="form-grid">
-            <div class="form-group">
-              <label>Objet *</label>
-              <select formControlName="objet">
-                <option value="">Sélectionner</option>
+      <!-- Formulaire moderne -->
+      <div class="card modern-card">
+        <div class="card-header modern-card-header">
+          <div class="card-title-wrapper">
+            <span class="card-icon">✨</span>
+            <h3>Nouvelle Réclamation</h3>
+          </div>
+          <p class="card-subtitle">Décrivez votre problème et nous vous répondrons sous 24h</p>
+        </div>
+
+        <form [formGroup]="reclamationForm" (ngSubmit)="ajouterReclamation()" class="modern-form">
+          <div class="form-row">
+            <div class="form-group modern-form-group">
+              <label class="modern-label">
+                <span class="label-icon">📦</span>
+                Type de problème *
+              </label>
+              <select formControlName="objet" class="modern-select">
+                <option value="">Sélectionner le type</option>
                 <option *ngFor="let o of objetOptions" [value]="o">{{ o }}</option>
               </select>
             </div>
-            <div class="form-group">
-              <label>Réf. colis / code-barres *</label>
-              <input formControlName="codeBarre" placeholder="Ex: CMD-1234" />
-            </div>
-            <div class="form-group full">
-              <label>Description</label>
-              <textarea formControlName="description" rows="3" placeholder="Décrivez le problème..."></textarea>
+            <div class="form-group modern-form-group">
+              <label class="modern-label">
+                <span class="label-icon">🔖</span>
+                Référence colis *
+              </label>
+              <input type="text" formControlName="codeBarre" class="modern-input" placeholder="Ex: CMD12345" />
             </div>
           </div>
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary" [disabled]="loading">Envoyer</button>
+
+          <div class="form-group modern-form-group full">
+            <label class="modern-label">
+              <span class="label-icon">💬</span>
+              Description détaillée
+            </label>
+            <textarea formControlName="description" class="modern-textarea" rows="4" placeholder="Décrivez le problème avec le plus de détails possible..."></textarea>
+            <div class="input-hint">Minimum 10 caractères recommandés</div>
+          </div>
+
+          <div class="form-actions modern-actions">
+            <button type="submit" class="btn btn-primary modern-btn" [disabled]="loading">
+              <span *ngIf="!loading">🚀 Envoyer la réclamation</span>
+              <span *ngIf="loading">⏳ Envoi en cours...</span>
+            </button>
           </div>
         </form>
-        <div class="alert success" *ngIf="reclamationSuccessMsg">{{ reclamationSuccessMsg }}</div>
-        <div class="alert error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+        <div class="alert success modern-alert" *ngIf="reclamationSuccessMsg">
+          <span class="alert-icon">✅</span>
+          {{ reclamationSuccessMsg }}
+        </div>
+        <div class="alert error modern-alert" *ngIf="errorMessage">
+          <span class="alert-icon">❌</span>
+          {{ errorMessage }}
+        </div>
       </div>
 
-      <div class="card" *ngIf="reclamationsList.length > 0">
-        <div class="card-header"><h3>Historique</h3></div>
-        <div class="claim-item" *ngFor="let rec of reclamationsList">
-          <div class="claim-top">
-            <strong>{{ rec.objet }}</strong>
-            <span class="status-pill status-en_attente">{{ rec.statut }}</span>
+      <!-- Historique moderne -->
+      <div class="card modern-card" *ngIf="reclamationsList.length > 0">
+        <div class="card-header modern-card-header">
+          <div class="card-title-wrapper">
+            <span class="card-icon">📋</span>
+            <h3>Mes Réclamations</h3>
           </div>
-          <div class="muted">{{ rec.codeBarre }} · {{ formatDate(rec.dateCreation) }}</div>
-          <p *ngIf="rec.description">{{ rec.description }}</p>
+          <div class="filter-chips">
+            <span class="chip" [class.active]="reclamationFilter === 'ALL'" (click)="setReclamationFilter('ALL')">Toutes</span>
+            <span class="chip" [class.active]="reclamationFilter === 'EN_ATTENTE'" (click)="setReclamationFilter('EN_ATTENTE')">En attente</span>
+            <span class="chip" [class.active]="reclamationFilter === 'RESOLUE'" (click)="setReclamationFilter('RESOLUE')">Résolues</span>
+          </div>
+        </div>
+
+        <div class="claims-grid">
+          <div class="claim-card modern-claim-card" *ngFor="let rec of getFilteredReclamations()">
+            <div class="claim-header">
+              <div class="claim-info">
+                <span class="claim-icon">{{ getClaimIcon(rec.objet) }}</span>
+                <div>
+                  <h4 class="claim-title">{{ rec.objet }}</h4>
+                  <p class="claim-ref">{{ rec.codeBarre }}</p>
+                </div>
+              </div>
+              <span class="status-badge modern-status-badge" [ngClass]="'status-' + rec.statut.toLowerCase()">
+                {{ getReclamationStatusLabel(rec.statut) }}
+              </span>
+            </div>
+
+            <p class="claim-description">{{ rec.description }}</p>
+
+            <div class="claim-footer">
+              <span class="claim-date">
+                <span class="date-icon">📅</span>
+                {{ formatDate(rec.dateCreation) }}
+              </span>
+              <button class="btn-view-details" (click)="openReclamationDetails(rec)">
+                Voir détails →
+              </button>
+            </div>
+
+            <!-- Réponse de l'admin -->
+            <div *ngIf="rec.reponseAdmin" class="admin-response modern-admin-response">
+              <div class="response-header modern-response-header">
+                <span class="response-icon">💬</span>
+                <div>
+                  <strong>Réponse du support</strong>
+                  <span class="response-time">{{ formatDate(rec.dateReponse) }}</span>
+                </div>
+              </div>
+              <div class="response-content">{{ rec.reponseAdmin }}</div>
+            </div>
+
+            <!-- Debug: Afficher si aucune réponse -->
+            <div *ngIf="!rec.reponseAdmin" class="no-response-debug" style="color: #64748b; font-size: 0.75rem; margin-top: 0.5rem;">
+              📭 Aucune réponse du support pour le moment
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- État vide moderne -->
+      <div class="empty-state modern-empty-state" *ngIf="reclamationsList.length === 0">
+        <div class="empty-icon">📭</div>
+        <h3>Aucune réclamation</h3>
+        <p>Vous n'avez pas encore de réclamations. Utilisez le formulaire ci-dessus pour signaler un problème.</p>
+      </div>
+    </div>
+
+    <!-- ========== SIDEBAR DÉTAILS RÉCLAMATION ========== -->
+    <div class="side-panel reclamation-details-panel" [class.open]="showReclamationDetails">
+      <div class="side-panel-header">
+        <h3>Détails de la Réclamation</h3>
+        <button class="btn-icon" (click)="closeReclamationDetails()">✕</button>
+      </div>
+      <div class="side-panel-content" *ngIf="selectedReclamation">
+        <div class="reclamation-detail-section">
+          <div class="detail-header">
+            <span class="detail-icon">{{ getClaimIcon(selectedReclamation.objet) }}</span>
+            <div>
+              <h4>{{ selectedReclamation.objet }}</h4>
+              <p class="detail-ref">{{ selectedReclamation.codeBarre }}</p>
+            </div>
+            <span class="status-badge modern-status-badge" [ngClass]="'status-' + selectedReclamation.statut.toLowerCase()">
+              {{ getReclamationStatusLabel(selectedReclamation.statut) }}
+            </span>
+          </div>
+
+          <div class="detail-row">
+            <span class="label">📅 Date de création:</span>
+            <span class="value">{{ formatDate(selectedReclamation.dateCreation) }}</span>
+          </div>
+
+          <div class="detail-row">
+            <span class="label">📝 Description:</span>
+            <span class="value">{{ selectedReclamation.description }}</span>
+          </div>
+        </div>
+
+        <!-- Réponse admin -->
+        <div class="reclamation-detail-section admin-response-section" *ngIf="selectedReclamation.reponseAdmin">
+          <div class="section-title">
+            <span class="section-icon">💬</span>
+            <h4>Réponse du Support</h4>
+          </div>
+          <div class="admin-response-detail">
+            <div class="response-header">
+              <span class="response-date">{{ formatDate(selectedReclamation.dateReponse) }}</span>
+            </div>
+            <div class="response-content">{{ selectedReclamation.reponseAdmin }}</div>
+          </div>
+        </div>
+
+        <!-- Pas de réponse -->
+        <div class="reclamation-detail-section no-response-section" *ngIf="!selectedReclamation.reponseAdmin">
+          <div class="section-title">
+            <span class="section-icon">📭</span>
+            <h4>Statut de la Réclamation</h4>
+          </div>
+          <div class="no-response-detail">
+            <p>Notre équipe examine votre réclamation. Vous recevrez une réponse sous 24h.</p>
+            <div class="status-info">
+              <span class="info-icon">⏳</span>
+              <span>En attente de traitement</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

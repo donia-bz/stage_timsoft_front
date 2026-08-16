@@ -123,6 +123,8 @@ export interface Reclamation {
   dateCreation?: string;
   dateResolution?: string;
   objet?: string; // Pour compatibilité avec le frontend
+  reponseAdmin?: string; // Réponse de l'admin visible par le client
+  dateReponse?: string; // Date de la réponse admin
   codeBarre?: string; // Pour compatibilité avec le frontend
 }
 
