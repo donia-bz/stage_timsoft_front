@@ -303,16 +303,9 @@
           <button class="btn btn-secondary" (click)="showManifestHistory = !showManifestHistory">
             {{ showManifestHistory ? 'En cours' : 'Historique' }}
           </button>
-          <button class="btn btn-secondary" (click)="toggleManifestView()">
-            {{ manifestViewMode === 'list' ? '📋 Liste' : '🔲 Grille' }}
-          </button>
-          <button class="btn btn-primary" (click)="imprimerToutesEtiquettes()" 
-                  [disabled]="pendingCommandes.length === 0" *ngIf="!showManifestHistory">
-            📄 Toutes étiquettes
-          </button>
-          <button class="btn btn-primary" (click)="validerEtImprimerManifest()"
-                  [disabled]="pendingCommandes.length === 0 || loading" *ngIf="!showManifestHistory">
-            Valider le manifeste
+          <button class="btn btn-primary" (click)="validerManifestPickup()"
+                  [disabled]="selectedColis.size === 0 || loading" *ngIf="!showManifestHistory">
+            🚚 Valider Pickup ({{ selectedColis.size }} colis)
           </button>
         </div>
       </div>
@@ -392,7 +385,6 @@
                   <td>{{ cmd.montantTotal || 0 }} DT</td>
                   <td><span class="service-badge" [class.express]="cmd.typeService === 'EXPRESS'">{{ cmd.typeService || 'STANDARD' }}</span></td>
                   <td class="actions">
-                    <button class="btn-icon" title="Étiquette" (click)="imprimerEtiquette(cmd)">🏷️</button>
                     <button class="btn-icon" title="Retirer" (click)="removeFromManifest(cmd)">🗑️</button>
                   </td>
                 </tr>
@@ -435,7 +427,6 @@
               </div>
             </div>
             <div class="colis-card-footer">
-              <button class="btn btn-sm btn-secondary" (click)="imprimerEtiquette(cmd)">🏷️ Étiquette</button>
               <button class="btn btn-sm btn-danger" (click)="removeFromManifest(cmd)">🗑️ Retirer</button>
             </div>
           </div>
@@ -471,12 +462,14 @@
           <div class="card-header"><h3>Historique des manifestes</h3></div>
           <div *ngIf="validatedManifests.length === 0" class="empty">Aucun manifeste validé</div>
           <div class="manifest-list" *ngIf="validatedManifests.length > 0">
-            <div class="manifest-item" *ngFor="let m of validatedManifests">
+            <div class="manifest-item" *ngFor="let m of validatedManifests" (click)="openManifestDetail(m)">
               <div>
                 <strong>Manifeste #{{ m.id?.substring(0, 8) }}</strong>
                 <div class="muted">{{ formatDate(m.dateCreation) }} · {{ m.nombreColis }} colis · {{ m.totalCOD || 0 }} DT</div>
               </div>
-              <button class="btn btn-secondary btn-sm" (click)="reprintManifest(m)">📄 Réimprimer</button>
+              <div class="manifest-item-actions">
+                <button class="btn btn-secondary btn-sm" (click)="telechargerManifest(m); $event.stopPropagation()">📥 Télécharger</button>
+              </div>
             </div>
           </div>
         </div>
@@ -953,6 +946,57 @@
           <div class="empty-icon">📭</div>
           <h3>Aucune réclamation</h3>
           <p>Aucune réclamation trouvée dans cette catégorie.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== SIDEBAR DÉTAILS MANIFESTE ========== -->
+    <div class="side-panel manifest-details-panel" [class.open]="showManifestDetail">
+      <div class="side-panel-header">
+        <h3>Détails du Manifeste</h3>
+        <button class="btn-icon" (click)="closeManifestDetail()">✕</button>
+      </div>
+      <div class="side-panel-content" *ngIf="selectedManifest">
+        <div class="manifest-detail-section">
+          <div class="detail-header">
+            <span class="detail-icon">📋</span>
+            <div>
+              <h4>Manifeste #{{ selectedManifest.id?.substring(0, 8) }}</h4>
+              <p class="detail-ref">{{ formatDate(selectedManifest.dateCreation) }}</p>
+            </div>
+            <span class="status-badge">{{ selectedManifest.statut }}</span>
+          </div>
+
+          <div class="detail-row">
+            <span class="label">📦 Nombre de colis:</span>
+            <span class="value">{{ selectedManifest.nombreColis }}</span>
+          </div>
+
+          <div class="detail-row">
+            <span class="label">💰 Total COD:</span>
+            <span class="value">{{ selectedManifest.totalCOD || 0 }} DT</span>
+          </div>
+        </div>
+
+        <!-- Liste des colis inclus -->
+        <div class="manifest-detail-section">
+          <div class="section-title">
+            <span class="section-icon">📦</span>
+            <h4>Colis inclus ({{ manifestColis.length }})</h4>
+          </div>
+          <div class="manifest-colis-list">
+            <div class="manifest-colis-item" *ngFor="let colis of manifestColis">
+              <div class="colis-item-header">
+                <span class="colis-item-code">{{ colis.codeBarre || colis.id?.substring(0, 8) }}</span>
+                <span class="colis-item-dest">{{ colis.nomDestinataire || '—' }}</span>
+              </div>
+              <div class="colis-item-details">
+                <span class="colis-item-info">{{ colis.telephone || '—' }}</span>
+                <span class="colis-item-info">{{ colis.adresseArrivee?.gouvernorat || '—' }}</span>
+                <span class="colis-item-cod">{{ colis.montantTotal || 0 }} DT</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

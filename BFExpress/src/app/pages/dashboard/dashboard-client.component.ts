@@ -77,6 +77,11 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
   selectedColis: Set<string> = new Set();
   clientInfo: any = null;
 
+  // Manifest details sidebar
+  showManifestDetail = false;
+  selectedManifest: any = null;
+  manifestColis: any[] = [];
+
   // Real-time tracking
   private socket: Socket | null = null;
   private trackingServiceUrl = 'http://localhost:8090';
@@ -230,7 +235,7 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
       };
       this.loadClientCommandes();
       this.loadReclamations();
-      this.loadManifests();
+      // loadManifests sera appelé après le chargement des commandes
       this.startRealTimeUpdates();
       this.initializeTrackingSocket();
       this.updateServiceStats();
@@ -377,6 +382,8 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
         this.pendingCommandes = this.commandes.filter(c => c.statut === 'EN_ATTENTE');
         // Charger les colis associés pour le suivi temps réel
         this.loadColisForClient();
+        // Charger les manifestes après avoir les commandes pour le calcul du Total COD
+        this.loadManifests();
         this.loading = false;
       },
       error: (err) => {
@@ -416,9 +423,42 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
   loadManifests(): void {
     if (!this.clientId) return;
 
+    console.log('📦 Chargement des manifestes pour client:', this.clientId);
+    console.log('📦 Commandes disponibles:', this.commandes);
+
     this.apiService.getManifestesByClient(this.clientId).subscribe({
       next: (res) => {
-        this.validatedManifests = (res || []).filter((m: any) => m.statut !== 'BROUILLON');
+        console.log('📦 Manifestes reçus:', res);
+        
+        this.validatedManifests = (res || [])
+          .filter((m: any) => m.statut !== 'BROUILLON')
+          .map((m: any) => {
+            console.log('📦 Traitement manifeste:', m);
+            
+            // Calculer le total COD en utilisant les commandes correspondantes
+            const manifestColis = m.commandeIds || [];
+            console.log('📦 CommandeIds du manifeste:', manifestColis);
+            
+            const totalCOD = manifestColis.reduce((sum: number, id: string) => {
+              const commande = this.commandes.find(c => c.id === id);
+              console.log(`📦 Recherche commande ${id}:`, commande);
+              if (commande) {
+                console.log(`📦 MontantTotal de la commande ${id}:`, commande.montantTotal);
+                return sum + (commande.montantTotal || 0);
+              }
+              console.log(`📦 Commande ${id} non trouvée`);
+              return sum;
+            }, 0);
+            
+            console.log(`📦 Total COD calculé pour manifeste ${m.id}:`, totalCOD);
+            
+            return {
+              ...m,
+              totalCOD: totalCOD
+            };
+          });
+          
+        console.log('📦 Manifestes traités avec Total COD:', this.validatedManifests);
       },
       error: (err) => console.error('Erreur chargement manifestes:', err)
     });
@@ -756,6 +796,66 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
     });
   }
 
+  validerManifestPickup(): void {
+    if (this.selectedColis.size === 0) {
+      this.errorMessage = 'Veuillez sélectionner au moins un colis pour le pickup.';
+      return;
+    }
+
+    this.loading = true;
+    this.errorMessage = '';
+
+    const selectedColisList = this.pendingCommandes.filter(c => this.selectedColis.has(c.id));
+    const manifeste = {
+      clientId: this.clientId,
+      nombreColis: selectedColisList.length,
+      commandeIds: selectedColisList.map(c => c.id).filter(id => !!id),
+      statut: 'BROUILLON'
+    };
+
+    this.apiService.creerManifeste(manifeste).subscribe({
+      next: (manifest) => {
+        if (!manifest || !manifest.id) {
+          this.loading = false;
+          this.errorMessage = 'Erreur: ID manifeste non reçu';
+          return;
+        }
+
+        this.apiService.validerManifeste(manifest.id).subscribe({
+          next: () => {
+            this.loading = false;
+
+            // Retirer les colis sélectionnés de la liste en attente
+            this.pendingCommandes = this.pendingCommandes.filter(c => !this.selectedColis.has(c.id));
+            this.selectedColis.clear();
+
+            // Enregistrer dans le tracking service
+            const totalCOD = selectedColisList.reduce((sum, c) => sum + (c.montantTotal || 0), 0);
+            this.registerManifestTracking(manifest.id, totalCOD);
+
+            this.loadClientCommandes();
+            this.loadManifests();
+            this.errorMessage = '';
+            this.successMessage = `Pickup validé avec ${selectedColisList.length} colis!`;
+
+            // Générer le PDF du manifeste
+            this.pdfService.generateManifestPDF(manifest, selectedColisList, this.clientInfo);
+          },
+          error: (err) => {
+            this.loading = false;
+            console.error('Erreur validation pickup:', err);
+            this.errorMessage = 'Erreur lors de la validation du pickup. Vérifiez que les commandes sont valides.';
+          }
+        });
+      },
+      error: (err) => {
+        this.loading = false;
+        console.error('Erreur création manifeste pickup:', err);
+        this.errorMessage = 'Erreur lors de la création du manifeste. Vérifiez que vous avez des commandes en attente.';
+      }
+    });
+  }
+
   removeFromManifest(cmd: Commande): void {
     this.pendingCommandes = this.pendingCommandes.filter(c => c.id !== cmd.id);
   }
@@ -770,6 +870,46 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
       nombreColis: this.pendingCommandes.length,
       totalCOD
     });
+  }
+
+  // ========== MANIFEST DETAILS SIDEBAR ==========
+  openManifestDetail(manifest: any): void {
+    this.selectedManifest = manifest;
+    this.loadManifestColis(manifest);
+    this.showManifestDetail = true;
+  }
+
+  closeManifestDetail(): void {
+    this.showManifestDetail = false;
+    this.selectedManifest = null;
+    this.manifestColis = [];
+  }
+
+  loadManifestColis(manifest: any): void {
+    if (!manifest || !manifest.commandeIds) {
+      this.manifestColis = [];
+      return;
+    }
+
+    // Charger les détails des colis depuis les commandes existantes
+    this.manifestColis = manifest.commandeIds.map((id: string) => {
+      const commande = this.commandes.find(c => c.id === id);
+      return commande || { id, info: 'Détails non disponibles' };
+    });
+  }
+
+  telechargerManifest(manifest: any): void {
+    console.log('📥 Téléchargement manifeste:', manifest);
+    console.log('📥 Commandes disponibles:', this.commandes);
+    
+    const manifestColis = manifest.commandeIds.map((id: string) => {
+      const commande = this.commandes.find(c => c.id === id);
+      console.log(`📥 Recherche commande ${id}:`, commande);
+      return commande || { id, info: 'Détails non disponibles' };
+    });
+    
+    console.log('📥 Colis du manifeste:', manifestColis);
+    this.pdfService.generateManifestPDF(manifest, manifestColis, this.clientInfo);
   }
 
   // ========== MANIFEST VIEW & FILTERS ==========

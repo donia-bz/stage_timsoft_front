@@ -535,6 +535,19 @@ $shadow: 0 4px 20px rgba(14, 165, 233, 0.08);
   background: #f8fafc;
   border-radius: 10px;
   border: 1px solid $border;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f1f5f9;
+    border-color: #3b82f6;
+    transform: translateX(-4px);
+  }
+
+  .manifest-item-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
 }
 
 // ========== MANIFEST ENHANCEMENTS ==========
@@ -2295,6 +2308,202 @@ $shadow: 0 4px 20px rgba(14, 165, 233, 0.08);
     transform: scale(1.05);
     background: #2563eb;
     color: white;
+  }
+}
+
+// ========== SIDEBAR DÉTAILS MANIFESTE ==========
+
+.side-panel.manifest-details-panel {
+  position: fixed;
+  top: 70px;
+  right: -500px;
+  width: 450px;
+  height: calc(100vh - 70px);
+  background: white;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+  transition: right 0.3s ease;
+  z-index: 1001;
+
+  &.open {
+    right: 0;
+  }
+
+  .side-panel-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: $text;
+      margin: 0;
+    }
+
+    .btn-icon {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: $muted;
+      padding: 0.5rem;
+      border-radius: 8px;
+      transition: all 0.2s;
+
+      &:hover {
+        background: #f1f5f9;
+        color: $text;
+      }
+    }
+  }
+
+  .side-panel-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+  }
+
+  .manifest-detail-section {
+    margin-bottom: 2rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .detail-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #e2e8f0;
+
+      .detail-icon {
+        font-size: 2.5rem;
+      }
+
+      h4 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: $text;
+        margin: 0 0 0.25rem 0;
+      }
+
+      .detail-ref {
+        font-size: 0.85rem;
+        color: $muted;
+        margin: 0;
+      }
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid #f1f5f9;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .label {
+        font-weight: 600;
+        color: $muted;
+        font-size: 0.9rem;
+      }
+
+      .value {
+        color: $text;
+        font-size: 0.9rem;
+        text-align: right;
+        max-width: 60%;
+      }
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #e2e8f0;
+
+      .section-icon {
+        font-size: 1.25rem;
+      }
+
+      h4 {
+        font-size: 1rem;
+        font-weight: 700;
+        color: $text;
+        margin: 0;
+      }
+    }
+
+    .manifest-colis-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .manifest-colis-item {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 1rem;
+      transition: all 0.2s;
+
+      &:hover {
+        background: #f1f5f9;
+        border-color: #3b82f6;
+      }
+
+      .colis-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e2e8f0;
+
+        .colis-item-code {
+          font-weight: 600;
+          color: $text;
+          font-size: 0.9rem;
+        }
+
+        .colis-item-dest {
+          font-size: 0.85rem;
+          color: $muted;
+        }
+      }
+
+      .colis-item-details {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+
+        .colis-item-info {
+          font-size: 0.8rem;
+          color: $muted;
+          background: #e2e8f0;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+        }
+
+        .colis-item-cod {
+          font-size: 0.8rem;
+          color: #059669;
+          background: #d1fae5;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          font-weight: 600;
+        }
+      }
+    }
   }
 }
 

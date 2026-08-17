@@ -169,93 +169,137 @@ export class PdfService {
   }
 
   async generateManifestPDF(manifestData: any, commandes: any[], clientInfo: any): Promise<void> {
+    console.log('📄 Generation PDF Manifeste:', manifestData);
+    console.log('📄 Commandes pour PDF:', commandes);
+    console.log('📄 Client info:', clientInfo);
+    
+    // Debug: Vérifier la structure de la première commande
+    if (commandes.length > 0) {
+      console.log('📄 Première commande structure:', JSON.stringify(commandes[0], null, 2));
+    }
+    
     const pdf = new jsPDF();
     
-    // En-tête
+    // En-tête entreprise
     pdf.setFillColor(14, 165, 233);
-    pdf.rect(0, 0, 210, 40, 'F');
+    pdf.rect(0, 0, 210, 35, 'F');
     
     pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(20);
+    pdf.setFontSize(24);
     pdf.setFont('helvetica', 'bold');
-    pdf.text('BFExpress - Manifeste', 105, 20, { align: 'center' });
+    pdf.text('BFExpress', 105, 15, { align: 'center' });
     
-    pdf.setFontSize(12);
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(`Manifeste #${manifestData.id?.substring(0, 8) || 'N/A'}`, 105, 30, { align: 'center' });
+    pdf.text('Service de Livraison Professionnel', 105, 22, { align: 'center' });
+    pdf.text('Manifeste de Collecte', 105, 28, { align: 'center' });
 
     // Informations du manifeste
     pdf.setTextColor(15, 23, 42);
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
     
-    let yPos = 50;
-    pdf.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 20, yPos);
-    pdf.text(`Expéditeur: ${clientInfo.name}`, 20, yPos + 8);
-    pdf.text(`Nombre de colis: ${commandes.length}`, 20, yPos + 16);
+    let yPos = 45;
+    pdf.text(`N° Manifeste: ${manifestData.id?.substring(0, 8) || 'N/A'}`, 15, yPos);
+    pdf.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 120, yPos);
+    pdf.text(`Expéditeur: ${clientInfo.name || 'N/A'}`, 15, yPos + 8);
+    pdf.text(`Téléphone: ${clientInfo.phone || 'N/A'}`, 120, yPos + 8);
+    pdf.text(`Nombre de colis: ${commandes.length}`, 15, yPos + 16);
     
     const totalCOD = commandes.reduce((sum, cmd) => sum + (cmd.montantTotal || 0), 0);
-    pdf.text(`Total COD: ${totalCOD} DT`, 20, yPos + 24);
+    pdf.text(`Total COD: ${totalCOD} DT`, 120, yPos + 16);
 
     // Tableau des colis
-    yPos += 35;
+    yPos += 25;
     
+    // En-tête du tableau
     pdf.setFillColor(241, 245, 249);
     pdf.rect(10, yPos, 190, 10, 'F');
     
     pdf.setTextColor(15, 23, 42);
-    pdf.setFontSize(9);
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
     
-    pdf.text('Code', 15, yPos + 7);
-    pdf.text('Destinataire', 50, yPos + 7);
-    pdf.text('Téléphone', 100, yPos + 7);
-    pdf.text('Adresse', 130, yPos + 7);
-    pdf.text('COD', 175, yPos + 7);
+    pdf.text('N°', 12, yPos + 7);
+    pdf.text('Code Barre', 25, yPos + 7);
+    pdf.text('Destinataire', 65, yPos + 7);
+    pdf.text('Téléphone', 105, yPos + 7);
+    pdf.text('Gouvernorat', 140, yPos + 7);
+    pdf.text('Ville', 165, yPos + 7);
+    pdf.text('COD (DT)', 185, yPos + 7);
 
     yPos += 15;
     
     pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7);
     
     commandes.forEach((cmd, index) => {
       if (yPos > 270) {
         pdf.addPage();
         yPos = 20;
+        
+        // Répéter l'en-tête du tableau sur la nouvelle page
+        pdf.setFillColor(241, 245, 249);
+        pdf.rect(10, yPos, 190, 10, 'F');
+        
+        pdf.setTextColor(15, 23, 42);
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'bold');
+        
+        pdf.text('N°', 12, yPos + 7);
+        pdf.text('Code Barre', 25, yPos + 7);
+        pdf.text('Destinataire', 65, yPos + 7);
+        pdf.text('Téléphone', 105, yPos + 7);
+        pdf.text('Gouvernorat', 140, yPos + 7);
+        pdf.text('Ville', 165, yPos + 7);
+        pdf.text('COD (DT)', 185, yPos + 7);
+
+        yPos += 15;
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(7);
       }
       
-      pdf.text(cmd.codeBarre || cmd.id?.substring(0, 8) || 'N/A', 15, yPos);
-      pdf.text(cmd.nomDestinataire || 'N/A', 50, yPos);
+      // Numéro de ligne
+      pdf.text(`${index + 1}`, 12, yPos);
       
-      // Utiliser le téléphone de l'adresseArrivee si disponible
-      const phone = cmd.adresseArrivee?.telephone || cmd.telephone || cmd.phone1 || 'N/A';
-      pdf.text(phone, 100, yPos);
+      // Code barre
+      pdf.text(cmd.codeBarre || cmd.id?.substring(0, 8) || 'N/A', 25, yPos);
       
-      // Adresse abrégée pour le tableau
-      let address = '';
-      if (cmd.adresseArrivee) {
-        const addr = cmd.adresseArrivee;
-        address = `${addr.ville || ''}, ${addr.gouvernorat || ''}`;
-      } else {
-        address = `${cmd.city || ''}, ${cmd.governorate || ''}`;
-      }
-      pdf.text(address.substring(0, 25), 130, yPos);
+      // Destinataire
+      const destName = cmd.nomDestinataire || cmd.destinataire?.nom || 'N/A';
+      pdf.text(destName, 65, yPos);
       
-      pdf.text(`${cmd.montantTotal || 0} DT`, 175, yPos);
+      // Téléphone
+      const phone = cmd.adresseArrivee?.telephone || cmd.telephone || cmd.phone1 || cmd.destinataire?.telephone || 'N/A';
+      pdf.text(phone, 105, yPos);
+      
+      // Gouvernorat
+      const gov = cmd.adresseArrivee?.gouvernorat || cmd.governorate || cmd.adresseArrivee?.region || cmd.destinataire?.gouvernorat || 'N/A';
+      pdf.text(gov, 140, yPos);
+      
+      // Ville
+      const city = cmd.adresseArrivee?.ville || cmd.city || cmd.adresseArrivee?.localite || cmd.destinataire?.ville || 'N/A';
+      pdf.text(city, 165, yPos);
+      
+      // COD
+      pdf.text(`${cmd.montantTotal || 0}`, 185, yPos);
       
       yPos += 8;
     });
 
-    // Footer
+    // Pied de page
+    const footerY = pdf.internal.pageSize.height - 20;
     pdf.setFillColor(14, 165, 233);
-    pdf.rect(0, 285, 210, 15, 'F');
+    pdf.rect(0, footerY, 210, 20, 'F');
     
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
-    pdf.text('BFExpress - Service de Livraison Professionnel', 105, 292, { align: 'center' });
-    pdf.text(new Date().toLocaleDateString('fr-FR'), 105, 298, { align: 'center' });
+    pdf.text('BFExpress - Service de Livraison Professionnel', 105, footerY + 5, { align: 'center' });
+    pdf.text(`${new Date().toLocaleDateString('fr-FR')} ${new Date().toLocaleTimeString('fr-FR')}`, 105, footerY + 12, { align: 'center' });
+    pdf.text('Document généré automatiquement', 105, footerY + 19, { align: 'center' });
 
-    const fileName = `manifeste_${manifestData.id?.substring(0, 8) || 'draft'}.pdf`;
+    const fileName = `manifeste_${manifestData.id?.substring(0, 8) || 'draft'}_${new Date().toISOString().split('T')[0]}.pdf`;
     pdf.save(fileName);
   }
 
