@@ -763,6 +763,10 @@
             <span class="stat-value">{{ getResolvedReclamationsCount() }}</span>
             <span class="stat-label">Résolues</span>
           </div>
+          <div class="stat-badge info clickable" (click)="openReclamationsSidebar()">
+            <span class="stat-value">📋</span>
+            <span class="stat-label">Mes Réclamations</span>
+          </div>
         </div>
       </div>
 
@@ -821,67 +825,6 @@
         <div class="alert error modern-alert" *ngIf="errorMessage">
           <span class="alert-icon">❌</span>
           {{ errorMessage }}
-        </div>
-      </div>
-
-      <!-- Historique moderne -->
-      <div class="card modern-card" *ngIf="reclamationsList.length > 0">
-        <div class="card-header modern-card-header">
-          <div class="card-title-wrapper">
-            <span class="card-icon">📋</span>
-            <h3>Mes Réclamations</h3>
-          </div>
-          <div class="filter-chips">
-            <span class="chip" [class.active]="reclamationFilter === 'ALL'" (click)="setReclamationFilter('ALL')">Toutes</span>
-            <span class="chip" [class.active]="reclamationFilter === 'EN_ATTENTE'" (click)="setReclamationFilter('EN_ATTENTE')">En attente</span>
-            <span class="chip" [class.active]="reclamationFilter === 'RESOLUE'" (click)="setReclamationFilter('RESOLUE')">Résolues</span>
-          </div>
-        </div>
-
-        <div class="claims-grid">
-          <div class="claim-card modern-claim-card" *ngFor="let rec of getFilteredReclamations()">
-            <div class="claim-header">
-              <div class="claim-info">
-                <span class="claim-icon">{{ getClaimIcon(rec.objet) }}</span>
-                <div>
-                  <h4 class="claim-title">{{ rec.objet }}</h4>
-                  <p class="claim-ref">{{ rec.codeBarre }}</p>
-                </div>
-              </div>
-              <span class="status-badge modern-status-badge" [ngClass]="'status-' + rec.statut.toLowerCase()">
-                {{ getReclamationStatusLabel(rec.statut) }}
-              </span>
-            </div>
-
-            <p class="claim-description">{{ rec.description }}</p>
-
-            <div class="claim-footer">
-              <span class="claim-date">
-                <span class="date-icon">📅</span>
-                {{ formatDate(rec.dateCreation) }}
-              </span>
-              <button class="btn-view-details" (click)="openReclamationDetails(rec)">
-                Voir détails →
-              </button>
-            </div>
-
-            <!-- Réponse de l'admin -->
-            <div *ngIf="rec.reponseAdmin" class="admin-response modern-admin-response">
-              <div class="response-header modern-response-header">
-                <span class="response-icon">💬</span>
-                <div>
-                  <strong>Réponse du support</strong>
-                  <span class="response-time">{{ formatDate(rec.dateReponse) }}</span>
-                </div>
-              </div>
-              <div class="response-content">{{ rec.reponseAdmin }}</div>
-            </div>
-
-            <!-- Debug: Afficher si aucune réponse -->
-            <div *ngIf="!rec.reponseAdmin" class="no-response-debug" style="color: #64748b; font-size: 0.75rem; margin-top: 0.5rem;">
-              📭 Aucune réponse du support pour le moment
-            </div>
-          </div>
         </div>
       </div>
 
@@ -950,6 +893,66 @@
               <span>En attente de traitement</span>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== SIDEBAR LISTE RÉCLAMATIONS ========== -->
+    <div class="side-panel reclamations-sidebar" [class.open]="showReclamationsSidebar">
+      <div class="side-panel-header">
+        <h3>Mes Réclamations</h3>
+        <button class="btn-icon" (click)="closeReclamationsSidebar()">✕</button>
+      </div>
+      <div class="side-panel-content">
+        <!-- Réponse admin affichée au-dessus -->
+        <div class="sidebar-admin-response" *ngIf="selectedSidebarReclamation && hasAdminResponse(selectedSidebarReclamation)">
+          <div class="sidebar-response-header">
+            <span class="sidebar-response-title">💬 Réponse du support</span>
+            <button class="btn-close-sidebar-response" (click)="closeSidebarResponse()">✕</button>
+          </div>
+          <div class="sidebar-response-content">
+            <div class="sidebar-response-reclamation-info">
+              <span class="sidebar-response-objet">{{ selectedSidebarReclamation.objet }}</span>
+              <span class="sidebar-response-ref">{{ selectedSidebarReclamation.codeBarre }}</span>
+            </div>
+            <div class="sidebar-response-date">{{ formatDate(selectedSidebarReclamation.dateReponse) }}</div>
+            <div class="sidebar-response-text">{{ selectedSidebarReclamation.reponseAdmin }}</div>
+          </div>
+        </div>
+
+        <!-- Filtres -->
+        <div class="reclamations-filters">
+          <span class="filter-chip" [class.active]="reclamationsSidebarFilter === 'ALL'" (click)="setReclamationsSidebarFilter('ALL')">Toutes</span>
+          <span class="filter-chip" [class.active]="reclamationsSidebarFilter === 'EN_ATTENTE'" (click)="setReclamationsSidebarFilter('EN_ATTENTE')">En attente</span>
+          <span class="filter-chip" [class.active]="reclamationsSidebarFilter === 'RESOLUE'" (click)="setReclamationsSidebarFilter('RESOLUE')">Résolues</span>
+        </div>
+
+        <!-- Liste des réclamations -->
+        <div class="reclamations-list" *ngIf="getFilteredSidebarReclamations().length > 0">
+          <div class="reclamation-item" *ngFor="let reclamation of getFilteredSidebarReclamations()">
+            <div class="reclamation-item-header">
+              <span class="reclamation-icon">{{ getClaimIcon(reclamation.objet) }}</span>
+              <div class="reclamation-item-info">
+                <span class="reclamation-item-title">{{ reclamation.objet }}</span>
+                <span class="reclamation-item-ref">{{ reclamation.codeBarre }}</span>
+              </div>
+              <span class="message-indicator" *ngIf="hasAdminResponse(reclamation)" (click)="selectReclamationForResponse(reclamation); $event.stopPropagation()">💬</span>
+            </div>
+            <div class="reclamation-item-footer">
+              <span class="reclamation-date">{{ formatDate(reclamation.dateCreation) }}</span>
+              <span class="reclamation-status" [ngClass]="'status-' + reclamation.statut.toLowerCase()">
+                {{ getReclamationStatusLabel(reclamation.statut) }}
+              </span>
+              <button class="btn-view-details-sidebar" (click)="openReclamationDetails(reclamation)">Voir détails</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- État vide -->
+        <div class="empty-state" *ngIf="getFilteredSidebarReclamations().length === 0">
+          <div class="empty-icon">📭</div>
+          <h3>Aucune réclamation</h3>
+          <p>Aucune réclamation trouvée dans cette catégorie.</p>
         </div>
       </div>
     </div>

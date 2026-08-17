@@ -105,6 +105,11 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
   showReclamationDetails = false;
   selectedReclamation: any = null;
 
+  // Reclamations list sidebar
+  showReclamationsSidebar = false;
+  reclamationsSidebarFilter = 'ALL'; // ALL, EN_ATTENTE, RESOLUE
+  selectedSidebarReclamation: any = null; // Réclamation sélectionnée pour afficher la réponse
+
   loading = false;
   errorMessage = '';
   successMessage = '';
@@ -230,6 +235,11 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
       this.initializeTrackingSocket();
       this.updateServiceStats();
 
+      // Rafraîchissement automatique des réclamations toutes les 30 secondes
+      this.refreshInterval = setInterval(() => {
+        this.loadReclamations();
+      }, 30000);
+
       // Connecter WebSocket pour les mises à jour de réclamations
       this.webSocketService.connect(this.clientId);
       this.wsSubscription = this.webSocketService.getReclamationUpdates().subscribe({
@@ -251,8 +261,10 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // Nettoyer l'intervalle de rafraîchissement
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
+      this.refreshInterval = null;
     }
     this.disconnectTrackingSocket();
 
@@ -427,17 +439,27 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
             objet: r.type || r.objet,
             codeBarre: r.commandeId || r.codeBarre,
             description: r.description,
-            dateCreation: r.dateCreation,
+            dateCreation: r.dateCreation || new Date().toISOString(), // Valeur par défaut si null
             statut: r.statut,
             reponseAdmin: r.reponseAdmin,  // Réponse de l'admin visible par le client
             dateReponse: r.dateReponse  // Date de la réponse
           };
 
           console.log(`📝 Réclamation ${r.id} mappée:`, mapped);
+          console.log(`📝 Date de création pour ${r.id}:`, r.dateCreation);
           console.log(`📝 Réponse admin pour ${r.id}:`, r.reponseAdmin);
 
           return mapped;
         });
+
+        // Mettre à jour la réclamation sélectionnée si elle est ouverte
+        if (this.selectedReclamation) {
+          const updatedReclamation = this.reclamationsList.find(r => r.id === this.selectedReclamation.id);
+          if (updatedReclamation) {
+            this.selectedReclamation = updatedReclamation;
+            console.log('📝 Réclamation sélectionnée mise à jour:', this.selectedReclamation);
+          }
+        }
 
         console.log('📝 Liste des réclamations mappée:', this.reclamationsList);
         console.log('📝 Réclamations avec réponse:', this.reclamationsList.filter(r => r.reponseAdmin));
@@ -853,9 +875,16 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
   }
 
   formatDate(date: Date | string | undefined): string {
-    if (!date) return '—';
+    if (!date) {
+      console.log('⚠️ Date manquante dans formatDate');
+      return '—';
+    }
     try {
       const d = new Date(date);
+      if (isNaN(d.getTime())) {
+        console.log('⚠️ Date invalide:', date);
+        return 'Date invalide';
+      }
       return d.toLocaleDateString('fr-FR', {
         day: '2-digit',
         month: '2-digit',
@@ -863,7 +892,8 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
         hour: '2-digit',
         minute: '2-digit'
       });
-    } catch {
+    } catch (e) {
+      console.log('⚠️ Erreur formatDate:', e, 'date:', date);
       return String(date);
     }
   }
@@ -1052,13 +1082,50 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
   }
 
   openReclamationDetails(reclamation: any): void {
+    // Rafraîchir les données avant d'ouvrir les détails
+    this.loadReclamations();
     this.selectedReclamation = reclamation;
     this.showReclamationDetails = true;
+    // Garder la sidebar ouverte pour permettre de voir les détails par-dessus
+    // showReclamationsSidebar reste inchangé
   }
 
   closeReclamationDetails(): void {
     this.showReclamationDetails = false;
     this.selectedReclamation = null;
+  }
+
+  // ========== SIDEBAR RÉCLAMATIONS ==========
+  openReclamationsSidebar(): void {
+    this.loadReclamations();
+    this.showReclamationsSidebar = true;
+  }
+
+  closeReclamationsSidebar(): void {
+    this.showReclamationsSidebar = false;
+  }
+
+  getFilteredSidebarReclamations(): any[] {
+    if (this.reclamationsSidebarFilter === 'ALL') {
+      return this.reclamationsList;
+    }
+    return this.reclamationsList.filter(r => r.statut === this.reclamationsSidebarFilter);
+  }
+
+  setReclamationsSidebarFilter(filter: string): void {
+    this.reclamationsSidebarFilter = filter;
+  }
+
+  hasAdminResponse(reclamation: any): boolean {
+    return !!(reclamation.reponseAdmin && reclamation.reponseAdmin.trim());
+  }
+
+  selectReclamationForResponse(reclamation: any): void {
+    this.selectedSidebarReclamation = reclamation;
+  }
+
+  closeSidebarResponse(): void {
+    this.selectedSidebarReclamation = null;
   }
 
   // ========== SERVICE CLIENT ==========
