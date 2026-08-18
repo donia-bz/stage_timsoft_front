@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService, Commande, Livreur } from '../../services/api.service';
 import { AuthService, UserProfile } from '../../services/auth.service';
 import { io, Socket } from 'socket.io-client';
+import { environment } from '../../../environments/environment';
 
 export interface Depot {
   id?: string;
@@ -323,7 +324,7 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   searchFilter = '';
   private adminMap: any = null;
   private socket: Socket | null = null;
-  private trackingServiceUrl = 'http://localhost:8090';
+  private trackingServiceUrl = environment.trackingServiceUrl || 'http://localhost:8083';
   private iaServiceUrl = 'http://localhost:8001';
   private driverPositions: any[] = [];
   private depotsPositions: any[] = [];
@@ -1486,8 +1487,10 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
             m.statut === 'VALIDE'
         );
         this.computeManifestStats();
+        console.log('📋 Manifestes chargés (mise à jour temps réel):', this.manifests.length);
       },
-      error: () => {
+      error: (err) => {
+        console.error('Erreur chargement manifestes:', err);
         this.manifests = [];
         this.computeManifestStats();
       }
@@ -1583,6 +1586,11 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   getDriverNameForManifest(livreurId: string): string {
     const driver = this.livreurs.find(l => l.id === livreurId);
     return driver ? `${driver.prenom} ${driver.nom}` : 'Non assigné';
+  }
+
+  getClientNameForManifest(clientId: string): string {
+    const client = this.usersList.find(u => u.id === clientId);
+    return client ? `${client.prenom} ${client.nom}` : 'Inconnu';
   }
 
   // ========== MANIFESTS DETAIL PANEL ==========
@@ -2552,6 +2560,7 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
         console.log('🔌 WebSocket connecté au tracking service');
         this.socket.emit('subscribe-positions');
         this.socket.emit('subscribe-admin-notifications');
+        this.socket.emit('subscribe-manifest-updates');
       });
 
       this.socket.on('initial-positions', (positions: any[]) => {
@@ -2588,6 +2597,20 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
         this.depotsPositions.push(depot);
         if (this.activeTab === 'carte') {
           this.addDepotToMap(depot);
+        }
+      });
+
+      this.socket.on('manifest-created', (manifest: any) => {
+        console.log('📋 Nouveau manifeste créé:', manifest.id);
+        this.chargerManifests();
+      });
+
+      this.socket.on('manifest-status-update', (update: any) => {
+        console.log('📋 Statut manifeste mis à jour:', update.manifestId, update.statut);
+        const manifest = this.manifests.find(m => m.id === update.manifestId);
+        if (manifest) {
+          manifest.statut = update.statut;
+          this.computeManifestStats();
         }
       });
 

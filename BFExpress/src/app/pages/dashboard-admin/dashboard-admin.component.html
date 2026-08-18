@@ -260,21 +260,6 @@
         </div>
       </div>
 
-      <!-- Filtres simplifiés -->
-      <div class="card mb-20">
-        <div class="filter-bar">
-          <input class="search-input" [(ngModel)]="manifestFilters.search" placeholder="Rechercher référence..." style="width: 300px;" />
-          <select [(ngModel)]="manifestFilters.statut" class="filter-select">
-            <option value="">Tous statuts</option>
-            <option value="EN_ATTENTE">En attente</option>
-            <option value="A_ENLEVER">À enlever</option>
-            <option value="EN_LIVRAISON">En livraison</option>
-            <option value="LIVRE">Livré</option>
-          </select>
-          <button class="btn btn-secondary" (click)="resetManifestFilters()">Réinitialiser</button>
-        </div>
-      </div>
-
       <!-- Actions groupées -->
       <div class="bulk-action-bar" *ngIf="selectedManifestIds.size > 0">
         <span>{{ selectedManifestIds.size }} manifeste(s) sélectionné(s)</span>
@@ -290,13 +275,27 @@
 
       <!-- Vue tableau des manifestes -->
       <div class="card">
+        <div class="card-header">
+          <div class="table-controls">
+            <input class="search-input" [(ngModel)]="manifestFilters.search" placeholder="Rechercher référence..." style="width: 300px;" />
+            <select [(ngModel)]="manifestFilters.statut" class="filter-select">
+              <option value="">Tous statuts</option>
+              <option value="EN_ATTENTE">En attente</option>
+              <option value="A_ENLEVER">À enlever</option>
+              <option value="EN_LIVRAISON">En livraison</option>
+              <option value="LIVRE">Livré</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" (click)="resetManifestFilters()">Réinitialiser</button>
+          </div>
+        </div>
         <div class="table-responsive">
           <table class="data-table">
             <thead>
               <tr>
                 <th width="40"><input type="checkbox" (change)="selectAllManifests()" [checked]="selectedManifestIds.size === filteredManifests.length && filteredManifests.length > 0" /></th>
                 <th>Référence</th>
-                <th>Date</th>
+                <th>Date de création</th>
+                <th>Créateur (Client)</th>
                 <th>Colis</th>
                 <th>Livreur</th>
                 <th>Statut</th>
@@ -308,6 +307,12 @@
                 <td><input type="checkbox" [checked]="isManifestSelected(m.id)" (change)="toggleManifestSelection(m.id)" /></td>
                 <td class="mono">{{ getManifestId(m) }}</td>
                 <td>{{ getManifestDate(m) }}</td>
+                <td>
+                  <div *ngIf="getClientNameForManifest(m.clientId)">
+                    {{ getClientNameForManifest(m.clientId) }}
+                  </div>
+                  <div *ngIf="!m.clientId" class="muted">Inconnu</div>
+                </td>
                 <td>{{ getManifestColisCount(m) }}</td>
                 <td>
                   <div *ngIf="m.livreurId">
@@ -322,64 +327,14 @@
                 </td>
                 <td class="actions">
                   <button class="btn-icon" (click)="openManifestPanel(m)" title="Détails">👁️</button>
-                  <button class="btn-icon" *ngIf="!m.livreurId" (click)="quickAssignManifest(m)" title="Assigner">📋</button>
-                  <button class="btn-icon" *ngIf="canValidateRetrait(m)" (click)="validerRetraitManifest(m.id || '')" title="Valider retrait">✅</button>
                 </td>
               </tr>
               <tr *ngIf="filteredManifests.length === 0">
-                <td colspan="7" class="empty">Aucun manifeste trouvé</td>
+                <td colspan="8" class="empty">Aucun manifeste trouvé</td>
               </tr>
             </tbody>
           </table>
         </div>
-      </div>
-      <div class="card" *ngIf="getPendingManifests().length > 0">
-        <div class="card-header"><h3>En attente d’affectation</h3></div>
-        <div class="list-stack">
-          <div class="list-item" *ngFor="let m of getPendingManifests()" [class.selected]="isManifestSelected(m.id)">
-            <div class="manifest-checkbox">
-              <input type="checkbox" [checked]="isManifestSelected(m.id)" (change)="toggleManifestSelection(m.id)" />
-            </div>
-            <div class="manifest-info" (click)="openManifestPanel(m)">
-              <strong>{{ getManifestId(m) }}</strong>
-              <div class="muted">{{ getManifestColisCount(m) }} colis · {{ getManifestDate(m) }}</div>
-            </div>
-            <div class="row-actions">
-              <select [ngModel]="getSelectedDriverForManifest(m.id)" (ngModelChange)="setSelectedDriverForManifest(m.id, $event)">
-                <option value="">Livreur...</option>
-                <option *ngFor="let l of getAvailableDrivers()" [value]="l.id">
-                  {{ getDriverFullName(l) }}
-                </option>
-              </select>
-              <button class="btn btn-primary btn-sm"
-                      (click)="affecterManifest(m.id || '', getSelectedDriverForManifest(m.id || ''))"
-                      [disabled]="!isManifestDriverSelected(m.id || '')">
-                Affecter
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header"><h3>En cours</h3></div>
-        <div class="list-stack" *ngIf="getInProgressManifests().length > 0">
-          <div class="list-item" *ngFor="let m of getInProgressManifests()" [class.selected]="isManifestSelected(m.id)">
-            <div class="manifest-checkbox">
-              <input type="checkbox" [checked]="isManifestSelected(m.id)" (change)="toggleManifestSelection(m.id)" />
-            </div>
-            <div class="manifest-info" (click)="openManifestPanel(m)">
-              <strong>{{ getManifestId(m) }}</strong>
-              <div class="muted">Livreur : {{ getDriverNameForManifest(m.livreurId || '') }}</div>
-            </div>
-            <div class="row-actions">
-              <span class="status-pill status-a_enlever">{{ getManifestStatus(m) }}</span>
-              <button class="btn btn-secondary btn-sm" *ngIf="canValidateRetrait(m)"
-                      (click)="validerRetraitManifest(m.id || '')">Valider retrait</button>
-            </div>
-          </div>
-        </div>
-        <div class="empty" *ngIf="hasNoManifests()">Aucun manifeste</div>
       </div>
 
       <!-- Panneau latéral de détails -->
@@ -515,10 +470,6 @@
         <span></span>
         <div class="bulk-actions">
           <button class="btn btn-secondary" (click)="openLivreursListSidebar()">📋 Liste Livreurs</button>
-          <button class="btn btn-warning" [class.btn-primary]="getPendingRegistrations().length === 0" [class.btn-warning]="getPendingRegistrations().length > 0" (click)="openPendingLivreurSidebar()">
-            📋 Liste d'attente
-            <span class="badge" *ngIf="getPendingRegistrations().length > 0">{{ getPendingRegistrations().length }}</span>
-          </button>
         </div>
       </div>
 
@@ -528,42 +479,42 @@
             <thead>
               <tr>
                 <th width="40"><input type="checkbox" (change)="selectAllUsers(filteredUsersList)" [checked]="selectedUserIds.size === filteredUsersList.length && filteredUsersList.length > 0" /></th>
-                <th>Utilisateur</th>
-                <th>Contact</th>
+                <th>Nom</th>
+                <th>Email</th>
                 <th>Rôle</th>
                 <th>Statut</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let u of filteredUsersList" [class.selected]="isUserSelected(u.id)">
-                <td><input type="checkbox" [checked]="isUserSelected(u.id)" (change)="toggleUserSelection(u.id)" /></td>
+              <tr *ngFor="let user of filteredUsersList" [class.selected]="isUserSelected(user.id)">
+                <td><input type="checkbox" [checked]="isUserSelected(user.id)" (change)="toggleUserSelection(user.id)" /></td>
                 <td>
                   <div class="user-cell">
-                    <div class="avatar-initials" [style.backgroundColor]="getAvatarColor(u.id)">
-                      {{ getAvatarInitials(u) }}
+                    <div class="user-avatar" [style.background-color]="getAvatarColor(user.id)">
+                      {{ getAvatarInitials(user) }}
                     </div>
-                    <div class="user-name">
-                      <strong>{{ u.prenom }} {{ u.nom }}</strong>
+                    <div>
+                      <strong>{{ user.prenom }} {{ user.nom }}</strong>
+                      <div class="muted">{{ user.telephone || '—' }}</div>
                     </div>
                   </div>
                 </td>
+                <td>{{ user.email }}</td>
                 <td>
-                  <div class="contact-info">
-                    <span>{{ u.email }}</span>
-                    <span class="muted text-sm">{{ u.telephone || '—' }}</span>
-                  </div>
+                  <span class="tag" [class.admin]="user.role === 'ADMIN'" [class.livreur]="user.role === 'LIVREUR'">
+                    {{ user.role }}
+                  </span>
                 </td>
-                <td><span class="tag">{{ u.role }}</span></td>
                 <td>
-                  <span class="status-badge" [ngClass]="{'active': u.statut === 'ACTIF' || u.approuve, 'pending': u.statut === 'INSCRIPTION' && !u.approuve, 'suspended': u.statut === 'SUSPENDU'}">
-                    {{ (u.statut === 'ACTIF' || u.approuve) ? 'Actif' : (u.statut === 'SUSPENDU' ? 'Suspendu' : 'En attente') }}
+                  <span class="status-pill" [ngClass]="'status-' + (user.statut || 'actif').toLowerCase()">
+                    {{ user.statut }}
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-icon" (click)="viewUserDetails(u)">👁️</button>
-                  <button class="btn-icon" *ngIf="u.approuve !== true && u.statut !== 'ACTIF'" (click)="approveUser(u.id)">✅</button>
-                  <button class="btn-icon danger" (click)="deleteUser(u)">🗑️</button>
+                  <button class="btn-icon" (click)="viewUserDetails(user)" title="Détails">👁️</button>
+                  <button class="btn-icon" *ngIf="user.statut === 'INSCRIPTION'" (click)="approveUser(user.id)" title="Approuver">✅</button>
+                  <button class="btn-icon danger" (click)="deleteUser(user)" title="Supprimer">🗑️</button>
                 </td>
               </tr>
               <tr *ngIf="filteredUsersList.length === 0">
@@ -575,249 +526,146 @@
       </div>
     </div>
 
-    <!-- ========== DEPOTS ========== -->
-    <div *ngIf="activeTab === 'depots'" class="tab-panel">
-      <!-- Formulaire d'ajout rapide -->
-      <div class="card mb-20">
-        <div class="form-row">
-          <input [(ngModel)]="nouveauDepot.nom" placeholder="Nom du dépôt (ex: Dépôt Tunis)" />
-          <input [(ngModel)]="nouveauDepot.ville" placeholder="Ville / Gouvernorat" />
-          <input type="number" [(ngModel)]="nouveauDepot.capacite" placeholder="Capacité max (ex: 500)" />
-          <button class="btn btn-primary" (click)="addDepotAndReset()">Ajouter le dépôt</button>
-        </div>
-      </div>
-
-      <!-- Grille des Dépôts (Smart Hubs) -->
-      <div class="cards-grid">
-        <div class="card depot-card" *ngFor="let d of depots" [class.over]="isDepotOverCapacity(d)" (click)="openDepotPanel(d)" style="cursor: pointer;">
-          <div class="card-header">
-            <h3>{{ d.nom }}</h3>
-            <span class="status-badge" *ngIf="hasDormantStock(d)" style="background: #fee2e2; color: #991b1b;">⚠️ Stock dormant</span>
-          </div>
-          <p class="muted" style="margin-top: 0;"><span class="icon">📍</span> {{ d.gouvernorat || d.ville }}</p>
-          
-          <!-- Barres de progression multiples (Smart Occupancy) -->
-          <div class="depot-stats-bars">
-            <div class="stat-row">
-              <span class="stat-label">Nouveaux ({{ d.stats?.nouveaux?.length || 0 }})</span>
-              <div class="progress-bar"><div class="progress-fill fill-blue" [style.width.%]="getDepotFillPercent(d, 'nouveaux')"></div></div>
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">En transit ({{ d.stats?.enTransit?.length || 0 }})</span>
-              <div class="progress-bar"><div class="progress-fill fill-green" [style.width.%]="getDepotFillPercent(d, 'enTransit')"></div></div>
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">Retours ({{ d.stats?.retours?.length || 0 }})</span>
-              <div class="progress-bar"><div class="progress-fill fill-red" [style.width.%]="getDepotFillPercent(d, 'retours')"></div></div>
-            </div>
-          </div>
-
-          <div class="depot-footer">
-            <span class="occupancy-text" [class.danger]="isDepotOverCapacity(d)">
-              {{ d.colisActuels || 0 }} / {{ d.capacite }} colis au total
-            </span>
-            <button class="btn-icon danger" (click)="removeDepot(d.id); $event.stopPropagation()" title="Supprimer">🗑️</button>
-          </div>
-        </div>
-      </div>
-      <div class="empty" *ngIf="depots.length === 0">Aucun dépôt configuré.</div>
-    </div>
-
-    <!-- ========== VEHICULES (FLOTTES) ========== -->
+    <!-- ========== VÉHICULES ========== -->
     <div *ngIf="activeTab === 'vehicules'" class="tab-panel">
-      
-      <!-- KPIs Control Tower -->
-      <div class="kpi-grid kpi-4 mb-20">
-        <div class="kpi-card">
-          <div class="kpi-label">Total Véhicules</div>
-          <div class="kpi-value">{{ vehicules.length }}</div>
-        </div>
-        <div class="kpi-card highlight-success">
-          <div class="kpi-label">Actifs sur le terrain</div>
-          <div class="kpi-value">{{ getVehiculesActifs() }}</div>
-        </div>
-        <div class="kpi-card highlight-warning">
-          <div class="kpi-label">En Maintenance</div>
-          <div class="kpi-value">{{ getVehiculesMaintenance() }}</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Capacité Totale (Kg)</div>
-          <div class="kpi-value">{{ getCapaciteTotaleKg() }} <small>Kg</small></div>
-        </div>
-      </div>
-
-      <!-- Formulaire d'ajout -->
       <div class="card mb-20">
-        <div class="form-row">
-          <input [(ngModel)]="nouveauVehicule.immatriculation" placeholder="Immatriculation (ex: 123 TUN 456)" />
-          <input [(ngModel)]="nouveauVehicule.modele" placeholder="Modèle (ex: Renault Master)" />
-          <select [(ngModel)]="nouveauVehicule.type">
-            <option value="CAMIONNETTE">Camionnette (Motos/Petits colis)</option>
-            <option value="UTILITAIRE">Utilitaire (Standard)</option>
-            <option value="CAMION">Camion (Lourd/Gros volume)</option>
-          </select>
-          <input type="number" [(ngModel)]="nouveauVehicule.capaciteKg" placeholder="Capacité en Kg" />
-          <button class="btn btn-primary" (click)="addVehiculeAndReset()">Ajouter véhicule</button>
+        <div class="card-header">
+          <h3>Ajouter un véhicule</h3>
         </div>
-      </div>
-
-      <!-- Grille des Véhicules -->
-      <div class="cards-grid">
-        <div class="card vehicule-card" *ngFor="let v of vehicules" (click)="openVehiculePanel(v)" style="cursor: pointer;">
-          <div class="card-header">
-            <div class="vehicule-title">
-              <span class="icon">{{ v.type === 'CAMION' ? '🚛' : (v.type === 'CAMIONNETTE' ? '🛵' : '🚐') }}</span>
-              <h3>{{ v.immatriculation }}</h3>
-            </div>
-            <span class="status-badge" [ngClass]="{'active': v.statut === 'DISPONIBLE', 'pending': v.statut === 'EN_SERVICE' || v.statut === 'EN_COURSE', 'suspended': v.statut === 'MAINTENANCE'}">
-              {{ v.statut }}
-            </span>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Immatriculation</label>
+            <input [(ngModel)]="nouveauVehicule.immatriculation" placeholder="123 TN 4567" />
           </div>
-          
-          <p class="muted mt-10">{{ v.modele }} • {{ v.annee || 2023 }}</p>
-          
-          <!-- Capacity Bar -->
-          <div class="capacity-bar-container mt-15">
-            <div class="capacity-labels">
-              <span>Charge actuelle (simulée)</span>
-              <span>Max: {{ v.capaciteKg || v.capacite || 1000 }} Kg</span>
-            </div>
-            <div class="progress-bar">
-              <div class="progress-fill fill-blue" [style.width.%]="v.statut === 'EN_COURSE' ? 75 : 0"></div>
-            </div>
+          <div class="form-group">
+            <label>Modèle</label>
+            <input [(ngModel)]="nouveauVehicule.modele" placeholder="Peugeot Partner" />
           </div>
-
-          <div class="driver-assignment mt-15" (click)="$event.stopPropagation()">
-            <div class="assigned-driver">
-              <span class="icon">👤</span> {{ getDriverForVehicule(v) }}
-            </div>
-            <select *ngIf="!v.livreurId" class="small-select" (change)="assignerLivreurVehicule(v, $event)">
-              <option value="">Assigner...</option>
-              <option *ngFor="let l of getLivreurUsers()" [value]="l.id">{{ l.prenom }} {{ l.nom }} ({{ l.gouvernorat || '—' }})</option>
+          <div class="form-group">
+            <label>Capacité (kg)</label>
+            <input type="number" [(ngModel)]="nouveauVehicule.capaciteKg" placeholder="1000" />
+          </div>
+          <div class="form-group">
+            <label>Type</label>
+            <select [(ngModel)]="nouveauVehicule.type">
+              <option value="FOURGON">Fourgon</option>
+              <option value="UTILITAIRE">Utilitaire</option>
+              <option value="CAMION">Camion</option>
             </select>
           </div>
         </div>
+        <button class="btn btn-primary" (click)="addVehiculeAndReset()">Ajouter</button>
       </div>
-      
-      <div class="empty" *ngIf="vehicules.length === 0">Aucun véhicule enregistré dans la flotte.</div>
-    </div>
 
-    <!-- ========== CARTE ========== -->
-    <div *ngIf="activeTab === 'carte'" class="tab-panel">
       <div class="card">
-        <div class="card-header">
-          <h3>Carte live temps réel</h3>
-          <div class="map-controls">
-            <button class="btn btn-secondary btn-sm" (click)="loadDepotsFromTracking()">🔄 Actualiser</button>
-            <button class="btn btn-secondary btn-sm" (click)="initializeWebSocket()">🔌 Reconnecter WebSocket</button>
-          </div>
-        </div>
-        
-        <!-- Filtres carte -->
-        <div class="map-filters">
-          <select [(ngModel)]="mapFilterStatut" class="filter-select" (change)="filterMapMarkers()">
-            <option value="">Tous statuts</option>
-            <option value="DISPONIBLE">Disponibles</option>
-            <option value="EN_COURSE">En course</option>
-            <option value="EN_PAUSE">En pause</option>
-          </select>
-          <select [(ngModel)]="mapFilterGouvernorat" class="filter-select" (change)="filterMapMarkers()">
-            <option value="">Tous gouvernorats</option>
-            <option *ngFor="let g of gouvernorats" [value]="g">{{ g }}</option>
-          </select>
-        </div>
-
-        <div class="map-wrapper">
-          <div id="admin-map" class="real-leaflet-map"></div>
-          <div class="map-badges">
-            <span class="map-badge badge-green">{{ getDriversDisponibles() }} disponibles</span>
-            <span class="map-badge badge-orange">{{ getDriversEnCourse() }} en course</span>
-            <span class="map-badge badge-purple">{{ getDepotsCount() }} dépôts</span>
-          </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Immatriculation</th>
+                <th>Modèle</th>
+                <th>Type</th>
+                <th>Capacité</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let v of vehicules">
+                <td class="mono">{{ v.immatriculation }}</td>
+                <td>{{ v.modele }}</td>
+                <td>{{ v.type }}</td>
+                <td>{{ v.capaciteKg }} kg</td>
+                <td>
+                  <span class="status-pill" [ngClass]="'status-' + (v.statut || 'disponible').toLowerCase()">
+                    {{ v.statut }}
+                  </span>
+                </td>
+                <td class="actions">
+                  <button class="btn-icon danger" (click)="removeVehicule(v.id || '')" title="Supprimer">🗑️</button>
+                </td>
+              </tr>
+              <tr *ngIf="vehicules.length === 0">
+                <td colspan="6" class="empty">Aucun véhicule</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
 
-    <!-- ========== RECLAMATIONS ========== -->
+    <!-- ========== DÉPÔTS ========== -->
+    <div *ngIf="activeTab === 'depots'" class="tab-panel">
+      <div class="card mb-20">
+        <div class="card-header">
+          <h3>Ajouter un dépôt</h3>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nom</label>
+            <input [(ngModel)]="nouveauDepot.nom" placeholder="Dépôt Tunis" />
+          </div>
+          <div class="form-group">
+            <label>Ville</label>
+            <input [(ngModel)]="nouveauDepot.ville" placeholder="Tunis" />
+          </div>
+          <div class="form-group">
+            <label>Capacité</label>
+            <input type="number" [(ngModel)]="nouveauDepot.capacite" placeholder="500" />
+          </div>
+        </div>
+        <button class="btn btn-primary" (click)="addDepotAndReset()">Ajouter</button>
+      </div>
+
+      <div class="card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Ville</th>
+                <th>Capacité</th>
+                <th>Occupation</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let d of depots" [class.warning]="isDepotOverCapacity(d)" [class.alert]="hasDormantStock(d)">
+                <td><strong>{{ d.nom }}</strong></td>
+                <td>{{ d.ville }}</td>
+                <td>{{ d.capacite }}</td>
+                <td>
+                  <div class="progress-bar">
+                    <div class="progress-fill" [style.width.%]="getDepotFillPercent(d, 'all')" 
+                         [class.warning]="getDepotFillPercent(d, 'all') > 80"
+                         [class.danger]="getDepotFillPercent(d, 'all') > 90"></div>
+                  </div>
+                  <small>{{ d.colisActuels || 0 }} / {{ d.capacite }}</small>
+                </td>
+                <td>
+                  <span class="status-pill" [ngClass]="'status-' + (d.statut || 'actif').toLowerCase()">
+                    {{ d.statut }}
+                  </span>
+                </td>
+                <td class="actions">
+                  <button class="btn-icon" (click)="openDepotPanel(d)" title="Détails">👁️</button>
+                  <button class="btn-icon danger" (click)="removeDepot(d.id || '')" title="Supprimer">🗑️</button>
+                </td>
+              </tr>
+              <tr *ngIf="depots.length === 0">
+                <td colspan="6" class="empty">Aucun dépôt</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== RÉCLAMATIONS ========== -->
     <div *ngIf="activeTab === 'reclamations'" class="tab-panel">
-      <div class="page-header">
-        <div>
-          <h1>Réclamations</h1>
-          <p>Gérer les réclamations des clients avec IA</p>
-        </div>
-        <div class="header-actions">
-          <button class="btn btn-secondary" (click)="refreshData()">Actualiser</button>
-          <button class="btn btn-primary" (click)="analyserReclamationsIA()">🤖 Analyser avec IA</button>
-        </div>
-      </div>
-
-      <!-- KPIs Réclamations -->
-      <div class="kpi-grid kpi-4">
-        <div class="kpi-card">
-          <div class="kpi-label">Total réclamations</div>
-          <div class="kpi-value">{{ reclamations.length }}</div>
-        </div>
-        <div class="kpi-card highlight-warning">
-          <div class="kpi-label">En attente</div>
-          <div class="kpi-value">{{ getReclamationsByStatut('EN_ATTENTE').length }}</div>
-        </div>
-        <div class="kpi-card highlight-success">
-          <div class="kpi-label">Résolues</div>
-          <div class="kpi-value">{{ getReclamationsByStatut('RESOLUE').length }}</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Taux résolution</div>
-          <div class="kpi-value">{{ getTauxResolution() }}%</div>
-        </div>
-      </div>
-
-      <!-- Alertes IA -->
-      <div class="card" *ngIf="anomaliesDetectees.length > 0">
-        <div class="card-header">
-          <h3>🤖 Alertes IA détectées</h3>
-        </div>
-        <div class="alert-list">
-          <div class="alert-row" *ngFor="let anomalie of anomaliesDetectees" [class]="anomalie.niveau.toLowerCase()">
-            <span class="dot" [class]="anomalie.niveau.toLowerCase()"></span>
-            <span>{{ anomalie.description }}</span>
-            <button class="btn-link" (click)="actionAnomalie(anomalie)">Voir</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Petit cadre IA (message) -->
-      <div class="ia-message-card" *ngIf="showIAModal">
-        <div class="ia-message-header">
-          <span class="ia-message-title">🤖 Analyse IA</span>
-          <button class="ia-close-btn" (click)="closeIAModal()">✕</button>
-        </div>
-        <div class="ia-message-body">
-          <div *ngIf="anomaliesDetectees.length === 0" class="ia-empty">
-            <p>Aucune anomalie détectée</p>
-          </div>
-          <div *ngIf="anomaliesDetectees.length > 0">
-            <div class="ia-summary">
-              <span class="ia-count">{{ anomaliesDetectees.length }} anomalie(s)</span>
-              <span class="ia-date">{{ getCurrentDateTime() }}</span>
-            </div>
-            <div class="ia-anomalies">
-              <div class="ia-anomaly-item" *ngFor="let anomalie of anomaliesDetectees" [class]="anomalie.niveau.toLowerCase()">
-                <span class="ia-anomaly-type">{{ anomalie.type }}</span>
-                <span class="ia-anomaly-desc">{{ anomalie.description }}</span>
-                <span class="ia-anomaly-action">{{ anomalie.actionRecommandee }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Filtres avancés -->
-      <div class="card">
-        <div class="card-header">
-          <h3>Filtres</h3>
-          <button class="btn-link" (click)="resetReclamationFilters()">Réinitialiser</button>
-        </div>
-        <div class="filter-grid">
+      <div class="card mb-20">
+        <div class="filter-bar">
           <input class="search-input" [(ngModel)]="reclamationFilters.search" placeholder="Rechercher..." />
           <select [(ngModel)]="reclamationFilters.statut" class="filter-select">
             <option value="">Tous statuts</option>
@@ -828,524 +676,263 @@
           </select>
           <select [(ngModel)]="reclamationFilters.type" class="filter-select">
             <option value="">Tous types</option>
-            <option *ngFor="let type of getReclamationTypes()" [value]="type">{{ type }}</option>
-          </select>
-          <select [(ngModel)]="reclamationFilters.priorite" class="filter-select">
-            <option value="">Toutes priorités</option>
-            <option value="URGENT">🔴 Urgent</option>
-            <option value="NORMAL">🟡 Normal</option>
-            <option value="FAIBLE">🟢 Faible</option>
+            <option value="COLIS_ENDOMMAGE">Colis endommagé</option>
+            <option value="RETARD">Retard</option>
+            <option value="PAIEMENT">Paiement</option>
+            <option value="AUTRE">Autre</option>
           </select>
         </div>
       </div>
 
-      <!-- Tableau réclamations amélioré -->
       <div class="card">
         <div class="table-responsive">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Référence</th>
+                <th>ID</th>
                 <th>Client</th>
-                <th>Commande</th>
                 <th>Type</th>
-                <th>Description</th>
-                <th>Date</th>
-                <th>Priorité IA</th>
+                <th>Objet</th>
                 <th>Statut</th>
+                <th>Date</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let rec of filteredReclamations" [class.urgent]="isReclamationUrgente(rec)">
-                <td class="mono">{{ rec.id?.substring(0, 8) || '—' }}</td>
+              <tr *ngFor="let r of filteredReclamations">
+                <td class="mono">#{{ r.id?.substring(r.id.length - 6) || 'N/A' }}</td>
+                <td>{{ getClientNameForReclamation(r.clientId) }}</td>
                 <td>
-                  <div>
-                    <strong>{{ getReclamationClientName(rec.clientId) }}</strong>
-                    <div class="muted" *ngIf="getClientReclamationCount(rec.clientId) > 1">
-                      {{ getClientReclamationCount(rec.clientId) }} réclamations
-                    </div>
-                  </div>
+                  <span class="tag">{{ r.type }}</span>
                 </td>
-                <td class="mono">{{ rec.commandeId || rec.codeBarre || '—' }}</td>
-                <td>{{ rec.type || rec.objet || '—' }}</td>
+                <td>{{ r.objet || r.description?.substring(0, 30) + '...' }}</td>
                 <td>
-                  <div class="description-cell">
-                    {{ rec.description?.substring(0, 60) || '—' }}
-                    <button class="btn-link" *ngIf="rec.description?.length > 60" (click)="voirDetailReclamation(rec)">
-                      Voir plus
-                    </button>
-                  </div>
-                </td>
-                <td>{{ rec.dateCreation ? formatDate(rec.dateCreation) : '—' }}</td>
-                <td>
-                  <span class="priority-badge" [ngClass]="getReclamationPriorityClass(rec)">
-                    {{ getReclamationPriorityLabel(rec) }}
+                  <span class="status-pill" [ngClass]="'status-' + (r.statut || 'en_attente').toLowerCase()">
+                    {{ r.statut }}
                   </span>
                 </td>
-                <td>
-                  <span class="status-pill" [ngClass]="getReclamationStatutClass(rec.statut)">
-                    {{ rec.statut || 'EN_ATTENTE' }}
-                  </span>
-                </td>
-                <td>
-                  <div class="action-buttons">
-                    <button class="btn-icon" (click)="voirDetailReclamation(rec)" title="Détails">👁️</button>
-                    <button class="btn-icon" (click)="genererReponseIA(rec)" title="Réponse IA">🤖</button>
-                    <select [(ngModel)]="rec.statut" (change)="updateReclamationStatus(rec.id, rec.statut)" class="status-select">
-                      <option value="EN_ATTENTE">En attente</option>
-                      <option value="EN_COURS">En cours</option>
-                      <option value="RESOLUE">Résolue</option>
-                      <option value="REJETEE">Rejetée</option>
-                    </select>
-                    <button class="btn-icon danger" (click)="deleteReclamation(rec.id)" title="Supprimer">🗑️</button>
-                  </div>
+                <td>{{ formatDate(r.dateCreation) }}</td>
+                <td class="actions">
+                  <button class="btn-icon" (click)="viewReclamationDetails(r)" title="Détails">👁️</button>
                 </td>
               </tr>
               <tr *ngIf="filteredReclamations.length === 0">
-                <td colspan="9" class="empty">Aucune réclamation ne correspond aux filtres.</td>
+                <td colspan="7" class="empty">Aucune réclamation</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
+    </div>
 
-      <!-- Modal Détail Réclamation -->
-      <div class="modal-overlay" *ngIf="showReclamationDetail" (click)="closeReclamationDetail()">
-        <div class="modal-content" (click)="$event.stopPropagation()">
-          <div class="modal-header">
-            <h3>Détails de la réclamation</h3>
-            <button class="btn-icon" (click)="closeReclamationDetail()">✕</button>
-          </div>
-          <div class="modal-body" *ngIf="selectedReclamation">
-            <div class="detail-section">
-              <h4>Informations générales</h4>
-              <div class="detail-grid">
-                <div class="detail-item">
-                  <span class="label">Référence</span>
-                  <span class="value mono">{{ selectedReclamation.id }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="label">Client</span>
-                  <span class="value">{{ getReclamationClientName(selectedReclamation.clientId) }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="label">Commande</span>
-                  <span class="value mono">{{ selectedReclamation.commandeId || selectedReclamation.codeBarre }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="label">Date</span>
-                  <span class="value">{{ formatDate(selectedReclamation.dateCreation) }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="detail-section">
-              <h4>Description</h4>
-              <p class="description-full">{{ selectedReclamation.description }}</p>
-            </div>
-
-            <div class="detail-section" *ngIf="selectedReclamation.adminCommentaire">
-              <h4>Commentaire admin</h4>
-              <p>{{ selectedReclamation.adminCommentaire }}</p>
-            </div>
-
-            <div class="detail-section" *ngIf="selectedReclamationAnalysis">
-              <h4>🤖 Analyse IA</h4>
-              <div class="ai-analysis">
-                <div class="ai-item">
-                  <span class="ai-label">Sentiment</span>
-                  <span class="ai-value" [ngClass]="selectedReclamationAnalysis.sentiment.toLowerCase()">
-                    {{ selectedReclamationAnalysis.sentiment }}
-                  </span>
-                </div>
-                <div class="ai-item">
-                  <span class="ai-label">Problème détecté</span>
-                  <span class="ai-value">{{ selectedReclamationAnalysis.problemeDetecte }}</span>
-                </div>
-                <div class="ai-item">
-                  <span class="ai-label">Action suggérée</span>
-                  <span class="ai-value">{{ selectedReclamationAnalysis.suggestionAction }}</span>
-                </div>
-                <div class="ai-item">
-                  <span class="ai-label">Temps de résolution estimé</span>
-                  <span class="ai-value">{{ selectedReclamationAnalysis.tempsResolutionEstime }}h</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="detail-section">
-              <h4>Ajouter un commentaire</h4>
-              <textarea [(ngModel)]="adminCommentaire" placeholder="Votre commentaire..." rows="3"></textarea>
-              <button class="btn btn-primary" (click)="ajouterCommentaireAdmin()">Enregistrer</button>
-            </div>
+    <!-- ========== CARTE LIVE ========== -->
+    <div *ngIf="activeTab === 'carte'" class="tab-panel">
+      <div class="card">
+        <div class="card-header">
+          <h3>Carte Live - Positions des livreurs</h3>
+          <div class="header-actions">
+            <select [(ngModel)]="mapFilterStatut" class="filter-select">
+              <option value="">Tous statuts</option>
+              <option value="DISPONIBLE">Disponibles</option>
+              <option value="EN_COURSE">En course</option>
+            </select>
+            <select [(ngModel)]="mapFilterGouvernorat" class="filter-select">
+              <option value="">Tous gouvernorats</option>
+              <option *ngFor="let g of gouvernorats" [value]="g">{{ g }}</option>
+            </select>
+            <button class="btn btn-secondary" (click)="initializeWebSocket()">🔌 Reconnecter WebSocket</button>
           </div>
         </div>
-      </div>
-
-      <!-- Modal Réponse IA -->
-      <div class="modal-overlay" *ngIf="showResponseModal" (click)="closeResponseModal()">
-        <div class="modal-content" (click)="$event.stopPropagation()">
-          <div class="modal-header">
-            <h3>🤖 Réponse suggérée par IA</h3>
-            <button class="btn-icon" (click)="closeResponseModal()">✕</button>
-          </div>
-          <div class="modal-body" *ngIf="suggestedResponses">
-            <div class="response-tabs">
-              <button class="tab-btn" [class.active]="activeResponseTab === 'FORMELLE'" (click)="activeResponseTab = 'FORMELLE'">
-                Formelle
-              </button>
-              <button class="tab-btn" [class.active]="activeResponseTab === 'EMPATHIQUE'" (click)="activeResponseTab = 'EMPATHIQUE'">
-                Empathique
-              </button>
-              <button class="tab-btn" [class.active]="activeResponseTab === 'TECHNIQUE'" (click)="activeResponseTab = 'TECHNIQUE'">
-                Technique
-              </button>
-            </div>
-            <div class="response-content">
-              <div class="confidence-score">
-                Confiance: {{ getActiveResponseConfidence() }}%
-              </div>
-              <textarea [(ngModel)]="responseText" rows="6"></textarea>
-              <div class="response-actions">
-                <button class="btn btn-secondary" (click)="closeResponseModal()">Annuler</button>
-                <button class="btn btn-primary" (click)="envoyerReponse()">Envoyer</button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <div id="admin-map" class="map-container"></div>
       </div>
     </div>
 
   </main>
-</div>
 
-<!-- Side Panel Utilisateur -->
-<div class="panel-backdrop" *ngIf="showUserPanel" (click)="closeUserPanel()"></div>
-<div class="user-side-panel glass-panel" [class.open]="showUserPanel">
-  <div class="panel-header">
-    <h3>Détails Utilisateur</h3>
-    <button class="btn-icon" (click)="closeUserPanel()">✕</button>
-  </div>
-  <div class="panel-content" *ngIf="selectedUser">
-    <div class="profile-header">
-      <div class="avatar-large" [style.backgroundColor]="getAvatarColor(selectedUser.id)">
-        {{ getAvatarInitials(selectedUser) }}
-      </div>
-      <h2>{{ selectedUser.prenom }} {{ selectedUser.nom }}</h2>
-      <span class="tag">{{ selectedUser.role }}</span>
-    </div>
-    
-    <div class="info-group">
-      <h4>Coordonnées</h4>
-      <div class="info-row">
-        <span class="icon">📧</span> {{ selectedUser.email }}
-      </div>
-      <div class="info-row">
-        <span class="icon">📱</span> {{ selectedUser.telephone || 'Non renseigné' }}
-      </div>
-    </div>
+  <!-- ========== SIDE PANELS ========== -->
 
-    <div class="info-group" *ngIf="selectedUser.entreprise">
-      <h4>Entreprise</h4>
-      <div class="info-row">
-        <span class="icon">🏢</span> {{ selectedUser.entreprise }}
-      </div>
-      <div class="info-row" *ngIf="selectedUser.matriculeFiscal">
-        <span class="icon">🧾</span> {{ selectedUser.matriculeFiscal }}
-      </div>
+  <!-- Panneau détails utilisateur -->
+  <div class="side-panel" *ngIf="showUserPanel" [class.open]="showUserPanel">
+    <div class="side-panel-header">
+      <h3>Détails utilisateur</h3>
+      <button class="btn-icon" (click)="closeUserPanel()">✕</button>
     </div>
-
-    <div class="info-group">
-      <h4>Statut</h4>
-      <span class="status-badge" [ngClass]="{'active': selectedUser.statut === 'ACTIF' || selectedUser.approuve, 'pending': selectedUser.statut === 'INSCRIPTION' && !selectedUser.approuve, 'suspended': selectedUser.statut === 'SUSPENDU'}">
-        {{ (selectedUser.statut === 'ACTIF' || selectedUser.approuve) ? 'Actif' : (selectedUser.statut === 'SUSPENDU' ? 'Suspendu' : 'En attente') }}
-      </span>
-    </div>
-
-    <div class="panel-actions">
-      <button class="btn btn-primary w-full" *ngIf="!selectedUser.approuve" (click)="approveUser(selectedUser.id)">Approuver le compte</button>
-      <button class="btn btn-secondary w-full" *ngIf="selectedUser.statut !== 'SUSPENDU'" (click)="toggleUserSelection(selectedUser.id); bulkSuspend(); closeUserPanel()">Suspendre l'utilisateur</button>
-      <button class="btn btn-secondary danger w-full" (click)="deleteUser(selectedUser); closeUserPanel()">Supprimer le compte</button>
-    </div>
-  </div>
-</div>
-
-<!-- Side Panel Dépôt (Inventaire) -->
-<div class="panel-backdrop" *ngIf="showDepotPanel" (click)="closeDepotPanel()"></div>
-<div class="user-side-panel glass-panel depot-panel" [class.open]="showDepotPanel">
-  <div class="panel-header">
-    <h3>Inventaire : {{ selectedDepot?.nom }}</h3>
-    <button class="btn-icon" (click)="closeDepotPanel()">✕</button>
-  </div>
-  
-  <div class="panel-content" *ngIf="selectedDepot">
-    <div class="profile-header depot-header-card">
-      <h2>{{ selectedDepot.nom }}</h2>
-      <span class="muted"><span class="icon">📍</span> {{ selectedDepot.gouvernorat || selectedDepot.ville }}</span>
-      <div class="capacity-circle">
-        <div class="circle-value">{{ selectedDepot.colisActuels || 0 }}</div>
-        <div class="circle-max">/ {{ selectedDepot.capacite }}</div>
-      </div>
-    </div>
-    
-    <div class="panel-actions mb-20">
-      <button class="btn btn-primary w-full" (click)="showToast('Scanner activé', 'info')">📷 Mode Scan (Entrée/Sortie)</button>
-    </div>
-
-    <div class="info-group">
-      <h4>Nouveaux Colis ({{ selectedDepotCommandes.nouveaux.length }})</h4>
-      <div class="colis-list" *ngIf="selectedDepotCommandes.nouveaux.length > 0">
-        <div class="colis-item" *ngFor="let c of selectedDepotCommandes.nouveaux">
-          <div class="colis-id">#{{ c.id?.substring(c.id.length - 6) }}</div>
-          <div class="colis-status badge-blue">{{ c.statut }}</div>
+    <div class="side-panel-content" *ngIf="selectedUser">
+      <div class="detail-section">
+        <h4>Informations personnelles</h4>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Nom complet</span>
+            <span class="value">{{ selectedUser.prenom }} {{ selectedUser.nom }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Email</span>
+            <span class="value">{{ selectedUser.email }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Téléphone</span>
+            <span class="value">{{ selectedUser.telephone || '—' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Rôle</span>
+            <span class="value">{{ selectedUser.role }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Statut</span>
+            <span class="value status-pill" [ngClass]="'status-' + (selectedUser.statut || 'actif').toLowerCase()">
+              {{ selectedUser.statut }}
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Date inscription</span>
+            <span class="value">{{ formatDate(selectedUser.dateInscription) }}</span>
+          </div>
         </div>
       </div>
-      <div class="empty-list" *ngIf="selectedDepotCommandes.nouveaux.length === 0">Aucun nouveau colis</div>
-    </div>
-
-    <div class="info-group">
-      <h4>En Transit depuis ce dépôt ({{ selectedDepotCommandes.enTransit.length }})</h4>
-      <div class="colis-list" *ngIf="selectedDepotCommandes.enTransit.length > 0">
-        <div class="colis-item" *ngFor="let c of selectedDepotCommandes.enTransit">
-          <div class="colis-id">#{{ c.id?.substring(c.id.length - 6) }}</div>
-          <div class="colis-status badge-green">{{ c.statut }}</div>
-        </div>
-      </div>
-      <div class="empty-list" *ngIf="selectedDepotCommandes.enTransit.length === 0">Aucun colis en transit</div>
-    </div>
-
-    <div class="info-group">
-      <h4>Retours / Quarantaine ({{ selectedDepotCommandes.retours.length }})</h4>
-      <div class="colis-list" *ngIf="selectedDepotCommandes.retours.length > 0">
-        <div class="colis-item" *ngFor="let c of selectedDepotCommandes.retours">
-          <div class="colis-id">#{{ c.id?.substring(c.id.length - 6) }}</div>
-          <div class="colis-status badge-red">{{ c.statut }}</div>
-        </div>
-      </div>
-      <div class="empty-list" *ngIf="selectedDepotCommandes.retours.length === 0">Aucun retour en souffrance</div>
-    </div>
-
-  </div>
-</div>
-
-<!-- Side Panel Vehicule -->
-<div class="panel-backdrop" *ngIf="showVehiculePanel" (click)="closeVehiculePanel()"></div>
-<div class="user-side-panel glass-panel vehicule-panel" [class.open]="showVehiculePanel">
-  <div class="panel-header">
-    <h3>Fiche Véhicule</h3>
-    <button class="btn-icon" (click)="closeVehiculePanel()">✕</button>
-  </div>
-  
-  <div class="panel-content" *ngIf="selectedVehicule">
-    <div class="profile-header vehicule-header-card">
-      <div class="vehicule-icon-large">
-        {{ selectedVehicule.type === 'CAMION' ? '🚛' : (selectedVehicule.type === 'CAMIONNETTE' ? '🛵' : '🚐') }}
-      </div>
-      <h2>{{ selectedVehicule.immatriculation }}</h2>
-      <span class="tag">{{ selectedVehicule.modele }}</span>
-    </div>
-    
-    <div class="info-group">
-      <h4>Informations Techniques</h4>
-      <div class="info-row">
-        <span class="icon">🏷️</span> Marque : {{ selectedVehicule.marque || 'Non spécifiée' }}
-      </div>
-      <div class="info-row">
-        <span class="icon">📅</span> Année : {{ selectedVehicule.annee || 2023 }}
-      </div>
-      <div class="info-row" style="align-items: center; justify-content: space-between;">
-        <div><span class="icon">📦</span> Capacité (Kg) :</div>
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <input type="number" class="form-input" style="width: 80px; padding: 0.25rem 0.5rem;"
-                  [ngModel]="getVehicleCapacity()" (ngModelChange)="setVehicleCapacity($event)"
-                 (change)="updateVehicleCapacity(selectedVehicule.id, selectedVehicule.capaciteKg)" />
-        </div>
-      </div>
-      <div class="info-row" *ngIf="selectedVehicule.capaciteVolume">
-        <span class="icon">📐</span> Volume : {{ selectedVehicule.capaciteVolume }} m³
-      </div>
-    </div>
-
-    <div class="info-group">
-      <h4>Affectation Actuelle</h4>
-      <div class="info-row">
-        <span class="icon">👤</span> Livreur : {{ getDriverForVehicule(selectedVehicule) }}
-      </div>
-      <div class="mt-10">
-        <select class="w-full form-input" (change)="assignerLivreurVehicule(selectedVehicule, $event)">
-          <option value="">Aucun livreur assigné</option>
-          <option *ngFor="let l of getLivreurUsers()" [value]="l.id" [selected]="selectedVehicule.livreurId === l.id">{{ l.prenom }} {{ l.nom }}</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="info-group">
-      <h4>Gestion du Statut</h4>
-      <select class="w-full form-input" [ngModel]="getVehicleStatus()" (ngModelChange)="setVehicleStatus($event)" (change)="updateVehicleStatus(selectedVehicule.id, selectedVehicule.statut)">
-        <option value="DISPONIBLE">Disponible (Au dépôt)</option>
-        <option value="EN_SERVICE">En Service (Assigné)</option>
-        <option value="EN_COURSE">En Course (Sur le terrain)</option>
-        <option value="MAINTENANCE">En Maintenance</option>
-        <option value="HORS_SERVICE">Hors Service</option>
-      </select>
-    </div>
-
-    <div class="panel-actions">
-      <button class="btn btn-primary w-full" *ngIf="selectedVehicule.statut !== 'MAINTENANCE'" (click)="toggleVehiculeMaintenance(selectedVehicule)">
-        🛠️ Déclarer en Maintenance
-      </button>
-      <button class="btn btn-secondary w-full" *ngIf="selectedVehicule.statut === 'MAINTENANCE'" (click)="toggleVehiculeMaintenance(selectedVehicule)">
-        ✅ Remettre en Service
-      </button>
-      <button class="btn btn-secondary danger w-full mt-10" (click)="removeVehicule(selectedVehicule.id); closeVehiculePanel()">
-        🗑️ Supprimer le véhicule
-      </button>
     </div>
   </div>
-</div>
 
-<!-- History modal -->
-<div class="modal-overlay" *ngIf="showHistoryPanel" (click)="closeHistory()">
-  <div class="modal-card" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h3>Historique #{{ historyForOrderId ? historyForOrderId.substring(historyForOrderId.length - 6) : '' }}</h3>
+  <!-- Panneau détails dépôt -->
+  <div class="side-panel" *ngIf="showDepotPanel" [class.open]="showDepotPanel">
+    <div class="side-panel-header">
+      <h3>Détails du dépôt</h3>
+      <button class="btn-icon" (click)="closeDepotPanel()">✕</button>
+    </div>
+    <div class="side-panel-content" *ngIf="selectedDepot">
+      <div class="detail-section">
+        <h4>Informations générales</h4>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Nom</span>
+            <span class="value">{{ selectedDepot.nom }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Ville</span>
+            <span class="value">{{ selectedDepot.ville }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Capacité</span>
+            <span class="value">{{ selectedDepot.capacite }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Occupation actuelle</span>
+            <span class="value">{{ selectedDepot.colisActuels || 0 }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h4>Commandes au dépôt</h4>
+        <div class="orders-tabs">
+          <button class="tab-btn" [class.active]="activeDepotTab === 'nouveaux'" (click)="activeDepotTab = 'nouveaux'">
+            Nouveaux ({{ selectedDepotCommandes.nouveaux.length }})
+          </button>
+          <button class="tab-btn" [class.active]="activeDepotTab === 'enTransit'" (click)="activeDepotTab = 'enTransit'">
+            En transit ({{ selectedDepotCommandes.enTransit.length }})
+          </button>
+          <button class="tab-btn" [class.active]="activeDepotTab === 'retours'" (click)="activeDepotTab = 'retours'">
+            Retours ({{ selectedDepotCommandes.retours.length }})
+          </button>
+        </div>
+        <div class="orders-list">
+          <div class="order-item" *ngFor="let cmd of (activeDepotTab === 'nouveaux' ? selectedDepotCommandes.nouveaux : activeDepotTab === 'enTransit' ? selectedDepotCommandes.enTransit : selectedDepotCommandes.retours)">
+            <span class="order-ref">#{{ cmd.id?.substring(cmd.id.length - 6) || 'N/A' }}</span>
+            <span class="order-dest">{{ getArriveeVille(cmd) }}</span>
+            <span class="order-status status-pill" [ngClass]="'status-' + (cmd.statut || 'en_attente').toLowerCase()">
+              {{ cmd.statut }}
+            </span>
+          </div>
+          <div class="empty" *ngIf="(activeDepotTab === 'nouveaux' ? selectedDepotCommandes.nouveaux : activeDepotTab === 'enTransit' ? selectedDepotCommandes.enTransit : selectedDepotCommandes.retours).length === 0">
+            Aucune commande
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panneau historique livraisons -->
+  <div class="side-panel" *ngIf="showHistoryPanel" [class.open]="showHistoryPanel">
+    <div class="side-panel-header">
+      <h3>Historique des livraisons</h3>
       <button class="btn-icon" (click)="closeHistory()">✕</button>
     </div>
-    <div class="modal-body">
-      <div *ngIf="deliveriesHistory.length === 0" class="empty">Aucun historique</div>
-      <div class="history-item" *ngFor="let h of deliveriesHistory">
-        <div><strong>Livraison</strong> {{ h.livraison.id }}</div>
-        <div class="muted">{{ h.livraison.statut }} · {{ formatDateTime(h.livraison.dateAffectation) }}</div>
-        <div *ngIf="h.positions?.length" class="muted">{{ h.positions.length }} positions GPS</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ========== SIDEBAR LISTE D'ATTENTE LIVREURS ========== -->
-<div class="side-panel" *ngIf="showPendingLivreurSidebar" [class.open]="showPendingLivreurSidebar">
-  <div class="side-panel-header">
-    <h3>Inscriptions en attente ({{ getPendingRegistrations().length }})</h3>
-    <button class="btn-icon" (click)="closePendingLivreurSidebar()">✕</button>
-  </div>
-  <div class="side-panel-content">
-    <div *ngIf="getPendingRegistrations().length === 0" class="empty">
-      Aucune inscription en attente
-    </div>
-    <div class="list-stack" *ngIf="getPendingRegistrations().length > 0">
-      <div class="list-item" *ngFor="let l of getPendingRegistrations()">
-        <div class="livreur-info">
-          <div class="livreur-header">
-            <strong>{{ l.prenom }} {{ l.nom }}</strong>
-            <span class="status-pill status-inscription">INSCRIPTION</span>
-          </div>
-          <div class="livreur-details">
-            <div class="detail-row">
-              <span class="label">📧 Email:</span>
-              <span class="value">{{ l.email || '—' }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">📱 Téléphone:</span>
-              <span class="value">{{ l.telephone || '—' }}</span>
-            </div>
-            <div class="detail-row" *ngIf="l.gouvernorat">
-              <span class="label">📍 Gouvernorat:</span>
-              <span class="value">{{ l.gouvernorat }}</span>
-            </div>
-            <div class="detail-row" *ngIf="l.adresse">
-              <span class="label">🏠 Adresse:</span>
-              <span class="value">{{ l.adresse }}</span>
-            </div>
-            <div class="detail-row" *ngIf="l.ville">
-              <span class="label">🏙️ Ville:</span>
-              <span class="value">{{ l.ville }}</span>
-            </div>
-            <div class="detail-row" *ngIf="l.dateNaissance">
-              <span class="label">🎂 Date de naissance:</span>
-              <span class="value">{{ formatDate(l.dateNaissance) }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="row-actions">
-          <select [(ngModel)]="l.gouvernorat" class="gouvernorat-select">
-            <option value="">Gouvernorat...</option>
-            <option *ngFor="let g of gouvernorats" [value]="g">{{ g }}</option>
-          </select>
-          <button class="btn btn-primary btn-sm" (click)="affecterGouvernoratEtValider(l)" [disabled]="!l.gouvernorat">
-            ✅ Valider
-          </button>
-          <button class="btn btn-danger btn-sm" (click)="supprimerLivreur(l.id || '')">
-            ❌ Refuser
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ========== SIDEBAR LISTE DES LIVREURS ========== -->
-<div class="side-panel" *ngIf="showLivreursListSidebar" [class.open]="showLivreursListSidebar">
-  <div class="side-panel-header">
-    <h3>Liste des Livreurs ({{ getLivreurUsers().length }})</h3>
-    <button class="btn-icon" (click)="closeLivreursListSidebar()">✕</button>
-  </div>
-  <div class="side-panel-content">
-    <div *ngIf="getLivreurUsers().length === 0" class="empty">
-      Aucun livreur enregistré
-    </div>
-    <div class="list-stack" *ngIf="getLivreurUsers().length > 0">
-      <div class="list-item" *ngFor="let l of getLivreurUsers()">
-        <div class="livreur-info">
-          <div class="livreur-header">
-            <strong>{{ l.prenom }} {{ l.nom }}</strong>
-            <span class="status-pill" [ngClass]="'status-' + (l.statut || 'disponible').toLowerCase()">{{ l.statut || 'DISPONIBLE' }}</span>
-          </div>
-          <div class="livreur-details">
-            <div class="detail-row">
-              <span class="label">📧 Email:</span>
-              <span class="value">{{ l.email || '—' }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">📱 Téléphone:</span>
-              <span class="value">{{ l.telephone || '—' }}</span>
-            </div>
-            <div class="detail-row" *ngIf="l.gouvernorat">
-              <span class="label">📍 Gouvernorat:</span>
-              <span class="value">{{ l.gouvernorat }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">⚙️ Statut:</span>
-              <div class="value" *ngIf="!editingStatus[l.id]">
-                <span class="status-pill" [ngClass]="'status-' + (l.statut || 'disponible').toLowerCase()">{{ l.statut || 'DISPONIBLE' }}</span>
-                <button class="btn btn-sm btn-link" (click)="startEditStatus(l.id)">✏️</button>
-              </div>
-              <div class="value" *ngIf="editingStatus[l.id]">
-                <select [(ngModel)]="l.statut" class="status-select-inline">
-                  <option value="DISPONIBLE">DISPONIBLE</option>
-                  <option value="EN_COURSE">EN_COURSE</option>
-                  <option value="HORS_LIGNE">HORS_LIGNE</option>
-                  <option value="SUSPENDU">SUSPENDU</option>
-                </select>
-                <button class="btn btn-sm btn-success" (click)="saveStatus(l)">✓</button>
-                <button class="btn btn-sm btn-secondary" (click)="cancelEditStatus(l.id)">✗</button>
+    <div class="side-panel-content">
+      <div class="detail-section">
+        <h4>Commande #{{ historyForOrderId?.substring(historyForOrderId.length - 6) }}</h4>
+        <div class="history-timeline">
+          <div class="history-item" *ngFor="let entry of deliveriesHistory">
+            <div class="history-date">{{ formatDate(entry.livraison?.dateAffectation || entry.livraison?.dateDebut) }}</div>
+            <div class="history-content">
+              <strong>Livreur: {{ getDriverNameForManifest(entry.livraison?.livreurId) }}</strong>
+              <div class="muted">Statut: {{ entry.livraison?.statut }}</div>
+              <div *ngIf="entry.positions && entry.positions.length > 0" class="muted">
+                {{ entry.positions.length }} positions enregistrées
               </div>
             </div>
           </div>
-        </div>
-        <div class="row-actions">
-          <button class="btn btn-danger btn-sm" (click)="deleteUser(l)">🗑️ Supprimer</button>
+          <div class="empty" *ngIf="deliveriesHistory.length === 0">
+            Aucun historique disponible
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
 
+  <!-- Panneau détails réclamation -->
+  <div class="side-panel" *ngIf="showReclamationDetail" [class.open]="showReclamationDetail">
+    <div class="side-panel-header">
+      <h3>Détails de la réclamation</h3>
+      <button class="btn-icon" (click)="showReclamationDetail = false">✕</button>
+    </div>
+    <div class="side-panel-content" *ngIf="selectedReclamation">
+      <div class="detail-section">
+        <h4>Informations générales</h4>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">ID</span>
+            <span class="value mono">#{{ selectedReclamation.id?.substring(selectedReclamation.id.length - 6) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Type</span>
+            <span class="value">{{ selectedReclamation.type }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Statut</span>
+            <span class="value status-pill" [ngClass]="'status-' + (selectedReclamation.statut || 'en_attente').toLowerCase()">
+              {{ selectedReclamation.statut }}
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Date création</span>
+            <span class="value">{{ formatDate(selectedReclamation.dateCreation) }}</span>
+          </div>
+        </div>
+      </div>
 
-<!-- Toasts -->
-<div class="toast-container">
-  <div *ngFor="let toast of toasts" class="toast" [ngClass]="'toast-' + toast.type">
-    <span>{{ toast.message }}</span>
-    <button (click)="removeToast(toast.id)">✕</button>
+      <div class="detail-section">
+        <h4>Description</h4>
+        <p>{{ selectedReclamation.description }}</p>
+      </div>
+
+      <div class="detail-section" *ngIf="selectedReclamation.adminCommentaire">
+        <h4>Commentaire admin</h4>
+        <p>{{ selectedReclamation.adminCommentaire }}</p>
+      </div>
+
+      <div class="detail-section">
+        <h4>Répondre au client</h4>
+        <textarea [(ngModel)]="adminCommentaire" placeholder="Votre réponse..." rows="4"></textarea>
+        <button class="btn btn-primary" (click)="respondToReclamation()">Envoyer réponse</button>
+      </div>
+    </div>
   </div>
+
+  <!-- ========== TOASTS ========== -->
+  <div class="toast-container">
+    <div *ngFor="let toast of toasts" class="toast" [class.success]="toast.type === 'success'" [class.error]="toast.type === 'error'" [class.info]="toast.type === 'info'">
+      <span>{{ toast.message }}</span>
+      <button class="toast-close" (click)="removeToast(toast.id)">✕</button>
+    </div>
+  </div>
+
 </div>

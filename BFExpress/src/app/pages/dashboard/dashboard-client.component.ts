@@ -751,6 +751,7 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
 
     const manifeste = {
       clientId: this.clientId,
+      clientNom: `${this.clientInfo?.prenom || ''} ${this.clientInfo?.nom || ''}`,
       nombreColis: this.pendingCommandes.length,
       commandeIds: this.pendingCommandes.map(c => c.id).filter(id => !!id),
       statut: 'BROUILLON'

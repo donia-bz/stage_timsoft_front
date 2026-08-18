@@ -166,6 +166,12 @@ io.on('connection', (socket) => {
     console.log('👤 Client abonné au manifeste:', manifestId);
   });
 
+  // Abonnement aux mises à jour de manifestes pour l'admin
+  socket.on('subscribe-manifest-updates', () => {
+    socket.join('manifest-updates');
+    console.log('👤 Admin abonné aux mises à jour de manifestes');
+  });
+
   // Enregistrement d'un nouveau manifeste pour le tracking
   socket.on('register-manifest', async (data) => {
     try {
@@ -184,6 +190,7 @@ io.on('connection', (socket) => {
 
       // Notifier les clients abonnés
       io.to('admin-notifications').emit('manifest-created', manifestTracking);
+      io.to('manifest-updates').emit('manifest-created', manifestTracking);
       io.to(`client-${clientId}`).emit('manifest-status-update', {
         manifestId,
         statut: 'EN_ATTENTE_RAMASSAGE',
@@ -494,6 +501,14 @@ app.put('/api/manifests/:manifestId/statut', async (req, res) => {
 
     // Diffuser la mise à jour en temps réel
     io.to('admin-notifications').emit('manifest-status-update', {
+      manifestId: req.params.manifestId,
+      statut,
+      livreurId,
+      depotId,
+      timestamp
+    });
+
+    io.to('manifest-updates').emit('manifest-status-update', {
       manifestId: req.params.manifestId,
       statut,
       livreurId,

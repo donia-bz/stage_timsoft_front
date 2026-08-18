@@ -63,10 +63,15 @@ export interface Destinataire {
 export interface Manifeste {
   id?: string;
   clientId: string;
+  clientNom?: string; // Nom du client pour affichage direct
   nombreColis: number;
-  statut: string; // BROUILLON, IMPRIME, CLOTURE
+  statut: string; // BROUILLON, IMPRIME, CLOTURE, EN_ATTENTE, A_ENLEVER, EN_LIVRAISON, LIVRE
   colisIds?: string[];
+  commandeIds?: string[]; // IDs des commandes incluses
+  livreurId?: string; // Livreur assigné
   dateCreation?: string;
+  dateAffectation?: string;
+  dateRetrait?: string;
 }
 
 export interface Enlevement {

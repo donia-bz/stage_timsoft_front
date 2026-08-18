@@ -14,5 +14,7 @@ export const environment = {
   // WebSocket URLs (sans /api) - Utilise les services Spring Boot existants
   trackingWsUrl: 'http://localhost:8083',
   livreursWsUrl: 'http://localhost:8084',
-  vehiclesWsUrl: 'http://localhost:8086'
+  vehiclesWsUrl: 'http://localhost:8086',
+  // URL du service tracking pour les manifestes
+  trackingServiceUrl: 'http://localhost:8083'
 };
