@@ -115,7 +115,6 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   
   manifestFilters = {
     search: '',
-    statut: '',
     livreurId: '',
     gouvernorat: '',
     minColis: 0,
@@ -1593,6 +1592,11 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     return client ? `${client.prenom} ${client.nom}` : 'Inconnu';
   }
 
+  getManifestMontant(manifest: any): number {
+    const commandes = this.getManifestCommandes(manifest);
+    return commandes.reduce((total, cmd) => total + (cmd.montantTotal || 0), 0);
+  }
+
   // ========== MANIFESTS DETAIL PANEL ==========
   openManifestPanel(manifest: any): void {
     this.selectedManifest = manifest;
@@ -1668,13 +1672,8 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
       const q = this.manifestFilters.search.toLowerCase();
       result = result.filter(m => 
         (m.id && m.id.toLowerCase().includes(q)) ||
-        (m.livreurId && this.getDriverNameForManifest(m.livreurId).toLowerCase().includes(q))
+        (m.clientId && this.getClientNameForManifest(m.clientId).toLowerCase().includes(q))
       );
-    }
-
-    // Filtre par statut
-    if (this.manifestFilters.statut) {
-      result = result.filter(m => m.statut === this.manifestFilters.statut);
     }
 
     // Filtre par livreur
@@ -1701,7 +1700,6 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   resetManifestFilters(): void {
     this.manifestFilters = {
       search: '',
-      statut: '',
       livreurId: '',
       gouvernorat: '',
       minColis: 0,

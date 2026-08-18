@@ -278,13 +278,6 @@
         <div class="card-header">
           <div class="table-controls">
             <input class="search-input" [(ngModel)]="manifestFilters.search" placeholder="Rechercher référence..." style="width: 300px;" />
-            <select [(ngModel)]="manifestFilters.statut" class="filter-select">
-              <option value="">Tous statuts</option>
-              <option value="EN_ATTENTE">En attente</option>
-              <option value="A_ENLEVER">À enlever</option>
-              <option value="EN_LIVRAISON">En livraison</option>
-              <option value="LIVRE">Livré</option>
-            </select>
             <button class="btn btn-secondary btn-sm" (click)="resetManifestFilters()">Réinitialiser</button>
           </div>
         </div>
@@ -297,8 +290,7 @@
                 <th>Date de création</th>
                 <th>Créateur (Client)</th>
                 <th>Colis</th>
-                <th>Livreur</th>
-                <th>Statut</th>
+                <th>Montant</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -314,23 +306,13 @@
                   <div *ngIf="!m.clientId" class="muted">Inconnu</div>
                 </td>
                 <td>{{ getManifestColisCount(m) }}</td>
-                <td>
-                  <div *ngIf="m.livreurId">
-                    {{ getDriverNameForManifest(m.livreurId) }}
-                  </div>
-                  <div *ngIf="!m.livreurId" class="muted">Non assigné</div>
-                </td>
-                <td>
-                  <span class="status-pill" [ngClass]="'status-' + getManifestStatus(m).toLowerCase()">
-                    {{ getManifestStatus(m) }}
-                  </span>
-                </td>
+                <td>{{ getManifestMontant(m) }} DT</td>
                 <td class="actions">
                   <button class="btn-icon" (click)="openManifestPanel(m)" title="Détails">👁️</button>
                 </td>
               </tr>
               <tr *ngIf="filteredManifests.length === 0">
-                <td colspan="8" class="empty">Aucun manifeste trouvé</td>
+                <td colspan="7" class="empty">Aucun manifeste trouvé</td>
               </tr>
             </tbody>
           </table>
