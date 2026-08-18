@@ -4,6 +4,7 @@ import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService, Livraison, Livreur, Commande } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+import { WebsocketSyncService } from '../../services/websocket-sync.service';
 
 interface ToastMessage {
   id: number;
@@ -47,6 +48,7 @@ type DriverTab =
 export class DashboardLivreurComponent implements OnInit, OnDestroy {
 
   activeTab: DriverTab = 'dashboard';
+  user: any = null;
 
   driverName = 'Livreur';
   driverId = '';
@@ -73,6 +75,8 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
     immatriculation: '',
     type: 'Voiture'
   };
+
+  assignedVehicles: any[] = []; // Flottes assignées au livreur
 
   notificationsEnabled = true;
 
@@ -119,7 +123,8 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
   constructor(
     private apiService: ApiService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private websocketSync: WebsocketSyncService
   ) {}
 
   ngOnInit(): void {
@@ -129,6 +134,7 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.user = user;
     this.driverName = `${user.prenom || ''} ${user.nom || ''}`.trim() || 'Livreur';
     this.driverId = user.id;
 
@@ -137,6 +143,7 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
     this.loadVehicleInfo();
     this.loadDriverData();
     this.startPolling();
+    this.initializeRealtimeSync();
   }
 
   ngOnDestroy(): void {
@@ -146,6 +153,7 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
       try { this.driverMap.remove(); } catch {}
       this.driverMap = null;
     }
+    this.websocketSync.disconnectAll();
   }
 
   // ========== NAVIGATION ==========
@@ -815,6 +823,42 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
     } catch {
       this.vehicleInfo = { marque: '', modele: '', immatriculation: '', type: 'Voiture' };
     }
+    
+    // Charger les véhicules assignés depuis le backend
+    this.loadAssignedVehicles();
+  }
+
+  loadAssignedVehicles(): void {
+    if (!this.driverId) {
+      console.log('❌ Pas de driverId disponible');
+      return;
+    }
+    
+    console.log('🔍 Chargement des véhicules pour livreur ID:', this.driverId);
+    
+    // Utiliser l'endpoint spécifique du service Spring Boot
+    this.apiService.getVehiculeByLivreurId(this.driverId).subscribe({
+      next: (vehicle) => {
+        if (vehicle) {
+          this.assignedVehicles = [vehicle];
+          console.log('✅ Véhicule assigné au livreur:', vehicle);
+        } else {
+          this.assignedVehicles = [];
+          console.log('ℹ️ Aucun véhicule assigné à ce livreur');
+        }
+      },
+      error: (err) => {
+        console.error('❌ Erreur chargement véhicule assigné:', err);
+        this.assignedVehicles = [];
+      }
+    });
+  }
+
+  // ========== REALTIME SYNC ==========
+  private initializeRealtimeSync(): void {
+    // Pour l'instant, désactivé car nous utilisons les services Spring Boot existants
+    // Vous pouvez réactiver cela si vos services Spring Boot ont des WebSocket
+    console.log('ℹ️ Synchronisation temps réel désactivée (utilise les services Spring Boot)');
   }
 
   saveVehicleInfo(): void {

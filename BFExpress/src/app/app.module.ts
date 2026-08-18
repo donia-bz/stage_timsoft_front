@@ -25,6 +25,7 @@ import { DashboardLivreurComponent } from './pages/dashboard-livreur/dashboard-l
 import { AuthGuard } from './auth.guard';
 import { AuthAdminGuard } from './auth-admin.guard';
 import { AuthLivreurGuard } from './auth-livreur.guard';
+import { WebsocketSyncService } from './services/websocket-sync.service';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -65,7 +66,8 @@ const routes: Routes = [
   ],
   imports: [BrowserModule, CommonModule, FormsModule, ReactiveFormsModule, HttpClientModule, RouterModule.forRoot(routes)],
   providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
+    WebsocketSyncService
   ],
   bootstrap: [AppComponent]
 })

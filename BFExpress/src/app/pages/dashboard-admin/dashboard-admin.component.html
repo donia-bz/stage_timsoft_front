@@ -213,6 +213,11 @@
                   <span class="status-pill" [ngClass]="getOrderStatusClass(order)">{{ order.statut }}</span>
                 </td>
                 <td>
+                  <div class="dispatch-status">
+                    <span *ngIf="order.dispatched" class="dispatch-badge dispatched">✓ Dispatché</span>
+                    <span *ngIf="!order.dispatched && isOrderPending(order)" class="dispatch-badge pending">En attente</span>
+                    <span *ngIf="!order.dispatched && !isOrderPending(order)" class="dispatch-badge manual">Manuel</span>
+                  </div>
                   <div class="dispatch" *ngIf="isOrderPending(order)">
                     <select [ngModel]="getSelectedDriverForOrder(order.id)" (ngModelChange)="setSelectedDriverForOrder(order.id, $event)">
                       <option value="">Livreur...</option>
@@ -239,19 +244,15 @@
     <!-- ========== MANIFESTES ========== -->
     <div *ngIf="activeTab === 'manifests'" class="tab-panel">
       
-      <!-- KPIs Dashboard pour Manifestes -->
-      <div class="kpi-grid kpi-4 mb-20">
+      <!-- KPIs simplifiés -->
+      <div class="kpi-grid kpi-3 mb-20">
         <div class="kpi-card">
-          <div class="kpi-label">Total aujourd'hui</div>
-          <div class="kpi-value">{{ manifestStats.totalToday }}</div>
+          <div class="kpi-label">Total manifestes</div>
+          <div class="kpi-value">{{ manifests.length }}</div>
         </div>
         <div class="kpi-card highlight-success">
-          <div class="kpi-label">Taux complétion</div>
-          <div class="kpi-value">{{ manifestStats.completionRate }}%</div>
-        </div>
-        <div class="kpi-card highlight-warning" *ngIf="manifestStats.lateManifests > 0">
-          <div class="kpi-label">En retard</div>
-          <div class="kpi-value">{{ manifestStats.lateManifests }}</div>
+          <div class="kpi-label">En cours</div>
+          <div class="kpi-value">{{ getInProgressManifests().length }}</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Colis totaux</div>
@@ -259,29 +260,18 @@
         </div>
       </div>
 
-      <!-- Filtres avancés -->
+      <!-- Filtres simplifiés -->
       <div class="card mb-20">
-        <div class="card-header">
-          <h3>Filtres avancés</h3>
-          <button class="btn-link" (click)="resetManifestFilters()">Réinitialiser</button>
-        </div>
-        <div class="filter-grid">
-          <input class="search-input" [ngModel]="manifestFilters.search" (ngModelChange)="manifestFilters.search = $event" placeholder="Rechercher référence, livreur..." />
-          <select [ngModel]="manifestFilters.statut" (ngModelChange)="manifestFilters.statut = $event" class="filter-select">
+        <div class="filter-bar">
+          <input class="search-input" [(ngModel)]="manifestFilters.search" placeholder="Rechercher référence..." style="width: 300px;" />
+          <select [(ngModel)]="manifestFilters.statut" class="filter-select">
             <option value="">Tous statuts</option>
-            <option value="IMPRIME">Imprimé</option>
-            <option value="VALIDE">Validé</option>
+            <option value="EN_ATTENTE">En attente</option>
             <option value="A_ENLEVER">À enlever</option>
             <option value="EN_LIVRAISON">En livraison</option>
             <option value="LIVRE">Livré</option>
           </select>
-          <select [ngModel]="manifestFilters.livreurId" (ngModelChange)="manifestFilters.livreurId = $event" class="filter-select">
-            <option value="">Tous livreurs</option>
-            <option *ngFor="let l of getLivreurUsers()" [value]="l.id">{{ l.prenom }} {{ l.nom }}</option>
-          </select>
-          <input type="number" [ngModel]="manifestFilters.minColis" (ngModelChange)="manifestFilters.minColis = $event" class="filter-input" placeholder="Min colis" />
-          <input type="date" [ngModel]="manifestFilters.dateDebut" (ngModelChange)="manifestFilters.dateDebut = $event" class="filter-input" />
-          <input type="date" [ngModel]="manifestFilters.dateFin" (ngModelChange)="manifestFilters.dateFin = $event" class="filter-input" />
+          <button class="btn btn-secondary" (click)="resetManifestFilters()">Réinitialiser</button>
         </div>
       </div>
 
@@ -295,7 +285,52 @@
           </select>
           <button class="btn btn-primary btn-sm" (click)="bulkAssignDriver()" [disabled]="!bulkDriverId">Affecter</button>
           <button class="btn btn-secondary btn-sm" (click)="bulkCancel()">Annuler</button>
-          <button class="btn btn-secondary btn-sm" (click)="bulkExport()">Export CSV</button>
+        </div>
+      </div>
+
+      <!-- Vue tableau des manifestes -->
+      <div class="card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th width="40"><input type="checkbox" (change)="selectAllManifests()" [checked]="selectedManifestIds.size === filteredManifests.length && filteredManifests.length > 0" /></th>
+                <th>Référence</th>
+                <th>Date</th>
+                <th>Colis</th>
+                <th>Livreur</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let m of filteredManifests" [class.selected]="isManifestSelected(m.id)">
+                <td><input type="checkbox" [checked]="isManifestSelected(m.id)" (change)="toggleManifestSelection(m.id)" /></td>
+                <td class="mono">{{ getManifestId(m) }}</td>
+                <td>{{ getManifestDate(m) }}</td>
+                <td>{{ getManifestColisCount(m) }}</td>
+                <td>
+                  <div *ngIf="m.livreurId">
+                    {{ getDriverNameForManifest(m.livreurId) }}
+                  </div>
+                  <div *ngIf="!m.livreurId" class="muted">Non assigné</div>
+                </td>
+                <td>
+                  <span class="status-pill" [ngClass]="'status-' + getManifestStatus(m).toLowerCase()">
+                    {{ getManifestStatus(m) }}
+                  </span>
+                </td>
+                <td class="actions">
+                  <button class="btn-icon" (click)="openManifestPanel(m)" title="Détails">👁️</button>
+                  <button class="btn-icon" *ngIf="!m.livreurId" (click)="quickAssignManifest(m)" title="Assigner">📋</button>
+                  <button class="btn-icon" *ngIf="canValidateRetrait(m)" (click)="validerRetraitManifest(m.id || '')" title="Valider retrait">✅</button>
+                </td>
+              </tr>
+              <tr *ngIf="filteredManifests.length === 0">
+                <td colspan="7" class="empty">Aucun manifeste trouvé</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
       <div class="card" *ngIf="getPendingManifests().length > 0">
@@ -479,8 +514,6 @@
       <div class="bulk-action-bar">
         <span></span>
         <div class="bulk-actions">
-          <button class="btn btn-primary" (click)="openAddLivreurModal()">➕ Ajouter Livreur</button>
-          <button class="btn btn-primary" (click)="openAddClientModal()">➕ Ajouter Client</button>
           <button class="btn btn-secondary" (click)="openLivreursListSidebar()">📋 Liste Livreurs</button>
           <button class="btn btn-warning" [class.btn-primary]="getPendingRegistrations().length === 0" [class.btn-warning]="getPendingRegistrations().length > 0" (click)="openPendingLivreurSidebar()">
             📋 Liste d'attente
@@ -1282,13 +1315,25 @@
               <span class="value">{{ l.gouvernorat }}</span>
             </div>
             <div class="detail-row">
-              <span class="label">� Statut:</span>
-              <span class="value">{{ l.statut || 'DISPONIBLE' }}</span>
+              <span class="label">⚙️ Statut:</span>
+              <div class="value" *ngIf="!editingStatus[l.id]">
+                <span class="status-pill" [ngClass]="'status-' + (l.statut || 'disponible').toLowerCase()">{{ l.statut || 'DISPONIBLE' }}</span>
+                <button class="btn btn-sm btn-link" (click)="startEditStatus(l.id)">✏️</button>
+              </div>
+              <div class="value" *ngIf="editingStatus[l.id]">
+                <select [(ngModel)]="l.statut" class="status-select-inline">
+                  <option value="DISPONIBLE">DISPONIBLE</option>
+                  <option value="EN_COURSE">EN_COURSE</option>
+                  <option value="HORS_LIGNE">HORS_LIGNE</option>
+                  <option value="SUSPENDU">SUSPENDU</option>
+                </select>
+                <button class="btn btn-sm btn-success" (click)="saveStatus(l)">✓</button>
+                <button class="btn btn-sm btn-secondary" (click)="cancelEditStatus(l.id)">✗</button>
+              </div>
             </div>
           </div>
         </div>
         <div class="row-actions">
-          <button class="btn btn-primary btn-sm" (click)="deleteUser(l)">👁️ Détails</button>
           <button class="btn btn-danger btn-sm" (click)="deleteUser(l)">🗑️ Supprimer</button>
         </div>
       </div>

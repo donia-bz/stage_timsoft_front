@@ -339,6 +339,37 @@ $sidebar-w: 280px;
   display: flex; flex-direction: column; gap: 0.35rem;
   select { padding: 0.35rem; border-radius: 8px; border: 1px solid $border; font-size: 0.8rem; }
 }
+
+.dispatch-status {
+  margin-bottom: 0.5rem;
+}
+
+.dispatch-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  
+  &.dispatched {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+  }
+  
+  &.pending {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+  }
+  
+  &.manual {
+    background: #e0f2fe;
+    color: #0284c7;
+    border: 1px solid #7dd3fc;
+  }
+}
 .path { display: flex; gap: 0.35rem; align-items: center; font-size: 0.82rem; font-weight: 600; }
 .arrow { color: $muted; }
 
@@ -1097,6 +1128,18 @@ tr.selected td {
   border-color: #bfdbfe;
 }
 
+// Table Styles for Manifests
+.kpi-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.filter-bar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 // Side Panel for Manifest Details
 .side-panel {
   position: fixed;
@@ -1184,8 +1227,19 @@ tr.selected td {
         .value {
           color: $text;
           font-weight: 400;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
         }
       }
+    }
+    
+    .status-select-inline {
+      padding: 0.25rem 0.5rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      margin-right: 0.25rem;
     }
   }
   

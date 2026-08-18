@@ -522,36 +522,54 @@
     <div *ngIf="activeTab === 'vehicule'" class="tab-panel">
       <div class="page-header">
         <div>
-          <h1>Mon véhicule</h1>
-          <p>Informations véhicule</p>
+          <h1>Mes véhicules</h1>
+          <p>Flotte assignée par l'administrateur</p>
         </div>
       </div>
-      <div class="card">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Marque</label>
-            <input type="text" name="marque" [(ngModel)]="vehicleInfo.marque" placeholder="Ex: Renault" />
-          </div>
-          <div class="form-group">
-            <label>Modèle</label>
-            <input type="text" name="modele" [(ngModel)]="vehicleInfo.modele" placeholder="Ex: Clio" />
-          </div>
-          <div class="form-group">
-            <label>Immatriculation</label>
-            <input type="text" name="immatriculation" [(ngModel)]="vehicleInfo.immatriculation" placeholder="Ex: 123 TN 4567" />
-          </div>
-          <div class="form-group">
-            <label>Type</label>
-            <select name="type" [(ngModel)]="vehicleInfo.type">
-              <option value="Voiture">Voiture</option>
-              <option value="Camionnette">Camionnette</option>
-              <option value="Moto">Moto</option>
-            </select>
+      
+      <div class="card" *ngIf="assignedVehicles.length > 0">
+        <div class="vehicles-grid">
+          <div *ngFor="let vehicle of assignedVehicles" class="vehicle-card">
+            <div class="vehicle-header">
+              <span class="vehicle-icon">{{ vehicle.type === 'CAMION' ? '🚛' : (vehicle.type === 'CAMIONNETTE' ? '🛵' : '🚐') }}</span>
+              <div class="vehicle-title">
+                <h3>{{ vehicle.immatriculation }}</h3>
+                <span class="status-badge" [ngClass]="{'active': vehicle.statut === 'DISPONIBLE', 'pending': vehicle.statut === 'EN_SERVICE' || vehicle.statut === 'EN_COURSE', 'suspended': vehicle.statut === 'MAINTENANCE'}">
+                  {{ vehicle.statut }}
+                </span>
+              </div>
+            </div>
+            
+            <div class="vehicle-details">
+              <div class="detail-row">
+                <span class="label">Marque:</span>
+                <span class="value">{{ vehicle.marque || '—' }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Modèle:</span>
+                <span class="value">{{ vehicle.modele || '—' }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Type:</span>
+                <span class="value">{{ vehicle.type || '—' }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Capacité:</span>
+                <span class="value">{{ vehicle.capaciteKg || 0 }} Kg</span>
+              </div>
+              <div class="detail-row" *ngIf="vehicle.annee">
+                <span class="label">Année:</span>
+                <span class="value">{{ vehicle.annee }}</span>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="form-actions">
-          <button type="button" class="btn btn-primary" (click)="saveVehicleInfo()">Enregistrer</button>
-        </div>
+      </div>
+      
+      <div class="card empty-state" *ngIf="assignedVehicles.length === 0">
+        <div class="empty-icon">🚗</div>
+        <h3>Aucun véhicule assigné</h3>
+        <p>Contactez l'administrateur pour qu'un véhicule vous soit assigné.</p>
       </div>
     </div>
 

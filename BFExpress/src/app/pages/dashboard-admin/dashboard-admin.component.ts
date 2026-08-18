@@ -876,8 +876,18 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
         console.log('Livraison créée avec succès');
         // Mettre à jour la carte des livraisons pour afficher le livreur affecté
         this.livraisonsMap[orderId] = driverId;
-        this.showToast('Livreur affecté avec succès', 'success');
-        this.refreshData();
+        // Marquer la commande comme dispatchée
+        this.apiService.markCommandeAsDispatched(orderId).subscribe({
+          next: () => {
+            this.showToast('Livreur affecté avec succès', 'success');
+            this.refreshData();
+          },
+          error: (err) => {
+            console.error('Erreur marquage commande dispatchée:', err);
+            this.showToast('Livreur affecté (marquage dispatchée échoué)', 'info');
+            this.refreshData();
+          }
+        });
       },
       error: (err: any) => {
         console.error('Erreur création livraison:', err);
@@ -929,9 +939,14 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   }
 
   dispatchGlobalIA(): void {
-    const pendingOrders = this.commandes.filter(c => c.statut === 'A_ENLEVER');
+    // Filtrer uniquement les commandes non dispatchées et en attente
+    const pendingOrders = this.commandes.filter(c => 
+      c.statut === 'A_ENLEVER' && 
+      (c.dispatched === false || c.dispatched === undefined)
+    );
+    
     if (pendingOrders.length === 0) {
-      this.showToast('Aucune commande à enlever pour le dispatching.', 'info');
+      this.showToast('Aucune nouvelle commande à dispatcher (toutes les commandes ont déjà été dispatchées).', 'info');
       return;
     }
     // Utiliser les livreurs du service auth
@@ -968,11 +983,17 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
                   next: () => {
                     this.apiService.updateLivreurStatut(livreurId, 'EN_COURSE').subscribe({
                       next: () => {
-                        count++;
-                        if (count === totalAssigned) {
-                           this.showToast(`Dispatch terminé ! ${totalAssigned} commandes affectées (Clustering K-Means).`, 'success');
-                           this.refreshData();
-                        }
+                        // Marquer la commande comme dispatchée
+                        this.apiService.markCommandeAsDispatched(orderId).subscribe({
+                          next: () => {
+                            count++;
+                            if (count === totalAssigned) {
+                               this.showToast(`Dispatch terminé ! ${totalAssigned} commandes affectées (Clustering K-Means).`, 'success');
+                               this.refreshData();
+                            }
+                          },
+                          error: (err) => console.error('Erreur marquage commande dispatchée:', err)
+                        });
                       },
                       error: (err) => console.error('Erreur mise à jour statut livreur:', err)
                     });

@@ -31,6 +31,7 @@ export interface Commande {
   montantTotal: number;
   predictionDelaiId?: string;
   affectationIAId?: string;
+  dispatched?: boolean; // Indique si la commande a déjà été dispatchée par l'IA
   colis?: Colis[];
   clientNom?: string; // Pour compatibilité avec les composants existants
   codeBarre?: string;
@@ -246,6 +247,10 @@ export class ApiService {
 
   updateCommandeStatut(id: string, statut: string): Observable<Commande> {
     return this.http.patch<Commande>(`${this.commandesUrl}/commandes/${id}/statut`, { statut });
+  }
+
+  markCommandeAsDispatched(id: string): Observable<Commande> {
+    return this.http.patch<Commande>(`${this.commandesUrl}/commandes/${id}/dispatched`, { dispatched: true });
   }
 
   deleteCommande(id: string): Observable<void> {
@@ -528,6 +533,10 @@ export class ApiService {
 
   getVehiculeById(id: string): Observable<Vehicule> {
     return this.http.get<Vehicule>(`${this.vehiclesUrl}/vehicules/${id}`);
+  }
+
+  getVehiculeByLivreurId(livreurId: string): Observable<Vehicule> {
+    return this.http.get<Vehicule>(`${this.livreursUrl}/vehicules/livreur/${livreurId}`);
   }
 
   creerVehicule(vehicule: Vehicule): Observable<Vehicule> {
