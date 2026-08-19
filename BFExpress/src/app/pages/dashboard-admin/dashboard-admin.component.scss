@@ -1592,6 +1592,279 @@ tr.selected td {
   border: none;
 }
 
+// ========== DEPOTS GRID STYLES ==========
+.depots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.depot-card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+  
+  &.warning {
+    border-color: #f59e0b;
+  }
+  
+  &.alert {
+    border-color: #ef4444;
+  }
+}
+
+.depot-image {
+  position: relative;
+  height: 180px;
+  overflow: hidden;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+  
+  &:hover img {
+    transform: scale(1.05);
+  }
+}
+
+.depot-status-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  
+  &.status-actif {
+    background: #d1fae5;
+    color: #059669;
+  }
+  
+  &.status-inactif {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+}
+
+.depot-content {
+  padding: 1.5rem;
+}
+
+.depot-header {
+  margin-bottom: 1.25rem;
+  
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: $text;
+    margin-bottom: 0.5rem;
+  }
+}
+
+.depot-location {
+  font-size: 0.875rem;
+  color: $muted;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.depot-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.metric-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 12px;
+}
+
+.metric-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.metric-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.metric-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: $text;
+}
+
+.metric-label {
+  font-size: 0.75rem;
+  color: $muted;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.depot-capacity-section {
+  margin-bottom: 1.5rem;
+}
+
+.capacity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  
+  span:first-child {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $text;
+  }
+  
+  .capacity-total {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: $primary;
+  }
+}
+
+.capacity-progress {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.capacity-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+  
+  &.warning {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  }
+  
+  &.danger {
+    background: linear-gradient(90deg, #ef4444, #f87171);
+  }
+}
+
+.capacity-details {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.capacity-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: #f1f5f9;
+  border-radius: 8px;
+  
+  .detail-label {
+    font-size: 0.75rem;
+    color: $muted;
+  }
+  
+  .detail-value {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $text;
+  }
+}
+
+.depot-actions {
+  display: flex;
+  gap: 0.75rem;
+  
+  .btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &.btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      color: white;
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+      }
+    }
+    
+    &.btn-danger {
+      background: #fee2e2;
+      color: #b91c1c;
+      
+      &:hover {
+        background: #ef4444;
+        color: white;
+      }
+    }
+  }
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+  
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: $text;
+    margin-bottom: 0.5rem;
+  }
+  
+  p {
+    font-size: 0.875rem;
+    color: $muted;
+  }
+}
+
 // ========== LIVREURS LIST SIDEBAR STYLES ==========
 .livreurs-list {
   display: flex;
@@ -1738,4 +2011,216 @@ tr.selected td {
       }
     }
   }
+}
+
+// ========== GRID CARDS (DEPOTS & VEHICULES) ==========
+.grid-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.pro-card {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid $border;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  }
+
+  &.warning-card {
+    border-color: rgba($warning, 0.5);
+    background: linear-gradient(to bottom, #fffbeb, white 40px);
+  }
+
+  &.alert-card {
+    border-color: rgba($danger, 0.5);
+    background: linear-gradient(to bottom, #fef2f2, white 40px);
+  }
+}
+
+.pro-card-header {
+  padding: 1.25rem 1.25rem 1rem;
+  border-bottom: 1px solid rgba(0,0,0,0.03);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.vehicule-icon-wrapper {
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.5);
+}
+
+.vehicule-title, .depot-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+
+  h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: $text;
+  }
+}
+
+.depot-title {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+
+  .depot-icon {
+    font-size: 1.8rem;
+    background: linear-gradient(135deg, $primary, $purple);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  h4 { margin-bottom: 0.2rem; }
+}
+
+.plate {
+  font-size: 0.85rem;
+  color: $muted;
+  background: #f8fafc;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  display: inline-block;
+  width: fit-content;
+}
+
+.depot-location {
+  font-size: 0.85rem;
+  color: $muted;
+}
+
+.pro-card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pro-card-body {
+  padding: 1.25rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed $border;
+  
+  &:last-child { border-bottom: none; }
+  
+  .info-label {
+    color: $muted;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  
+  .info-value {
+    color: $text;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+}
+
+.mt-10 { margin-top: 10px; }
+
+.capacity-section {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.capacity-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  
+  .info-label { font-size: 0.8rem; font-weight: 600; color: $text; }
+  .capacity-percent { font-size: 0.9rem; font-weight: 800; color: $primary; }
+}
+
+.progress-bar.lg {
+  height: 12px;
+  border-radius: 6px;
+  background: #e2e8f0;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #14b8a6);
+    border-radius: 6px;
+    transition: width 0.3s ease;
+    
+    &.warning { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    &.danger { background: linear-gradient(90deg, #ef4444, #f87171); }
+  }
+}
+
+.depot-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.alert-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  &.warning { background: #fffbeb; color: #b45309; border: 1px solid #fcd34d; }
+  &.danger { background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; }
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 16px;
+  border: 1px dashed $border;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+    filter: grayscale(1);
+  }
+
+  p { color: $muted; font-weight: 500; font-size: 1.1rem; margin: 0; }
 }

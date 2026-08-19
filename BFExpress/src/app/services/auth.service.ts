@@ -102,4 +102,10 @@ export class AuthService {
   getProfile(id: string): Observable<UserProfile> {
     return this.http.get<UserProfile>(`${this.apiUrl}/users/${id}`);
   }
+
+  updateGouvernorat(id: string, gouvernorat: string): Observable<UserProfile> {
+    return this.http.patch<UserProfile>(`${this.apiUrl}/users/${id}/gouvernorat`, null, {
+      params: { gouvernorat }
+    });
+  }
 }

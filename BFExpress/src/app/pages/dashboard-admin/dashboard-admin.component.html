@@ -539,39 +539,43 @@
         <button class="btn btn-primary" (click)="addVehiculeAndReset()">Ajouter</button>
       </div>
 
-      <div class="card">
-        <div class="table-responsive">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Immatriculation</th>
-                <th>Modèle</th>
-                <th>Type</th>
-                <th>Capacité</th>
-                <th>Statut</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let v of vehicules">
-                <td class="mono">{{ v.immatriculation }}</td>
-                <td>{{ v.modele }}</td>
-                <td>{{ v.type }}</td>
-                <td>{{ v.capaciteKg }} kg</td>
-                <td>
-                  <span class="status-pill" [ngClass]="'status-' + (v.statut || 'disponible').toLowerCase()">
-                    {{ v.statut }}
-                  </span>
-                </td>
-                <td class="actions">
-                  <button class="btn-icon danger" (click)="removeVehicule(v.id || '')" title="Supprimer">🗑️</button>
-                </td>
-              </tr>
-              <tr *ngIf="vehicules.length === 0">
-                <td colspan="6" class="empty">Aucun véhicule</td>
-              </tr>
-            </tbody>
-          </table>
+      <div class="grid-cards-container">
+        <div class="pro-card vehicule-card" *ngFor="let v of vehicules">
+          <div class="pro-card-header">
+            <div class="vehicule-icon-wrapper">
+              <span class="vehicule-icon" *ngIf="v.type === 'FOURGON'">🚐</span>
+              <span class="vehicule-icon" *ngIf="v.type === 'UTILITAIRE'">🚙</span>
+              <span class="vehicule-icon" *ngIf="v.type === 'CAMION'">🚛</span>
+              <span class="vehicule-icon" *ngIf="!['FOURGON', 'UTILITAIRE', 'CAMION'].includes(v.type || '')">🚗</span>
+            </div>
+            <div class="vehicule-title">
+              <h4>{{ v.modele }}</h4>
+              <span class="plate mono">{{ v.immatriculation }}</span>
+            </div>
+            <div class="pro-card-actions">
+              <button class="btn-icon danger" (click)="removeVehicule(v.id || '')" title="Supprimer">🗑️</button>
+            </div>
+          </div>
+          <div class="pro-card-body">
+            <div class="info-row">
+              <span class="info-label">Type</span>
+              <span class="info-value">{{ v.type }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Capacité</span>
+              <span class="info-value">{{ v.capaciteKg }} kg</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Statut</span>
+              <span class="status-pill" [ngClass]="'status-' + (v.statut || 'disponible').toLowerCase()">
+                {{ v.statut }}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="empty-state" *ngIf="vehicules.length === 0">
+          <div class="empty-icon">🚗</div>
+          <p>Aucun véhicule dans la flotte</p>
         </div>
       </div>
     </div>
@@ -599,47 +603,51 @@
         <button class="btn btn-primary" (click)="addDepotAndReset()">Ajouter</button>
       </div>
 
-      <div class="card">
-        <div class="table-responsive">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Nom</th>
-                <th>Ville</th>
-                <th>Capacité</th>
-                <th>Occupation</th>
-                <th>Statut</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let d of depots" [class.warning]="isDepotOverCapacity(d)" [class.alert]="hasDormantStock(d)">
-                <td><strong>{{ d.nom }}</strong></td>
-                <td>{{ d.ville }}</td>
-                <td>{{ d.capacite }}</td>
-                <td>
-                  <div class="progress-bar">
-                    <div class="progress-fill" [style.width.%]="getDepotFillPercent(d, 'all')" 
-                         [class.warning]="getDepotFillPercent(d, 'all') > 80"
-                         [class.danger]="getDepotFillPercent(d, 'all') > 90"></div>
-                  </div>
-                  <small>{{ d.colisActuels || 0 }} / {{ d.capacite }}</small>
-                </td>
-                <td>
-                  <span class="status-pill" [ngClass]="'status-' + (d.statut || 'actif').toLowerCase()">
-                    {{ d.statut }}
-                  </span>
-                </td>
-                <td class="actions">
-                  <button class="btn-icon" (click)="openDepotPanel(d)" title="Détails">👁️</button>
-                  <button class="btn-icon danger" (click)="removeDepot(d.id || '')" title="Supprimer">🗑️</button>
-                </td>
-              </tr>
-              <tr *ngIf="depots.length === 0">
-                <td colspan="6" class="empty">Aucun dépôt</td>
-              </tr>
-            </tbody>
-          </table>
+      <div class="grid-cards-container">
+        <div class="pro-card depot-card" *ngFor="let d of depots" [class.warning-card]="isDepotOverCapacity(d)" [class.alert-card]="hasDormantStock(d)">
+          <div class="pro-card-header">
+            <div class="depot-title">
+              <div class="depot-icon">🏬</div>
+              <div>
+                <h4>{{ d.nom }}</h4>
+                <span class="depot-location">📍 {{ d.ville }}</span>
+              </div>
+            </div>
+            <div class="pro-card-actions">
+              <button class="btn-icon" (click)="openDepotPanel(d)" title="Détails">👁️</button>
+              <button class="btn-icon danger" (click)="removeDepot(d.id || '')" title="Supprimer">🗑️</button>
+            </div>
+          </div>
+          
+          <div class="pro-card-body">
+            <div class="capacity-section">
+              <div class="capacity-header">
+                <span class="info-label">Occupation ({{ d.colisActuels || 0 }} / {{ d.capacite }})</span>
+                <span class="capacity-percent">{{ getDepotFillPercent(d, 'all') | number:'1.0-0' }}%</span>
+              </div>
+              <div class="progress-bar lg">
+                <div class="progress-fill" [style.width.%]="getDepotFillPercent(d, 'all')" 
+                     [class.warning]="getDepotFillPercent(d, 'all') > 80"
+                     [class.danger]="getDepotFillPercent(d, 'all') > 90"></div>
+              </div>
+            </div>
+
+            <div class="depot-alerts" *ngIf="hasDormantStock(d) || isDepotOverCapacity(d)">
+              <div class="alert-badge warning" *ngIf="isDepotOverCapacity(d)">⚠️ Surcharge capacitaire</div>
+              <div class="alert-badge danger" *ngIf="hasDormantStock(d)">🛑 Stock dormant détecté</div>
+            </div>
+            
+            <div class="info-row mt-10">
+              <span class="info-label">Statut</span>
+              <span class="status-pill" [ngClass]="'status-' + (d.statut || 'actif').toLowerCase()">
+                {{ d.statut }}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="empty-state" *ngIf="depots.length === 0">
+          <div class="empty-icon">🏬</div>
+          <p>Aucun dépôt configuré</p>
         </div>
       </div>
     </div>
