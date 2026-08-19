@@ -10,6 +10,7 @@ import { filter } from 'rxjs/operators';
 export class AppComponent {
   title = 'BFExpress';
   isHomePage = false;
+  hideLayout = false;
 
   constructor(private router: Router) {
     this.router.events
@@ -17,6 +18,7 @@ export class AppComponent {
       .subscribe((event) => {
         const url = event.urlAfterRedirects.split('?')[0];
         this.isHomePage = url === '/';
+        this.hideLayout = url.startsWith('/dashboard-livreur');
       });
   }
 }

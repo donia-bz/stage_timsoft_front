@@ -553,6 +553,7 @@
               <span class="plate mono">{{ v.immatriculation }}</span>
             </div>
             <div class="pro-card-actions">
+              <button class="btn-icon" (click)="openAssignVehicleModal(v)" title="Assigner un livreur">👤</button>
               <button class="btn-icon danger" (click)="removeVehicule(v.id || '')" title="Supprimer">🗑️</button>
             </div>
           </div>
@@ -570,6 +571,10 @@
               <span class="status-pill" [ngClass]="'status-' + (v.statut || 'disponible').toLowerCase()">
                 {{ v.statut }}
               </span>
+            </div>
+            <div class="info-row" *ngIf="v.livreurId">
+              <span class="info-label">Livreur</span>
+              <span class="info-value">{{ getLivreurName(v.livreurId) }}</span>
             </div>
           </div>
         </div>
@@ -1075,6 +1080,35 @@
     <div *ngFor="let toast of toasts" class="toast" [class.success]="toast.type === 'success'" [class.error]="toast.type === 'error'" [class.info]="toast.type === 'info'">
       <span>{{ toast.message }}</span>
       <button class="toast-close" (click)="removeToast(toast.id)">✕</button>
+    </div>
+  </div>
+
+  <!-- ========== ASSIGN VEHICLE MODAL ========== -->
+  <div class="modal-overlay" *ngIf="showAssignVehicleModal" (click)="closeAssignVehicleModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Assigner un véhicule</h3>
+        <button class="btn-icon" (click)="closeAssignVehicleModal()">✕</button>
+      </div>
+      <div class="modal-body" style="overflow: visible;">
+        <p *ngIf="vehicleToAssign">
+          Vous êtes sur le point d'assigner le véhicule 
+          <strong>{{ vehicleToAssign.modele }} ({{ vehicleToAssign.immatriculation }})</strong>.
+        </p>
+        <div class="form-group mt-10">
+          <label>Sélectionner un livreur</label>
+          <select [(ngModel)]="selectedLivreurIdForVehicle" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <option value="">Aucun livreur (Désassigner)</option>
+            <option *ngFor="let livreur of livreursList" [value]="livreur.id">
+              {{ livreur.prenom }} {{ livreur.nom }}
+            </option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeAssignVehicleModal()">Annuler</button>
+        <button class="btn btn-primary" (click)="confirmAssignVehicle()">Confirmer</button>
+      </div>
     </div>
   </div>
 

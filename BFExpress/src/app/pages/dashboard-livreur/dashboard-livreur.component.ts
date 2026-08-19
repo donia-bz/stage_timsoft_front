@@ -26,17 +26,9 @@ interface Earnings {
   month: number;
 }
 
-type DriverTab =
-  | 'dashboard'
-  | 'courses'
-  | 'map'
-  | 'enlevements'
-  | 'livraison'
-  | 'echecs'
-  | 'suivi'
-  | 'gains'
-  | 'vehicule'
-  | 'parametres';
+type DriverTab = 'accueil' | 'tournee' | 'carte' | 'gains' | 'profil';
+
+type TourneeFilter = 'all' | 'to_pickup' | 'picked_up' | 'in_progress' | 'completed' | 'failed';
 
 @Component({
   selector: 'app-dashboard-livreur',
@@ -47,7 +39,7 @@ type DriverTab =
 })
 export class DashboardLivreurComponent implements OnInit, OnDestroy {
 
-  activeTab: DriverTab = 'dashboard';
+  activeTab: DriverTab = 'accueil';
   user: any = null;
 
   driverName = 'Livreur';
@@ -61,6 +53,7 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
   colisMap: { [colisId: string]: any } = {};
   newAssignments: Livraison[] = [];
   currentDelivery: Livraison | null = null;
+  activeDeliveryView: Livraison | null = null;
 
   loading = false;
   searchColisId = '';
@@ -76,7 +69,7 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
     type: 'Voiture'
   };
 
-  assignedVehicles: any[] = []; // Flottes assignées au livreur
+  assignedVehicles: any[] = [];
 
   notificationsEnabled = true;
 
@@ -88,6 +81,14 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
   private gpsInterval: any = null;
   private pollInterval: any = null;
   private driverMap: any = null;
+  private activeDeliveryMap: any = null;
+
+  deliveryProgressSteps = [
+    { key: 'A_ENLEVER', label: 'À enlever' },
+    { key: 'ENLEVE', label: 'Enlevé' },
+    { key: 'EN_LIVRAISON', label: 'En route' },
+    { key: 'LIVRE', label: 'Livré' }
+  ];
 
   trackingSteps = [
     { key: 'EN_ATTENTE', label: 'En attente' },
@@ -118,7 +119,7 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
   selectedFailureReason = '';
   failureDescription = '';
 
-  courseFilter: 'all' | 'to_pickup' | 'in_progress' | 'completed_today' = 'all';
+  tourneeFilter: TourneeFilter = 'all';
 
   constructor(
     private apiService: ApiService,
@@ -149,19 +150,48 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.gpsInterval) clearInterval(this.gpsInterval);
     if (this.pollInterval) clearInterval(this.pollInterval);
-    if (this.driverMap) {
-      try { this.driverMap.remove(); } catch {}
-      this.driverMap = null;
-    }
+    this.destroyMap(this.driverMap);
+    this.driverMap = null;
+    this.destroyMap(this.activeDeliveryMap);
+    this.activeDeliveryMap = null;
     this.websocketSync.disconnectAll();
   }
 
   // ========== NAVIGATION ==========
   setTab(tab: DriverTab): void {
+    this.closeActiveDelivery();
     this.activeTab = tab;
-    if (tab === 'map') {
-      setTimeout(() => this.initMap(), 150);
+    if (tab === 'carte') {
+      setTimeout(() => this.initMap('driver-map'), 150);
     }
+  }
+
+  setTourneeFilter(filter: TourneeFilter): void {
+    this.tourneeFilter = filter;
+  }
+
+  goToTournee(filter: TourneeFilter = 'all'): void {
+    this.tourneeFilter = filter;
+    this.setTab('tournee');
+  }
+
+  openActiveDelivery(livraison: Livraison): void {
+    this.activeDeliveryView = livraison;
+    setTimeout(() => this.initActiveDeliveryMap(), 150);
+  }
+
+  closeActiveDelivery(): void {
+    this.activeDeliveryView = null;
+    this.destroyMap(this.activeDeliveryMap);
+    this.activeDeliveryMap = null;
+  }
+
+  getActiveTourneeCount(): number {
+    return this.getToPickupList().length + this.getPickedUpList().length + this.getInProgressList().length;
+  }
+
+  getNextActionDelivery(): Livraison | null {
+    return this.getInProgressList()[0] || this.getPickedUpList()[0] || this.getToPickupList()[0] || null;
   }
 
   // ========== DATA ==========
@@ -212,42 +242,49 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
       .map(l => l.colisId)
       .filter((id): id is string => !!id && !this.colisMap[id]);
 
-    if (colisIds.length > 0) {
-      colisIds.forEach(id => {
-        // 1. Fetch Colis
-        this.apiService.getColisById(id).subscribe({
-          next: (colis) => {
-            this.colisMap[id] = colis;
-            this.updateCurrentDelivery();
-            this.calculateEarnings();
-          },
-          error: (err) => {
-            console.error('Error loading colis', id, err);
-            this.colisMap[id] = { id: id, statut: 'EN_ATTENTE', poids: 0 };
+    colisIds.forEach(id => {
+      this.apiService.getColisById(id).subscribe({
+        next: (colis) => {
+          this.colisMap[id] = colis;
+          const commandeId = colis?.commandeId;
+          if (commandeId && !this.commandesMap[commandeId]) {
+            this.fetchCommande(commandeId);
           }
-        });
+          this.updateCurrentDelivery();
+          this.calculateEarnings();
+        },
+        error: (err) => {
+          console.error('Error loading colis', id, err);
+          this.colisMap[id] = { id, statut: 'EN_ATTENTE', poids: 0 };
+        }
       });
-    }
+    });
 
-    // 2. Fetch Commandes pour avoir les vraies destinations et clients
     const commandeIds = this.livraisons
       .map(l => this.getLinkedCommandeId(l))
       .filter((id): id is string => !!id && !this.commandesMap[id]);
 
-    if (commandeIds.length > 0) {
-      commandeIds.forEach(id => {
-        this.apiService.getCommandeById(id).subscribe({
-          next: (cmd) => {
-            this.commandesMap[id] = cmd;
-          },
-          error: (err) => console.error('Error loading commande', id, err)
-        });
-      });
-    }
+    commandeIds.forEach(id => this.fetchCommande(id));
+  }
+
+  private fetchCommande(id: string): void {
+    this.apiService.getCommandeById(id).subscribe({
+      next: (cmd) => {
+        this.commandesMap[id] = cmd;
+      },
+      error: (err) => console.error('Error loading commande', id, err)
+    });
   }
 
   private getLinkedCommandeId(livraison: Livraison): string {
-    return livraison.colisId || livraison.commandeId || '';
+    if (livraison.commandeId) return livraison.commandeId;
+    const colis = this.colisMap[livraison.colisId];
+    if (colis?.commandeId) return colis.commandeId;
+    return '';
+  }
+
+  getCommandeForLivraison(livraison: Livraison): Commande | undefined {
+    return this.getCommande(this.getLinkedCommandeId(livraison));
   }
 
   getColis(colisId: string): any {
@@ -312,8 +349,11 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
           this.latitude = position.coords.latitude;
           this.longitude = position.coords.longitude;
           this.updateDriverPosition();
-          if (this.activeTab === 'map') {
-            this.updateMapMarker();
+          if (this.activeTab === 'carte') {
+            this.updateMapMarker(this.driverMap);
+          }
+          if (this.activeDeliveryView) {
+            this.updateMapMarker(this.activeDeliveryMap);
           }
         },
         (error) => console.error('GPS error:', error),
@@ -337,35 +377,88 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
   }
 
   // ========== MAP ==========
-  initMap(): void {
-    const container = document.getElementById('driver-map');
+  private destroyMap(map: any): void {
+    if (map) {
+      try { map.remove(); } catch {}
+    }
+  }
+
+  initMap(containerId: string): void {
+    const container = document.getElementById(containerId);
     if (!container || (window as any).L === undefined) return;
 
     const L = (window as any).L;
 
-    if (this.driverMap) {
-      try { this.driverMap.remove(); } catch {}
+    if (containerId === 'driver-map') {
+      this.destroyMap(this.driverMap);
       this.driverMap = null;
     }
 
-    this.driverMap = L.map('driver-map').setView([this.latitude, this.longitude], 12);
+    const map = L.map(containerId).setView([this.latitude, this.longitude], 12);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap'
-    }).addTo(this.driverMap);
+    }).addTo(map);
 
-    this.addDriverMarker();
-    this.addDestinationMarkers();
+    this.addDriverMarkerToMap(map);
+    this.addDestinationMarkersToMap(map);
+
+    if (containerId === 'driver-map') {
+      this.driverMap = map;
+    }
 
     setTimeout(() => {
-      try { this.driverMap?.invalidateSize(); } catch {}
+      try { map?.invalidateSize(); } catch {}
     }, 200);
   }
 
-  addDriverMarker(): void {
-    if (!this.driverMap) return;
-    const L = (window as any).L;
+  initActiveDeliveryMap(): void {
+    if (!this.activeDeliveryView) return;
 
+    const container = document.getElementById('active-delivery-map');
+    if (!container || (window as any).L === undefined) return;
+
+    const L = (window as any).L;
+    this.destroyMap(this.activeDeliveryMap);
+    this.activeDeliveryMap = null;
+
+    const dest = this.getDestinationCoords(this.activeDeliveryView);
+    const centerLat = dest ? (this.latitude + dest.lat) / 2 : this.latitude;
+    const centerLng = dest ? (this.longitude + dest.lng) / 2 : this.longitude;
+
+    const map = L.map('active-delivery-map').setView([centerLat, centerLng], dest ? 13 : 12);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    this.addDriverMarkerToMap(map);
+
+    if (dest) {
+      L.marker([dest.lat, dest.lng], {
+        icon: L.divIcon({
+          className: 'destination-marker',
+          html: '<div style="font-size:18px">🏁</div>',
+          iconSize: [28, 28]
+        })
+      })
+        .addTo(map)
+        .bindPopup(`<b>Destination</b><br>${dest.label}`);
+    }
+
+    this.activeDeliveryMap = map;
+
+    setTimeout(() => {
+      try { map?.invalidateSize(); } catch {}
+      if (dest) {
+        const bounds = L.latLngBounds([[this.latitude, this.longitude], [dest.lat, dest.lng]]);
+        map.fitBounds(bounds, { padding: [40, 40] });
+      }
+    }, 200);
+  }
+
+  private addDriverMarkerToMap(map: any): void {
+    const L = (window as any).L;
     L.marker([this.latitude, this.longitude], {
       icon: L.divIcon({
         className: 'driver-marker',
@@ -373,36 +466,68 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
         iconSize: [30, 30]
       })
     })
-      .addTo(this.driverMap)
+      .addTo(map)
       .bindPopup(`<b>${this.driverName}</b><br>Position actuelle`);
   }
 
-  addDestinationMarkers(): void {
-    if (!this.driverMap) return;
+  private addDestinationMarkersToMap(map: any): void {
     const L = (window as any).L;
 
-    this.getInProgressList().concat(this.getToPickupList()).forEach((livraison, index) => {
-      const commande = this.getCommande(this.getLinkedCommandeId(livraison));
-      const lat = this.latitude + (index + 1) * 0.01 * (index % 2 === 0 ? 1 : -1);
-      const lng = this.longitude + (index + 1) * 0.008;
+    this.getActiveDeliveries().forEach((livraison) => {
+      const dest = this.getDestinationCoords(livraison);
+      if (!dest) return;
 
-      L.marker([lat, lng], {
+      L.marker([dest.lat, dest.lng], {
         icon: L.divIcon({
           className: 'destination-marker',
           html: '<div style="font-size:18px">📦</div>',
           iconSize: [28, 28]
         })
       })
-        .addTo(this.driverMap)
-        .bindPopup(
-          `<b>${this.getCommandeDestinataire(commande)}</b><br>${this.getCommandeDestination(commande)}`
-        );
+        .addTo(map)
+        .bindPopup(`<b>${dest.recipient}</b><br>${dest.label}`);
     });
   }
 
-  updateMapMarker(): void {
-    if (!this.driverMap) return;
-    this.driverMap.setView([this.latitude, this.longitude], this.driverMap.getZoom() || 12);
+  updateMapMarker(map: any): void {
+    if (!map) return;
+    map.setView([this.latitude, this.longitude], map.getZoom() || 12);
+  }
+
+  getDestinationCoords(livraison: Livraison): { lat: number; lng: number; label: string; recipient: string } | null {
+    const commande = this.getCommandeForLivraison(livraison);
+    const addr = commande?.adresseArrivee;
+    const lat = addr?.latitude;
+    const lng = addr?.longitude;
+
+    if (lat == null || lng == null) return null;
+
+    return {
+      lat,
+      lng,
+      label: this.getCommandeFullAddress(commande),
+      recipient: this.getCommandeDestinataire(commande)
+    };
+  }
+
+  openNavigation(livraison: Livraison): void {
+    const dest = this.getDestinationCoords(livraison);
+    if (!dest) {
+      const commande = this.getCommandeForLivraison(livraison);
+      const address = encodeURIComponent(this.getCommandeFullAddress(commande));
+      window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
+      return;
+    }
+    window.open(`https://waze.com/ul?ll=${dest.lat},${dest.lng}&navigate=yes`, '_blank');
+  }
+
+  callClient(livraison: Livraison): void {
+    const phone = this.getCommandePhone(this.getCommandeForLivraison(livraison));
+    if (!phone || phone === '—') {
+      this.showToast('Numéro de téléphone indisponible', 'error');
+      return;
+    }
+    window.location.href = `tel:${phone.replace(/\s/g, '')}`;
   }
 
   // ========== STATUS ==========
@@ -441,6 +566,7 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
         this.showToast('Enlèvement validé — colis récupéré', 'success');
         this.loading = false;
         this.loadLivraisons();
+        this.openActiveDelivery(livraison);
       },
       error: (err) => {
         console.error('Erreur validation enlèvement:', err);
@@ -457,7 +583,7 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const commande = this.commandesMap[livraison.commandeId || ''];
+    const commande = this.getCommandeForLivraison(livraison);
     const montant = commande?.montantTotal || 0;
     const finalStatus = montant > 0 ? 'LIVRE_PAYE' : 'LIVRE';
 
@@ -465,25 +591,22 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
 
     this.loading = true;
 
-    const finish = () => {
-      this.apiService.updateColisStatut(colisId, finalStatus).subscribe({
-        next: () => {
-          if (this.colisMap[colisId]) {
-            this.colisMap[colisId].statut = finalStatus;
-          }
-          this.showToast('Livraison terminée', 'success');
-          this.loading = false;
-          this.toggleStatut('DISPONIBLE');
-          this.loadLivraisons();
-        },
-        error: () => {
-          this.loading = false;
-          this.showToast('Erreur clôture livraison', 'error');
+    this.apiService.updateColisStatut(colisId, finalStatus).subscribe({
+      next: () => {
+        if (this.colisMap[colisId]) {
+          this.colisMap[colisId].statut = finalStatus;
         }
-      });
-    };
-
-    finish();
+        this.showToast('Livraison terminée', 'success');
+        this.loading = false;
+        this.closeActiveDelivery();
+        this.toggleStatut('DISPONIBLE');
+        this.loadLivraisons();
+      },
+      error: () => {
+        this.loading = false;
+        this.showToast('Erreur clôture livraison', 'error');
+      }
+    });
   }
 
   showFailureModalFor(livraison: Livraison): void {
@@ -521,6 +644,7 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
         this.showFailureModal = false;
         this.showToast(`Échec enregistré (${this.selectedFailureReason})`, 'success');
         this.loading = false;
+        this.closeActiveDelivery();
         this.toggleStatut('DISPONIBLE');
         this.loadLivraisons();
       },
@@ -547,6 +671,7 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
         this.showToast('Livraison démarrée', 'success');
         this.loading = false;
         this.loadLivraisons();
+        this.openActiveDelivery(livraison);
       },
       error: (err) => {
         console.error('Erreur démarrage livraison:', err);
@@ -556,111 +681,101 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
     });
   }
 
-  changeCommandeStatus(livraison: Livraison, newStatus: string): void {
-    const commandeId = this.getLinkedCommandeId(livraison);
-    if (!commandeId) {
-      this.showToast('Commande introuvable (ID manquant)', 'error');
-      return;
-    }
-
-    console.log('Changement statut:', { commandeId, currentStatus: this.getCommandeStatut(commandeId), newStatus });
-
-    this.loading = true;
-    this.apiService.updateCommandeStatut(commandeId, newStatus).subscribe({
-      next: () => {
-        console.log('Statut changé avec succès:', newStatus);
-        if (this.commandesMap[commandeId]) {
-          this.commandesMap[commandeId].statut = newStatus;
-        }
-        this.showToast(`Statut changé: ${this.getStatutLabel(newStatus)}`, 'success');
-        this.loading = false;
-        this.loadLivraisons();
-      },
-      error: (err) => {
-        console.error('Erreur changement statut:', err);
-        this.loading = false;
-        const errorMsg = err?.error?.message || err?.message || 'Erreur backend';
-        this.showToast(`Erreur: ${errorMsg}`, 'error');
-      }
-    });
+  getPrimaryAction(livraison: Livraison): 'pickup' | 'start' | 'deliver' | 'none' {
+    const statut = this.getColisStatut(livraison.colisId);
+    if (statut === 'A_ENLEVER') return 'pickup';
+    if (statut === 'ENLEVE') return 'start';
+    if (statut === 'EN_LIVRAISON') return 'deliver';
+    return 'none';
   }
 
-  canChangeToStatus(livraison: Livraison, status: string): boolean {
-    const currentStatus = this.getCommandeStatut(this.getLinkedCommandeId(livraison));
-    
-    // Si même statut, pas de changement
-    if (currentStatus === status) return false;
-    
-    // Autoriser toutes les transitions pour les boutons d'action (les boutons sont déjà conditionnés dans le HTML)
-    // La validation stricte n'est pas nécessaire car les boutons ne s'affichent que pour les transitions valides
-    return true;
+  executePrimaryAction(livraison: Livraison): void {
+    const action = this.getPrimaryAction(livraison);
+    if (action === 'pickup') this.validerEnlevement(livraison);
+    else if (action === 'start') this.demarrerLivraison(livraison);
+    else if (action === 'deliver') this.terminerLivraison(livraison);
   }
 
-  getStepIcon(status: string): string {
-    const icons: { [key: string]: string } = {
-      'EN_ATTENTE': '⏳',
-      'MANIFESTE': '📋',
-      'A_ENLEVER': '📥',
-      'ENLEVE': '✅',
-      'AU_DEPOT': '🏢',
-      'EN_LIVRAISON': '🚚',
-      'LIVRE': '📦',
-      'LIVRE_PAYE': '💰',
-      'ECHEC_LIVRAISON': '❌',
-      'RETOUR_DEPOT': '🔄',
-      'RETOUR_EXPEDITEUR': '↩️',
-      'ANNULEE': '🚫'
+  getPrimaryActionLabel(livraison: Livraison): string {
+    const action = this.getPrimaryAction(livraison);
+    const labels: Record<string, string> = {
+      pickup: '✅ Valider enlèvement',
+      start: '🚚 Démarrer livraison',
+      deliver: '✅ Confirmer livraison',
+      none: 'Voir détails'
     };
-    return icons[status] || '📍';
+    return labels[action];
   }
 
-  // Expose getLinkedCommandeId to template
-  getLinkedCommandeIdPublic(livraison: Livraison): string {
-    return this.getLinkedCommandeId(livraison);
+  isProgressStepCompleted(stepKey: string, currentStatus: string): boolean {
+    const order = ['A_ENLEVER', 'ENLEVE', 'EN_LIVRAISON', 'LIVRE', 'LIVRE_PAYE'];
+    const stepIdx = order.indexOf(stepKey);
+    const currentIdx = order.indexOf(currentStatus);
+    if (currentIdx < 0) return false;
+    if (stepKey === 'LIVRE') {
+      return ['LIVRE', 'LIVRE_PAYE'].includes(currentStatus);
+    }
+    return stepIdx >= 0 && currentIdx > stepIdx;
+  }
+
+  isProgressStepActive(stepKey: string, currentStatus: string): boolean {
+    if (stepKey === 'LIVRE') {
+      return ['LIVRE', 'LIVRE_PAYE'].includes(currentStatus);
+    }
+    return stepKey === currentStatus;
   }
 
   // ========== LISTES / FILTRES ==========
-  get filteredLivraisons(): Livraison[] {
-    switch (this.courseFilter) {
+  get filteredTournee(): Livraison[] {
+    switch (this.tourneeFilter) {
       case 'to_pickup':
         return this.getToPickupList();
+      case 'picked_up':
+        return this.getPickedUpList();
       case 'in_progress':
         return this.getInProgressList();
-      case 'completed_today':
-        return this.livraisons.filter(l =>
-          ['LIVRE', 'LIVRE_PAYE'].includes(this.getCommandeStatut(this.getLinkedCommandeId(l)))
-        );
+      case 'completed':
+        return this.getCompletedList();
+      case 'failed':
+        return this.getFailedList();
       default:
         return this.livraisons;
     }
   }
 
-  applyFilter(): void {
-    // Triggered by filter change - computed property handles logic
+  getActiveDeliveries(): Livraison[] {
+    return this.livraisons.filter(l => {
+      const s = this.getColisStatut(l.colisId);
+      return ['A_ENLEVER', 'ENLEVE', 'EN_LIVRAISON'].includes(s);
+    });
   }
 
   getToPickupList(): Livraison[] {
-    return this.livraisons.filter(l =>
-      this.getCommandeStatut(this.getLinkedCommandeId(l)) === 'A_ENLEVER'
-    );
+    return this.livraisons.filter(l => this.getColisStatut(l.colisId) === 'A_ENLEVER');
+  }
+
+  getPickedUpList(): Livraison[] {
+    return this.livraisons.filter(l => this.getColisStatut(l.colisId) === 'ENLEVE');
   }
 
   getInProgressList(): Livraison[] {
+    return this.livraisons.filter(l => this.getColisStatut(l.colisId) === 'EN_LIVRAISON');
+  }
+
+  getCompletedList(): Livraison[] {
     return this.livraisons.filter(l =>
-      this.getCommandeStatut(this.getLinkedCommandeId(l)) === 'EN_LIVRAISON'
+      ['LIVRE', 'LIVRE_PAYE'].includes(this.getColisStatut(l.colisId))
     );
   }
 
   getFailedList(): Livraison[] {
     return this.livraisons.filter(l =>
-      ['ECHEC_LIVRAISON', 'RETOUR_DEPOT', 'RETOUR_EXPEDITEUR'].includes(
-        this.getCommandeStatut(this.getLinkedCommandeId(l))
-      )
+      ['ECHEC_LIVRAISON', 'RETOUR_DEPOT', 'RETOUR_EXPEDITEUR'].includes(this.getColisStatut(l.colisId))
     );
   }
 
   getQueuePreview(): Livraison[] {
-    return this.filteredLivraisons.slice(0, 5);
+    return this.getActiveDeliveries().slice(0, 5);
   }
 
   getToPickupCount(): number {
@@ -677,14 +792,9 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
     return this.commandesMap[commandeId];
   }
 
-  getCommandeStatut(commandeId: string | undefined): string {
-    if (!commandeId) return 'EN_ATTENTE';
-    return this.commandesMap[commandeId]?.statut || 'EN_ATTENTE';
-  }
-
   getCommandeDestinataire(commande?: Commande | null): string {
     if (!commande) return '—';
-    return (commande as any).nomDestinataire || (commande as any).clientNom || '—';
+    return (commande as any).nomDestinataire || commande.clientNom || '—';
   }
 
   getCommandeDestination(commande?: Commande | null): string {
@@ -692,9 +802,17 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
     return commande.adresseArrivee?.ville || (commande as any).ville || '—';
   }
 
+  getCommandeFullAddress(commande?: Commande | null): string {
+    if (!commande?.adresseArrivee) {
+      return this.getCommandeDestination(commande);
+    }
+    const a = commande.adresseArrivee;
+    return [a.rue, a.localite, a.ville, a.gouvernorat].filter(Boolean).join(', ');
+  }
+
   getCommandePhone(commande?: Commande | null): string {
     if (!commande) return '—';
-    return (commande as any).telephoneDestinataire || (commande as any).telephone || '—';
+    return (commande as any).telephoneDestinataire || commande.telephone || commande.adresseArrivee?.telephone || '—';
   }
 
   getCommandeTotal(commande?: Commande | null): number {
@@ -702,7 +820,7 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
   }
 
   getLivraisonRefShort(livraison: Livraison): string {
-    const id = livraison?.id || this.getLinkedCommandeId(livraison) || '';
+    const id = livraison?.id || this.getLinkedCommandeId(livraison) || livraison?.colisId || '';
     if (!id) return 'N/A';
     return '#' + id.substring(Math.max(0, id.length - 6));
   }
@@ -733,27 +851,25 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
   getDeliveryStats(): DeliveryStats {
     return {
       toPickup: this.getToPickupCount(),
-      inProgress: this.getInProgressCount(),
-      deliveredToday: this.livraisons.filter(l =>
-        ['LIVRE', 'LIVRE_PAYE'].includes(this.getCommandeStatut(this.getLinkedCommandeId(l)))
-      ).length,
+      inProgress: this.getInProgressCount() + this.getPickedUpList().length,
+      deliveredToday: this.getCompletedList().length,
       failedToday: this.getFailedList().length,
       rating: this.driverInfo?.noteMoyenne || 4.5
     };
   }
 
   calculateEarnings(): void {
-    const delivered = this.livraisons.filter(l =>
-      ['LIVRE', 'LIVRE_PAYE'].includes(this.getCommandeStatut(this.getLinkedCommandeId(l)))
-    ).length;
-
-    // Estimation locale — à remplacer par API paiements livreur si dispo
+    const delivered = this.getCompletedList().length;
     const rate = 2;
     this.earnings = {
       today: delivered * rate,
       week: delivered * rate * 5,
       month: delivered * rate * 20
     };
+  }
+
+  dismissNewAssignments(): void {
+    this.newAssignments = [];
   }
 
   // ========== SUIVI ==========
@@ -773,7 +889,6 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
         this.loading = false;
       },
       error: () => {
-        // fallback éventuel search
         const anyApi = this.apiService as any;
         if (typeof anyApi.searchCommandes === 'function') {
           anyApi.searchCommandes(this.searchColisId.trim()).subscribe({
@@ -795,20 +910,6 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
     });
   }
 
-  getStepIndex(status: string): number {
-    return this.trackingSteps.findIndex(s => s.key === status);
-  }
-
-  isStepCompleted(stepKey: string, currentStatus: string): boolean {
-    const a = this.getStepIndex(stepKey);
-    const b = this.getStepIndex(currentStatus);
-    return a >= 0 && b >= 0 && a < b;
-  }
-
-  isStepActive(stepKey: string, currentStatus: string): boolean {
-    return stepKey === currentStatus;
-  }
-
   getColisShortId(colis: any): string {
     return colis?.id ? String(colis.id).substring(0, 8) : 'N/A';
   }
@@ -823,47 +924,24 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
     } catch {
       this.vehicleInfo = { marque: '', modele: '', immatriculation: '', type: 'Voiture' };
     }
-    
-    // Charger les véhicules assignés depuis le backend
     this.loadAssignedVehicles();
   }
 
   loadAssignedVehicles(): void {
-    if (!this.driverId) {
-      console.log('❌ Pas de driverId disponible');
-      return;
-    }
-    
-    console.log('🔍 Chargement des véhicules pour livreur ID:', this.driverId);
-    
-    // Utiliser l'endpoint spécifique du service Spring Boot
+    if (!this.driverId) return;
+
     this.apiService.getVehiculeByLivreurId(this.driverId).subscribe({
       next: (vehicle) => {
-        if (vehicle) {
-          this.assignedVehicles = [vehicle];
-          console.log('✅ Véhicule assigné au livreur:', vehicle);
-        } else {
-          this.assignedVehicles = [];
-          console.log('ℹ️ Aucun véhicule assigné à ce livreur');
-        }
+        this.assignedVehicles = vehicle ? [vehicle] : [];
       },
-      error: (err) => {
-        console.error('❌ Erreur chargement véhicule assigné:', err);
+      error: () => {
         this.assignedVehicles = [];
       }
     });
   }
 
-  // ========== REALTIME SYNC ==========
   private initializeRealtimeSync(): void {
-    // Pour l'instant, désactivé car nous utilisons les services Spring Boot existants
-    // Vous pouvez réactiver cela si vos services Spring Boot ont des WebSocket
     console.log('ℹ️ Synchronisation temps réel désactivée (utilise les services Spring Boot)');
-  }
-
-  saveVehicleInfo(): void {
-    localStorage.setItem('driverVehicle', JSON.stringify(this.vehicleInfo));
-    this.showToast('Véhicule enregistré', 'success');
   }
 
   uploadDriverPhoto(event: any): void {

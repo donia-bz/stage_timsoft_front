@@ -3171,4 +3171,69 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     this.authService.logout();
     this.router.navigate(['/home']);
   }
+  
+  // ========== VEHICLE ASSIGNMENT ==========
+  showAssignVehicleModal = false;
+  vehicleToAssign: Vehicule | null = null;
+  selectedLivreurIdForVehicle = '';
+
+  openAssignVehicleModal(vehicule: Vehicule): void {
+    this.vehicleToAssign = vehicule;
+    this.selectedLivreurIdForVehicle = vehicule.livreurId || '';
+    this.showAssignVehicleModal = true;
+  }
+
+  closeAssignVehicleModal(): void {
+    this.showAssignVehicleModal = false;
+    this.vehicleToAssign = null;
+    this.selectedLivreurIdForVehicle = '';
+  }
+
+  confirmAssignVehicle(): void {
+    if (!this.vehicleToAssign || !this.selectedLivreurIdForVehicle) {
+      this.showToast('Veuillez sélectionner un livreur', 'error');
+      return;
+    }
+    
+    const vehiculeId = this.vehicleToAssign.id || '';
+    const livreurId = this.selectedLivreurIdForVehicle;
+
+    // Call both endpoints to ensure sync between microservices (Livreurs and Vehicles)
+    this.apiService.affecterVehicule(livreurId, vehiculeId).subscribe({
+      next: () => {
+        this.fallbackUpdateVehicule(this.vehicleToAssign!, livreurId);
+      },
+      error: (err) => {
+        console.error('Erreur affecterVehicule:', err);
+        // Try the fallback anyway if the Livreurs service endpoint fails
+        this.fallbackUpdateVehicule(this.vehicleToAssign!, livreurId);
+      }
+    });
+  }
+
+  private fallbackUpdateVehicule(vehicule: Vehicule, livreurId: string): void {
+    const updatedVehicule = {
+      ...vehicule,
+      livreurId: livreurId,
+      statut: 'EN_SERVICE'
+    };
+    
+    this.apiService.updateVehicule(vehicule.id || '', updatedVehicule as any).subscribe({
+      next: () => {
+        this.showToast('Véhicule assigné avec succès', 'success');
+        this.closeAssignVehicleModal();
+        this.refreshData();
+      },
+      error: (err) => {
+        console.error('Erreur updateVehicule:', err);
+        this.showToast('Erreur lors de l\'assignation du véhicule', 'error');
+      }
+    });
+  }
+
+  getLivreurName(livreurId: string): string {
+    if (!livreurId) return 'Non assigné';
+    const livreur = this.usersList.find(u => u.id === livreurId);
+    return livreur ? `${livreur.prenom} ${livreur.nom}` : 'Livreur inconnu';
+  }
 }

@@ -1,6 +1,5 @@
 <div class="livreur-dashboard">
 
-  <!-- TOP HORIZONTAL BAR -->
   <header class="livreur-topbar">
     <div class="topbar-brand">
       <div class="brand-logo">🚚</div>
@@ -8,6 +7,13 @@
         <span class="brand-text">BFExpress</span>
         <span class="brand-sub">Espace livreur</span>
       </div>
+    </div>
+    <div class="topbar-actions" *ngIf="!activeDeliveryView">
+      <select [ngModel]="driverStatus" (ngModelChange)="toggleStatut($event)" class="status-select compact">
+        <option value="DISPONIBLE">🟢 Disponible</option>
+        <option value="EN_COURSE">🟡 En course</option>
+        <option value="HORS_LIGNE">🔴 Hors ligne</option>
+      </select>
     </div>
   </header>
 
@@ -20,64 +26,35 @@
             <span *ngIf="!hasDriverPhoto()">{{ getDriverNameDisplay().charAt(0) }}</span>
           </div>
           <div class="status-indicator" [class.online]="isDriverOnline()" [class.offline]="isDriverOffline()"></div>
-          <input type="file" (change)="uploadDriverPhoto($event)" accept="image/*" class="photo-upload" title="Changer photo" />
         </div>
         <div class="user-info">
           <div class="user-name">{{ getDriverNameDisplay() }}</div>
-          <div class="user-role">⭐ {{ getDriverRating() }} / 5.0</div>
+          <div class="user-role">⭐ {{ getDriverRating() }} · {{ getActiveTourneeCount() }} course(s) active(s)</div>
         </div>
       </div>
 
       <nav class="sidebar-nav">
-        <div class="nav-group">
-          <div class="nav-label">Principal</div>
-          <a class="nav-item" [class.active]="activeTab === 'dashboard'" (click)="setTab('dashboard')">
-            <span class="nav-icon">📊</span> Tableau de bord
-          </a>
-          <a class="nav-item" [class.active]="activeTab === 'courses'" (click)="setTab('courses')">
-            <span class="nav-icon">📦</span> Mes courses
-            <span class="badge" *ngIf="getToPickupCount() > 0">{{ getToPickupCount() }}</span>
-          </a>
-          <a class="nav-item" [class.active]="activeTab === 'map'" (click)="setTab('map')">
-            <span class="nav-icon">🗺️</span> Carte live
-          </a>
-        </div>
-
-        <div class="nav-group">
-          <div class="nav-label">Opérations</div>
-          <a class="nav-item" [class.active]="activeTab === 'enlevements'" (click)="setTab('enlevements')">
-            <span class="nav-icon">📥</span> Enlèvements
-            <span class="badge" *ngIf="getToPickupCount() > 0">{{ getToPickupCount() }}</span>
-          </a>
-          <a class="nav-item" [class.active]="activeTab === 'livraison'" (click)="setTab('livraison')">
-            <span class="nav-icon">🚚</span> En livraison
-            <span class="badge" *ngIf="getInProgressCount() > 0">{{ getInProgressCount() }}</span>
-          </a>
-          <a class="nav-item" [class.active]="activeTab === 'echecs'" (click)="setTab('echecs')">
-            <span class="nav-icon">❌</span> Échecs / Retours
-          </a>
-          <a class="nav-item" [class.active]="activeTab === 'suivi'" (click)="setTab('suivi')">
-            <span class="nav-icon">🔍</span> Suivi colis
-          </a>
-        </div>
-
-        <div class="nav-group">
-          <div class="nav-label">Compte</div>
-          <a class="nav-item" [class.active]="activeTab === 'gains'" (click)="setTab('gains')">
-            <span class="nav-icon">💰</span> Mes gains
-          </a>
-          <a class="nav-item" [class.active]="activeTab === 'vehicule'" (click)="setTab('vehicule')">
-            <span class="nav-icon">🚗</span> Mon véhicule
-          </a>
-          <a class="nav-item" [class.active]="activeTab === 'parametres'" (click)="setTab('parametres')">
-            <span class="nav-icon">⚙️</span> Paramètres
-          </a>
-        </div>
+        <a class="nav-item" [class.active]="activeTab === 'accueil'" (click)="setTab('accueil')">
+          <span class="nav-icon">🏠</span> Accueil
+        </a>
+        <a class="nav-item" [class.active]="activeTab === 'tournee'" (click)="setTab('tournee')">
+          <span class="nav-icon">📦</span> Ma tournée
+          <span class="badge" *ngIf="getActiveTourneeCount() > 0">{{ getActiveTourneeCount() }}</span>
+        </a>
+        <a class="nav-item" [class.active]="activeTab === 'carte'" (click)="setTab('carte')">
+          <span class="nav-icon">🗺️</span> Carte
+        </a>
+        <a class="nav-item" [class.active]="activeTab === 'gains'" (click)="setTab('gains')">
+          <span class="nav-icon">💰</span> Gains
+        </a>
+        <a class="nav-item" [class.active]="activeTab === 'profil'" (click)="setTab('profil')">
+          <span class="nav-icon">👤</span> Profil
+        </a>
       </nav>
     </div>
   </aside>
 
-  <main class="livreur-main">
+  <main class="livreur-main" [class.has-bottom-nav]="!activeDeliveryView">
 
     <div class="toast-container">
       <div *ngFor="let toast of toasts"
@@ -90,413 +67,261 @@
       </div>
     </div>
 
-    <!-- DASHBOARD -->
-    <div *ngIf="activeTab === 'dashboard'" class="tab-panel">
-      <div class="page-header">
-        <div>
-          <h1>Bonjour, {{ driverName }}</h1>
-          <p>Voici votre tournée du jour</p>
-        </div>
-        <div class="header-actions">
-          <select [ngModel]="driverStatus" (ngModelChange)="toggleStatut($event)" class="status-select">
-            <option value="DISPONIBLE">🟢 Disponible</option>
-            <option value="EN_COURSE">🟡 En course</option>
-            <option value="HORS_LIGNE">🔴 Hors ligne</option>
-          </select>
+    <!-- ========== COURSE ACTIVE (fullscreen) ========== -->
+    <div *ngIf="activeDeliveryView" class="active-delivery-panel">
+      <div class="active-delivery-header">
+        <button type="button" class="btn btn-secondary btn-sm" (click)="closeActiveDelivery()">← Retour</button>
+        <div class="active-delivery-title">
+          <strong>Course {{ getLivraisonRefShort(activeDeliveryView) }}</strong>
+          <span class="status-pill" [ngClass]="getStatutClass(getColisStatut(activeDeliveryView.colisId))">
+            {{ getStatutLabel(getColisStatut(activeDeliveryView.colisId)) }}
+          </span>
         </div>
       </div>
 
-      <div class="alert alert-info" *ngIf="newAssignments.length > 0">
-        <span class="alert-icon">🔔</span>
-        <div>
-          <strong>{{ newAssignments.length }} nouvelle(s) course(s) affectée(s)</strong>
-          <p>Consultez vos courses pour les démarrer.</p>
-        </div>
+      <div class="active-delivery-map">
+        <div id="active-delivery-map" class="real-leaflet-map"></div>
       </div>
 
-      <div class="kpi-grid">
-        <div class="kpi-card" (click)="setTab('enlevements')">
-          <div class="kpi-top">
-            <span class="kpi-label">À enlever</span>
-            <span class="kpi-icon warning">📥</span>
+      <div class="active-delivery-body">
+        <div class="client-card">
+          <div class="client-row">
+            <span class="client-label">Destinataire</span>
+            <span class="client-value">{{ getCommandeDestinataire(getCommandeForLivraison(activeDeliveryView)) }}</span>
           </div>
-          <div class="kpi-value">{{ getDeliveryStats().toPickup }}</div>
-        </div>
-        <div class="kpi-card" (click)="setTab('livraison')">
-          <div class="kpi-top">
-            <span class="kpi-label">En cours</span>
-            <span class="kpi-icon info">🚚</span>
+          <div class="client-row">
+            <span class="client-label">Téléphone</span>
+            <span class="client-value mono">{{ getCommandePhone(getCommandeForLivraison(activeDeliveryView)) }}</span>
           </div>
-          <div class="kpi-value">{{ getDeliveryStats().inProgress }}</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-top">
-            <span class="kpi-label">Livrés aujourd'hui</span>
-            <span class="kpi-icon success">✅</span>
+          <div class="client-row">
+            <span class="client-label">Adresse</span>
+            <span class="client-value">{{ getCommandeFullAddress(getCommandeForLivraison(activeDeliveryView)) }}</span>
           </div>
-          <div class="kpi-value">{{ getDeliveryStats().deliveredToday }}</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-top">
-            <span class="kpi-label">Note moyenne</span>
-            <span class="kpi-icon rating">⭐</span>
+          <div class="client-row" *ngIf="getCommandeTotal(getCommandeForLivraison(activeDeliveryView)) > 0">
+            <span class="client-label">COD à encaisser</span>
+            <span class="client-value cod">{{ getCommandeTotal(getCommandeForLivraison(activeDeliveryView)) }} DT</span>
           </div>
-          <div class="kpi-value">{{ getDeliveryStats().rating }}</div>
         </div>
-      </div>
 
-      <div class="card" *ngIf="currentDelivery">
-        <div class="card-header">
-          <h3>🚚 Course en cours</h3>
-          <span class="status-pill status-in-progress">EN_LIVRAISON</span>
-        </div>
-        <div class="delivery-details">
-          <div class="delivery-info">
-            <div class="info-row">
-              <span class="label">Référence</span>
-              <span class="value mono">{{ getLivraisonRefShort(currentDelivery) }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">Destinataire</span>
-              <span class="value">{{ getCommandeDestinataire(getCommande(currentDelivery.commandeId)) }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">Destination</span>
-              <span class="value">{{ getCommandeDestination(getCommande(currentDelivery.commandeId)) }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">COD</span>
-              <span class="value">{{ getCommandeTotal(getCommande(currentDelivery.commandeId)) }} DT</span>
-            </div>
-          </div>
-          <div class="delivery-actions">
-            <button type="button" class="btn btn-success" (click)="terminerLivraison(currentDelivery)">✅ Terminer</button>
-            <button type="button" class="btn btn-danger" (click)="showFailureModalFor(currentDelivery)">❌ Échec</button>
+        <div class="progress-bar-steps">
+          <div *ngFor="let step of deliveryProgressSteps"
+               class="progress-step"
+               [class.active]="isProgressStepActive(step.key, getColisStatut(activeDeliveryView.colisId))"
+               [class.completed]="isProgressStepCompleted(step.key, getColisStatut(activeDeliveryView.colisId))">
+            <div class="progress-dot"></div>
+            <span>{{ step.label }}</span>
           </div>
         </div>
-      </div>
 
-      <div class="card">
-        <div class="card-header">
-          <h3>📋 File d'attente</h3>
-          <button type="button" class="btn btn-link" (click)="setTab('courses')">Voir toutes</button>
+        <div class="active-delivery-actions">
+          <button type="button" class="btn btn-secondary" (click)="callClient(activeDeliveryView)">📞 Appeler</button>
+          <button type="button" class="btn btn-secondary" (click)="openNavigation(activeDeliveryView)">🧭 Navigation</button>
         </div>
-        <div class="delivery-list">
-          <div *ngFor="let livraison of getQueuePreview()" class="delivery-item">
-            <div class="delivery-main">
-              <div class="delivery-ref">{{ getLivraisonRefShort(livraison) }}</div>
-              <div class="delivery-dest">{{ getCommandeDestinataire(getCommande(livraison.commandeId)) }}</div>
-            </div>
-            <div class="delivery-meta">
-              <span class="status-pill" [ngClass]="getStatutClass(getCommandeStatut(livraison.commandeId))">
-                {{ getStatutLabel(getCommandeStatut(livraison.commandeId)) }}
-              </span>
-              <button type="button" class="btn btn-sm btn-primary"
-                      *ngIf="getCommandeStatut(livraison.commandeId) === 'A_ENLEVER'"
-                      (click)="validerEnlevement(livraison)">
-                Valider
-              </button>
-            </div>
-          </div>
-          <div *ngIf="getQueuePreview().length === 0" class="empty">Aucune course en attente.</div>
+
+        <div class="active-delivery-primary">
+          <button type="button"
+                  class="btn btn-primary btn-block"
+                  *ngIf="getPrimaryAction(activeDeliveryView) !== 'none'"
+                  (click)="executePrimaryAction(activeDeliveryView)"
+                  [disabled]="loading">
+            {{ getPrimaryActionLabel(activeDeliveryView) }}
+          </button>
+          <button type="button"
+                  class="btn btn-danger btn-block"
+                  *ngIf="getColisStatut(activeDeliveryView.colisId) === 'EN_LIVRAISON'"
+                  (click)="showFailureModalFor(activeDeliveryView)">
+            ❌ Signaler un échec
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- MES COURSES -->
-    <div *ngIf="activeTab === 'courses'" class="tab-panel">
+    <!-- ========== ACCUEIL ========== -->
+    <div *ngIf="activeTab === 'accueil' && !activeDeliveryView" class="tab-panel">
       <div class="page-header">
         <div>
-          <h1>Mes courses</h1>
-          <p>Gérer toutes vos livraisons</p>
-        </div>
-        <div class="header-actions">
-          <select [(ngModel)]="courseFilter" class="filter-select">
-            <option value="all">Toutes</option>
-            <option value="to_pickup">À enlever</option>
-            <option value="in_progress">En cours</option>
-            <option value="completed_today">Terminées</option>
-          </select>
+          <h1>Bonjour, {{ driverName }}</h1>
+          <p>Votre journée en un coup d'œil</p>
         </div>
       </div>
 
-      <div class="cards-grid">
-        <div *ngFor="let livraison of filteredLivraisons" class="delivery-card">
-          <div class="delivery-card-header">
-            <div class="delivery-ref">#{{ getLivraisonRefShort(livraison) }}</div>
+      <div class="alert alert-info clickable" *ngIf="newAssignments.length > 0" (click)="goToTournee('all')">
+        <span class="alert-icon">🔔</span>
+        <div>
+          <strong>{{ newAssignments.length }} nouvelle(s) course(s)</strong>
+          <p>Consultez votre tournée pour commencer.</p>
+        </div>
+        <button type="button" class="btn btn-sm btn-primary" (click)="dismissNewAssignments(); $event.stopPropagation()">OK</button>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card" (click)="goToTournee('to_pickup')">
+          <div class="kpi-top"><span class="kpi-label">À enlever</span><span class="kpi-icon warning">📥</span></div>
+          <div class="kpi-value">{{ getDeliveryStats().toPickup }}</div>
+        </div>
+        <div class="kpi-card" (click)="goToTournee('in_progress')">
+          <div class="kpi-top"><span class="kpi-label">En cours</span><span class="kpi-icon info">🚚</span></div>
+          <div class="kpi-value">{{ getDeliveryStats().inProgress }}</div>
+        </div>
+        <div class="kpi-card" (click)="goToTournee('completed')">
+          <div class="kpi-top"><span class="kpi-label">Livrés</span><span class="kpi-icon success">✅</span></div>
+          <div class="kpi-value">{{ getDeliveryStats().deliveredToday }}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top"><span class="kpi-label">Note</span><span class="kpi-icon rating">⭐</span></div>
+          <div class="kpi-value">{{ getDeliveryStats().rating }}</div>
+        </div>
+      </div>
+
+      <div class="card next-action-card" *ngIf="getNextActionDelivery() as next">
+        <div class="card-header">
+          <h3>▶ Prochaine action</h3>
+        </div>
+        <div class="next-action-body">
+          <div class="next-action-info">
+            <div class="next-action-ref">{{ getLivraisonRefShort(next) }}</div>
+            <div class="next-action-dest">{{ getCommandeDestinataire(getCommandeForLivraison(next)) }}</div>
+            <div class="next-action-address">{{ getCommandeFullAddress(getCommandeForLivraison(next)) }}</div>
+            <div class="next-action-cod" *ngIf="getCommandeTotal(getCommandeForLivraison(next)) > 0">
+              💰 COD: {{ getCommandeTotal(getCommandeForLivraison(next)) }} DT
+            </div>
+          </div>
+          <div class="next-action-buttons">
+            <button type="button" class="btn btn-primary" (click)="openActiveDelivery(next)">Ouvrir la course</button>
+            <button type="button" class="btn btn-success"
+                    *ngIf="getPrimaryAction(next) !== 'none'"
+                    (click)="executePrimaryAction(next)">
+              {{ getPrimaryActionLabel(next) }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" *ngIf="!getNextActionDelivery()">
+        <div class="empty-state compact">
+          <div class="empty-icon">✅</div>
+          <h3>Aucune action en attente</h3>
+          <p>Vous êtes à jour. De nouvelles courses apparaîtront ici.</p>
+        </div>
+      </div>
+
+      <div class="card" *ngIf="getQueuePreview().length > 0">
+        <div class="card-header">
+          <h3>📋 File d'attente</h3>
+          <button type="button" class="btn btn-link" (click)="goToTournee('all')">Voir tout</button>
+        </div>
+        <div class="delivery-list">
+          <div *ngFor="let livraison of getQueuePreview()" class="delivery-item clickable" (click)="openActiveDelivery(livraison)">
+            <div class="delivery-main">
+              <div class="delivery-ref">{{ getLivraisonRefShort(livraison) }}</div>
+              <div class="delivery-dest">{{ getCommandeDestinataire(getCommandeForLivraison(livraison)) }}</div>
+            </div>
             <span class="status-pill" [ngClass]="getStatutClass(getColisStatut(livraison.colisId))">
               {{ getStatutLabel(getColisStatut(livraison.colisId)) }}
             </span>
           </div>
+        </div>
+      </div>
+    </div>
 
-          <div class="delivery-card-body">
-            <div class="delivery-info">
-              <div class="info-row">
-                <span class="label">Colis ID:</span>
-                <span class="value mono">{{ livraison.colisId?.substring(0, 8) || '—' }}</span>
-              </div>
-              <div class="info-row">
-                <span class="label">Poids:</span>
-                <span class="value">{{ getColis(livraison.colisId)?.poids || 0 }} kg</span>
-              </div>
-            </div>
+    <!-- ========== TOURNEE ========== -->
+    <div *ngIf="activeTab === 'tournee' && !activeDeliveryView" class="tab-panel">
+      <div class="page-header">
+        <div>
+          <h1>Ma tournée</h1>
+          <p>{{ livraisons.length }} course(s) au total</p>
+        </div>
+      </div>
 
-            <!-- Timeline interactive -->
-            <div class="delivery-timeline">
-              <div *ngFor="let step of trackingSteps" class="timeline-step"
-                   [class.active]="step.key === getColisStatut(livraison.colisId)"
-                   [class.completed]="isStepCompleted(step.key, getColisStatut(livraison.colisId))"
-                   [class.clickable]="canChangeToStatus(livraison, step.key)"
-                   (click)="changeCommandeStatus(livraison, step.key)">
-                <div class="timeline-marker">
-                  <span class="marker-icon">{{ getStepIcon(step.key) }}</span>
-                </div>
-                <div class="timeline-content">
-                  <div class="timeline-label">{{ step.label }}</div>
-                  <div class="timeline-hint" *ngIf="canChangeToStatus(livraison, step.key)">Cliquez pour changer</div>
-                </div>
-              </div>
+      <div class="filter-chips">
+        <button type="button" class="chip" [class.active]="tourneeFilter === 'all'" (click)="setTourneeFilter('all')">Tous</button>
+        <button type="button" class="chip" [class.active]="tourneeFilter === 'to_pickup'" (click)="setTourneeFilter('to_pickup')">
+          À enlever <span class="chip-count" *ngIf="getToPickupCount()">{{ getToPickupCount() }}</span>
+        </button>
+        <button type="button" class="chip" [class.active]="tourneeFilter === 'picked_up'" (click)="setTourneeFilter('picked_up')">Enlevé</button>
+        <button type="button" class="chip" [class.active]="tourneeFilter === 'in_progress'" (click)="setTourneeFilter('in_progress')">
+          En cours <span class="chip-count" *ngIf="getInProgressCount()">{{ getInProgressCount() }}</span>
+        </button>
+        <button type="button" class="chip" [class.active]="tourneeFilter === 'completed'" (click)="setTourneeFilter('completed')">Livrés</button>
+        <button type="button" class="chip" [class.active]="tourneeFilter === 'failed'" (click)="setTourneeFilter('failed')">Échecs</button>
+      </div>
+
+      <div class="card search-card">
+        <div class="search-form">
+          <input type="text" [(ngModel)]="searchColisId" name="searchColisId"
+                 placeholder="Rechercher un colis par ID..." class="search-input"
+                 (keyup.enter)="searchColis()" />
+          <button type="button" class="btn btn-primary" (click)="searchColis()" [disabled]="loading">🔍</button>
+        </div>
+        <div class="error" *ngIf="searchError">{{ searchError }}</div>
+        <div *ngIf="foundColis" class="search-result">
+          <strong>Colis #{{ getColisShortId(foundColis) }}</strong>
+          <span class="status-pill" [ngClass]="getStatutClass(foundColis.statut || '')">{{ getStatutLabel(foundColis.statut || '') }}</span>
+          <p>{{ getCommandeDestinataire(foundColis) }} — {{ getCommandeFullAddress(foundColis) }}</p>
+        </div>
+      </div>
+
+      <div class="tournee-list">
+        <div *ngFor="let livraison of filteredTournee" class="tournee-card" (click)="openActiveDelivery(livraison)">
+          <div class="tournee-card-top">
+            <span class="tournee-ref">{{ getLivraisonRefShort(livraison) }}</span>
+            <span class="status-pill" [ngClass]="getStatutClass(getColisStatut(livraison.colisId))">
+              {{ getStatutLabel(getColisStatut(livraison.colisId)) }}
+            </span>
+          </div>
+          <div class="tournee-card-body">
+            <div class="tournee-line"><span>👤</span> {{ getCommandeDestinataire(getCommandeForLivraison(livraison)) }}</div>
+            <div class="tournee-line"><span>📍</span> {{ getCommandeFullAddress(getCommandeForLivraison(livraison)) }}</div>
+            <div class="tournee-line" *ngIf="getCommandeTotal(getCommandeForLivraison(livraison)) > 0">
+              <span>💰</span> COD {{ getCommandeTotal(getCommandeForLivraison(livraison)) }} DT
             </div>
           </div>
-
-          <div class="delivery-card-footer">
+          <div class="tournee-card-footer" (click)="$event.stopPropagation()">
+            <button type="button" class="btn btn-sm btn-secondary" (click)="callClient(livraison)">📞</button>
+            <button type="button" class="btn btn-sm btn-secondary" (click)="openNavigation(livraison)">🧭</button>
             <button type="button" class="btn btn-sm btn-primary"
-                    *ngIf="getColisStatut(livraison.colisId) === 'A_ENLEVER'"
-                    (click)="validerEnlevement(livraison)">
-              ✅ Valider enlèvement
+                    *ngIf="getPrimaryAction(livraison) !== 'none'"
+                    (click)="executePrimaryAction(livraison)">
+              {{ getPrimaryActionLabel(livraison) }}
             </button>
-            <button type="button" class="btn btn-sm btn-success"
-                    *ngIf="getColisStatut(livraison.colisId) === 'ENLEVE'"
-                    (click)="demarrerLivraison(livraison)">
-              🚚 Démarrer livraison
-            </button>
-            <button type="button" class="btn btn-sm btn-success"
-                    *ngIf="getColisStatut(livraison.colisId) === 'EN_LIVRAISON'"
-                    (click)="terminerLivraison(livraison)">
-              ✅ Livrer avec succès
-            </button>
-            <button type="button" class="btn btn-sm btn-danger"
-                    *ngIf="getColisStatut(livraison.colisId) === 'EN_LIVRAISON'"
-                    (click)="showFailureModalFor(livraison)">
-              ❌ Signaler échec
-            </button>
+            <button type="button" class="btn btn-sm btn-link" (click)="openActiveDelivery(livraison)">Détails →</button>
           </div>
         </div>
 
-        <div *ngIf="filteredLivraisons.length === 0" class="empty-state">
+        <div *ngIf="filteredTournee.length === 0" class="empty-state">
           <div class="empty-icon">📦</div>
-          <h3>Aucune course trouvée</h3>
+          <h3>Aucune course</h3>
           <p>Les nouvelles affectations apparaîtront ici.</p>
         </div>
       </div>
     </div>
 
-    <!-- CARTE -->
-    <div *ngIf="activeTab === 'map'" class="tab-panel">
+    <!-- ========== CARTE ========== -->
+    <div *ngIf="activeTab === 'carte' && !activeDeliveryView" class="tab-panel">
       <div class="page-header">
         <div>
-          <h1>Carte live</h1>
-          <p>Position GPS et destinations</p>
+          <h1>Carte</h1>
+          <p>Votre position et vos destinations</p>
         </div>
-        <span class="badge">GPS Actif</span>
+        <span class="badge gps-badge">GPS actif</span>
       </div>
-      <div class="card">
+      <div class="card map-card">
         <div class="map-wrapper">
           <div id="driver-map" class="real-leaflet-map"></div>
         </div>
+        <p class="map-hint muted">Les marqueurs 📦 utilisent les coordonnées réelles des adresses de livraison.</p>
       </div>
     </div>
 
-    <!-- ENLEVEMENTS -->
-    <div *ngIf="activeTab === 'enlevements'" class="tab-panel">
-      <div class="page-header">
-        <div>
-          <h1>Enlèvements</h1>
-          <p>Colis à enlever</p>
-        </div>
-      </div>
-      <div class="card">
-        <div class="table-responsive">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Référence</th>
-                <th>Destinataire</th>
-                <th>Destination</th>
-                <th>COD</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let livraison of getToPickupList()">
-                <td class="mono">{{ getLivraisonRefShort(livraison) }}</td>
-                <td>{{ getCommandeDestinataire(getCommande(livraison.commandeId)) }}</td>
-                <td>{{ getCommandeDestination(getCommande(livraison.commandeId)) }}</td>
-                <td>{{ getCommandeTotal(getCommande(livraison.commandeId)) }} DT</td>
-                <td>
-                  <button type="button" class="btn btn-primary" (click)="validerEnlevement(livraison)">
-                    Valider enlèvement
-                  </button>
-                </td>
-              </tr>
-              <tr *ngIf="getToPickupList().length === 0">
-                <td colspan="5" class="empty">Aucun enlèvement en attente.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- EN LIVRAISON -->
-    <div *ngIf="activeTab === 'livraison'" class="tab-panel">
-      <div class="page-header">
-        <div>
-          <h1>En livraison</h1>
-          <p>Courses en cours</p>
-        </div>
-      </div>
-      <div class="card">
-        <div class="table-responsive">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Référence</th>
-                <th>Destinataire</th>
-                <th>Téléphone</th>
-                <th>Destination</th>
-                <th>COD</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let livraison of getInProgressList()">
-                <td class="mono">{{ getLivraisonRefShort(livraison) }}</td>
-                <td>{{ getCommandeDestinataire(getCommande(livraison.commandeId)) }}</td>
-                <td class="mono">{{ getCommandePhone(getCommande(livraison.commandeId)) }}</td>
-                <td>{{ getCommandeDestination(getCommande(livraison.commandeId)) }}</td>
-                <td>{{ getCommandeTotal(getCommande(livraison.commandeId)) }} DT</td>
-                <td>
-                  <div class="action-buttons">
-                    <button type="button" class="btn btn-success" (click)="terminerLivraison(livraison)">✅ Terminer</button>
-                    <button type="button" class="btn btn-danger" (click)="showFailureModalFor(livraison)">❌ Échec</button>
-                  </div>
-                </td>
-              </tr>
-              <tr *ngIf="getInProgressList().length === 0">
-                <td colspan="6" class="empty">Aucune livraison en cours.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- ECHECS -->
-    <div *ngIf="activeTab === 'echecs'" class="tab-panel">
-      <div class="page-header">
-        <div>
-          <h1>Échecs / Retours</h1>
-          <p>Livraisons échouées et retours</p>
-        </div>
-      </div>
-      <div class="card">
-        <div class="table-responsive">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Référence</th>
-                <th>Destinataire</th>
-                <th>Destination</th>
-                <th>Statut</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let livraison of getFailedList()">
-                <td class="mono">{{ getLivraisonRefShort(livraison) }}</td>
-                <td>{{ getCommandeDestinataire(getCommande(livraison.commandeId)) }}</td>
-                <td>{{ getCommandeDestination(getCommande(livraison.commandeId)) }}</td>
-                <td>
-                  <span class="status-pill" [ngClass]="getStatutClass(getCommandeStatut(livraison.commandeId))">
-                    {{ getStatutLabel(getCommandeStatut(livraison.commandeId)) }}
-                  </span>
-                </td>
-              </tr>
-              <tr *ngIf="getFailedList().length === 0">
-                <td colspan="4" class="empty">Aucun échec ou retour.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- SUIVI -->
-    <div *ngIf="activeTab === 'suivi'" class="tab-panel">
-      <div class="page-header">
-        <div>
-          <h1>Suivi colis</h1>
-          <p>Rechercher et suivre un colis</p>
-        </div>
-      </div>
-      <div class="card">
-        <div class="search-section">
-          <div class="search-form">
-            <input type="text" [(ngModel)]="searchColisId" name="searchColisId"
-                   placeholder="Entrez l'ID du colis..." class="search-input"
-                   (keyup.enter)="searchColis()" />
-            <button type="button" class="btn btn-primary" (click)="searchColis()" [disabled]="loading">
-              🔍 Rechercher
-            </button>
-          </div>
-          <div class="error" *ngIf="searchError">{{ searchError }}</div>
-        </div>
-
-        <div *ngIf="foundColis" class="tracking-result">
-          <div class="tracking-header">
-            <h3>Colis #{{ getColisShortId(foundColis) }}</h3>
-            <span class="status-pill" [ngClass]="getStatutClass(foundColis.statut || '')">
-              {{ getStatutLabel(foundColis.statut || '') }}
-            </span>
-          </div>
-          <div class="tracking-info">
-            <div class="info-row">
-              <span class="label">Destinataire</span>
-              <span class="value">{{ getCommandeDestinataire(foundColis) }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">Destination</span>
-              <span class="value">{{ getCommandeDestination(foundColis) }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">COD</span>
-              <span class="value">{{ getCommandeTotal(foundColis) }} DT</span>
-            </div>
-          </div>
-          <div class="tracking-timeline">
-            <div *ngFor="let step of trackingSteps"
-                 class="timeline-item"
-                 [class.active]="isStepActive(step.key, foundColis.statut || '')"
-                 [class.completed]="isStepCompleted(step.key, foundColis.statut || '')">
-              <div class="timeline-marker"></div>
-              <div class="timeline-content">
-                <div class="timeline-label">{{ step.label }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- GAINS -->
-    <div *ngIf="activeTab === 'gains'" class="tab-panel">
+    <!-- ========== GAINS ========== -->
+    <div *ngIf="activeTab === 'gains' && !activeDeliveryView" class="tab-panel">
       <div class="page-header">
         <div>
           <h1>Mes gains</h1>
-          <p>Revenus de livraison (estimation)</p>
+          <p>Estimation basée sur vos livraisons réussies</p>
         </div>
       </div>
-      <div class="kpi-grid">
+      <div class="kpi-grid kpi-grid-3">
         <div class="kpi-card">
           <div class="kpi-top"><span class="kpi-label">Aujourd'hui</span><span class="kpi-icon success">💰</span></div>
           <div class="kpi-value">{{ earnings.today }} DT</div>
@@ -512,75 +337,21 @@
       </div>
       <div class="card">
         <div class="earnings-info">
-          <p>Estimation basée sur les livraisons réussies (tarif indicatif 2 DT / course).</p>
-          <p class="muted">Le COD client n’est pas un gain livreur. Contactez l’admin pour le bordereau exact.</p>
+          <p>{{ getCompletedList().length }} livraison(s) réussie(s) · tarif indicatif 2 DT / course.</p>
+          <p class="muted">Le COD client n'est pas un gain livreur. Contactez l'admin pour le bordereau exact.</p>
         </div>
       </div>
     </div>
 
-    <!-- VEHICULE -->
-    <div *ngIf="activeTab === 'vehicule'" class="tab-panel">
+    <!-- ========== PROFIL ========== -->
+    <div *ngIf="activeTab === 'profil' && !activeDeliveryView" class="tab-panel">
       <div class="page-header">
         <div>
-          <h1>Mes véhicules</h1>
-          <p>Flotte assignée par l'administrateur</p>
+          <h1>Mon profil</h1>
+          <p>Compte, véhicule et paramètres</p>
         </div>
       </div>
-      
-      <div class="card" *ngIf="assignedVehicles.length > 0">
-        <div class="vehicles-grid">
-          <div *ngFor="let vehicle of assignedVehicles" class="vehicle-card">
-            <div class="vehicle-header">
-              <span class="vehicle-icon">{{ vehicle.type === 'CAMION' ? '🚛' : (vehicle.type === 'CAMIONNETTE' ? '🛵' : '🚐') }}</span>
-              <div class="vehicle-title">
-                <h3>{{ vehicle.immatriculation }}</h3>
-                <span class="status-badge" [ngClass]="{'active': vehicle.statut === 'DISPONIBLE', 'pending': vehicle.statut === 'EN_SERVICE' || vehicle.statut === 'EN_COURSE', 'suspended': vehicle.statut === 'MAINTENANCE'}">
-                  {{ vehicle.statut }}
-                </span>
-              </div>
-            </div>
-            
-            <div class="vehicle-details">
-              <div class="detail-row">
-                <span class="label">Marque:</span>
-                <span class="value">{{ vehicle.marque || '—' }}</span>
-              </div>
-              <div class="detail-row">
-                <span class="label">Modèle:</span>
-                <span class="value">{{ vehicle.modele || '—' }}</span>
-              </div>
-              <div class="detail-row">
-                <span class="label">Type:</span>
-                <span class="value">{{ vehicle.type || '—' }}</span>
-              </div>
-              <div class="detail-row">
-                <span class="label">Capacité:</span>
-                <span class="value">{{ vehicle.capaciteKg || 0 }} Kg</span>
-              </div>
-              <div class="detail-row" *ngIf="vehicle.annee">
-                <span class="label">Année:</span>
-                <span class="value">{{ vehicle.annee }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="card empty-state" *ngIf="assignedVehicles.length === 0">
-        <div class="empty-icon">🚗</div>
-        <h3>Aucun véhicule assigné</h3>
-        <p>Contactez l'administrateur pour qu'un véhicule vous soit assigné.</p>
-      </div>
-    </div>
 
-    <!-- PARAMETRES -->
-    <div *ngIf="activeTab === 'parametres'" class="tab-panel">
-      <div class="page-header">
-        <div>
-          <h1>Paramètres</h1>
-          <p>Gérer votre compte</p>
-        </div>
-      </div>
       <div class="card">
         <div class="settings-section">
           <h3>Photo de profil</h3>
@@ -609,9 +380,55 @@
           </div>
         </div>
       </div>
+
+      <div class="card">
+        <div class="card-header"><h3>🚗 Mon véhicule</h3></div>
+        <div class="vehicles-grid" *ngIf="assignedVehicles.length > 0">
+          <div *ngFor="let vehicle of assignedVehicles" class="vehicle-card">
+            <div class="vehicle-header">
+              <span class="vehicle-icon">{{ vehicle.type === 'CAMION' ? '🚛' : (vehicle.type === 'CAMIONNETTE' ? '🛵' : '🚐') }}</span>
+              <div class="vehicle-title">
+                <h3>{{ vehicle.immatriculation }}</h3>
+                <span class="status-badge">{{ vehicle.statut }}</span>
+              </div>
+            </div>
+            <div class="vehicle-details">
+              <div class="detail-row"><span class="label">Marque</span><span class="value">{{ vehicle.marque || '—' }}</span></div>
+              <div class="detail-row"><span class="label">Modèle</span><span class="value">{{ vehicle.modele || '—' }}</span></div>
+              <div class="detail-row"><span class="label">Capacité</span><span class="value">{{ vehicle.capaciteKg || 0 }} Kg</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="empty-state compact" *ngIf="assignedVehicles.length === 0">
+          <div class="empty-icon">🚗</div>
+          <p>Aucun véhicule assigné. Contactez l'administrateur.</p>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-danger btn-block logout-btn" (click)="logout()">Déconnexion</button>
     </div>
 
   </main>
+
+  <!-- Bottom nav (mobile) -->
+  <nav class="bottom-nav" *ngIf="!activeDeliveryView">
+    <button type="button" [class.active]="activeTab === 'accueil'" (click)="setTab('accueil')">
+      <span class="nav-icon">🏠</span><span>Accueil</span>
+    </button>
+    <button type="button" [class.active]="activeTab === 'tournee'" (click)="setTab('tournee')">
+      <span class="nav-icon">📦</span><span>Tournée</span>
+      <span class="bottom-badge" *ngIf="getActiveTourneeCount() > 0">{{ getActiveTourneeCount() }}</span>
+    </button>
+    <button type="button" [class.active]="activeTab === 'carte'" (click)="setTab('carte')">
+      <span class="nav-icon">🗺️</span><span>Carte</span>
+    </button>
+    <button type="button" [class.active]="activeTab === 'gains'" (click)="setTab('gains')">
+      <span class="nav-icon">💰</span><span>Gains</span>
+    </button>
+    <button type="button" [class.active]="activeTab === 'profil'" (click)="setTab('profil')">
+      <span class="nav-icon">👤</span><span>Profil</span>
+    </button>
+  </nav>
 
   <!-- FAILURE MODAL -->
   <div *ngIf="showFailureModal" class="modal-overlay" (click)="annulerEchec()">
