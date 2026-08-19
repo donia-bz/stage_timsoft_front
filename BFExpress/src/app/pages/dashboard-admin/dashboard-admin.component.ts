@@ -2553,6 +2553,11 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   // ========== WEBSOCKET TRACKING ==========
   initializeWebSocket(): void {
     try {
+      // Déconnecter l'ancienne connexion si elle existe
+      this.disconnectWebSocket();
+      
+      this.showToast('Tentative de reconnexion WebSocket...', 'info');
+      
       this.socket = io(this.trackingServiceUrl);
       
       this.socket.on('connect', () => {
@@ -2560,6 +2565,20 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
         this.socket.emit('subscribe-positions');
         this.socket.emit('subscribe-admin-notifications');
         this.socket.emit('subscribe-manifest-updates');
+        
+        // Recharger les données après connexion
+        this.loadDepotsFromTracking();
+        this.loadDriverPositionsFromTracking();
+        
+        // Initialiser la carte si elle ne l'est pas déjà
+        if (!this.adminMap) {
+          this.initMapAdmin();
+        } else {
+          // Mettre à jour la carte avec les nouvelles données
+          this.updateMapWithRealData();
+        }
+        
+        this.showToast('WebSocket reconnecté avec succès', 'success');
       });
 
       this.socket.on('initial-positions', (positions: any[]) => {
@@ -2619,6 +2638,7 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
       this.socket.on('connect_error', (error) => {
         console.error('❌ Erreur WebSocket:', error);
+        this.showToast('Erreur de connexion WebSocket - Vérifiez que le service tracking est démarré', 'error');
       });
 
     } catch (error) {
@@ -2651,9 +2671,18 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
   // ========== MAP REAL DATA ==========
   updateMapWithRealData(): void {
-    if (!this.adminMap) return;
+    console.log('🗺️ Mise à jour de la carte avec les données réelles');
+    console.log('📍 adminMap existe:', !!this.adminMap);
+    console.log('📍 driverPositions:', this.driverPositions.length);
+    console.log('📍 depotsPositions:', this.depotsPositions.length);
+    
+    if (!this.adminMap) {
+      console.error('❌ adminMap n\'existe pas, initialisation annulée');
+      return;
+    }
 
     const L = (window as any).L;
+    console.log('📍 Leaflet L existe:', !!L);
     
     // Nettoyer les marqueurs existants
     this.adminMap.eachLayer((layer: any) => {
@@ -2663,9 +2692,12 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     });
 
     // Ajouter les marqueurs des livreurs avec couleurs par statut
-    this.driverPositions.forEach(driver => {
+    console.log('📍 Ajout des marqueurs livreurs...');
+    this.driverPositions.forEach((driver, index) => {
       const lat = driver.position?.latitude || 36.8065;
       const lon = driver.position?.longitude || 10.1815;
+      
+      console.log(`📍 Livreur ${index}: ${driver.nom} ${driver.prenom} - Position: [${lat}, ${lon}]`);
       
       const markerColor = this.getMarkerColorByStatus(driver.statut);
       const markerIcon = L.divIcon({
@@ -2689,9 +2721,12 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     });
 
     // Ajouter les dépôts
-    this.depotsPositions.forEach(depot => {
+    console.log('📍 Ajout des marqueurs dépôts...');
+    this.depotsPositions.forEach((depot, index) => {
       const lat = depot.position?.latitude || 36.8065;
       const lon = depot.position?.longitude || 10.1815;
+      
+      console.log(`📍 Dépôt ${index}: ${depot.nom} - Position: [${lat}, ${lon}]`);
       
       const depotIcon = L.divIcon({
         className: 'depot-marker',
@@ -2711,6 +2746,8 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
         .addTo(this.adminMap)
         .bindPopup(depotPopup);
     });
+    
+    console.log('✅ Mise à jour de la carte terminée');
   }
 
   updateMarkerPosition(data: any): void {
@@ -2873,6 +2910,21 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
       }
     } catch (error) {
       console.error('Erreur chargement dépôts:', error);
+    }
+  }
+
+  async loadDriverPositionsFromTracking(): Promise<void> {
+    try {
+      console.log('🔄 Chargement des positions depuis:', `${this.trackingServiceUrl}/api/positions`);
+      const response = await fetch(`${this.trackingServiceUrl}/api/positions`);
+      const positions = await response.json();
+      this.driverPositions = positions;
+      console.log('📍 Positions des livreurs chargées:', positions.length, positions);
+      if (this.activeTab === 'carte') {
+        this.updateMapWithRealData();
+      }
+    } catch (error) {
+      console.error('❌ Erreur chargement positions livreurs:', error);
     }
   }
 
