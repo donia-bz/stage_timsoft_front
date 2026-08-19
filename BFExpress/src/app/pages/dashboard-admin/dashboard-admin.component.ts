@@ -82,8 +82,8 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   showReclamationDetail = false;
   selectedReclamation: any = null;
   selectedReclamationAnalysis: any = null;
-  adminCommentaire = '';
-  
+  reponseClient = '';
+
   showResponseModal = false;
   showIAModal = false;
   activeResponseTab: 'FORMELLE' | 'EMPATHIQUE' | 'TECHNIQUE' = 'EMPATHIQUE';
@@ -2351,13 +2351,11 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     this.showToast(`Action: ${anomalie.actionRecommandee}`, 'info');
     // Implémenter l'action selon le type d'anomalie
   }
-
-  // ========== MODAL DÉTAIL RÉCLAMATION ==========
   
   voirDetailReclamation(reclamation: any): void {
     this.selectedReclamation = reclamation;
     this.selectedReclamationAnalysis = this.reclamationsAnalysis[reclamation.id] || this.analyserReclamationIA(reclamation);
-    this.adminCommentaire = reclamation.adminCommentaire || '';
+    this.reponseClient = reclamation.reponseAdmin || '';
     this.showReclamationDetail = true;
   }
 
@@ -2365,35 +2363,17 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     this.showReclamationDetail = false;
     this.selectedReclamation = null;
     this.selectedReclamationAnalysis = null;
-    this.adminCommentaire = '';
-  }
-
-  ajouterCommentaireAdmin(): void {
-    if (!this.selectedReclamation || !this.adminCommentaire.trim()) return;
-    
-    this.apiService.updateReclamation(this.selectedReclamation.id, {
-      ...this.selectedReclamation,
-      adminCommentaire: this.adminCommentaire
-    }).subscribe({
-      next: () => {
-        this.showToast('Commentaire ajouté', 'success');
-        this.refreshData();
-        this.closeReclamationDetail();
-      },
-      error: (err) => {
-        console.error('Error adding comment:', err);
-        this.showToast('Erreur lors de l\'ajout du commentaire', 'error');
-      }
-    });
+    this.reponseClient = '';
   }
 
   // ========== RÉPONSE IA ==========
-  
+
   genererReponseIA(reclamation: any): void {
     this.selectedReclamation = reclamation;
+    this.showReclamationDetail = false; // Fermer le panneau de détails
     this.showResponseModal = true;
     this.activeResponseTab = 'EMPATHIQUE';
-    
+
     // Préparer le contexte pour l'IA
     const contexte = {
       client_name: this.getReclamationClientName(reclamation.clientId),
@@ -2403,10 +2383,10 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
       probleme: this.reclamationsAnalysis[reclamation.id]?.problemeDetecte || 'Problème signalé',
       temps_estime: this.reclamationsAnalysis[reclamation.id]?.tempsResolutionEstime || 24
     };
-    
+
     // Générer les 3 types de réponses via API
     this.suggestedResponses = [];
-    
+
     // Générer réponse empathique par défaut
     this.apiService.genererReponseReclamation(
       reclamation.id,
@@ -2432,7 +2412,7 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
         this.responseText = this.getActiveResponseText();
       }
     });
-    
+
     // Générer les autres types en arrière-plan
     this.apiService.genererReponseReclamation(reclamation.id, 'FORMELLE', contexte).subscribe({
       next: (response) => {
@@ -2450,7 +2430,7 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
         });
       }
     });
-    
+
     this.apiService.genererReponseReclamation(reclamation.id, 'TECHNIQUE', contexte).subscribe({
       next: (response) => {
         this.suggestedResponses.push({
@@ -2473,14 +2453,14 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     const clientName = this.getReclamationClientName(reclamation.clientId);
     const ref = reclamation.commandeId || reclamation.codeBarre || 'votre commande';
     const probleme = this.reclamationsAnalysis[reclamation.id]?.problemeDetecte || 'votre réclamation';
-    
+
     return `Madame, Monsieur ${clientName},\n\nNous accusons réception de votre réclamation concernant ${probleme} (Réf: ${ref}).\n\nVotre dossier a été enregistré sous la référence ${reclamation.id?.substring(0, 8)} et est actuellement en cours de traitement par notre service client.\n\nNous vous informerons de l'avancement de votre dossier dans les plus brefs délais.\n\nCordialement,\nLe service client BFExpress`;
   }
 
   genererReponseEmpathique(reclamation: any): string {
     const clientName = this.getReclamationClientName(reclamation.clientId);
     const ref = reclamation.commandeId || reclamation.codeBarre || 'votre commande';
-    
+
     return `Cher/Chère ${clientName},\n\nNous sommes vraiment désolés d'apprendre votre mécontentement concernant votre commande ${ref}. Nous comprenons parfaitement votre situation et nous allons faire notre possible pour la résoudre rapidement.\n\nNotre équipe s'occupe personnellement de votre dossier (Réf: ${reclamation.id?.substring(0, 8)}) et vous recontactera dans les plus brefs délais.\n\nMerci de votre patience et de votre compréhension.\n\nBien cordialement,\nL'équipe BFExpress`;
   }
 
@@ -2488,7 +2468,7 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     const ref = reclamation.commandeId || reclamation.codeBarre || 'N/A';
     const statut = reclamation.statut || 'EN_ATTENTE';
     const probleme = this.reclamationsAnalysis[reclamation.id]?.problemeDetecte || 'Problème signalé';
-    
+
     return `Suivi technique - Réclamation ${reclamation.id?.substring(0, 8)}\n\nCommande concernée: ${ref}\nStatut actuel: ${statut}\nProblème identifié: ${probleme}\n\nActions en cours:\n- Vérification du statut de la commande\n- Analyse du parcours de livraison\n- Contact avec le livreur si nécessaire\n\nDélai estimé de résolution: ${this.reclamationsAnalysis[reclamation.id]?.tempsResolutionEstime || 24}h\n\nVous serez notifié automatiquement de la résolution.`;
   }
 
@@ -2515,23 +2495,44 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     const payload = {
       ...this.selectedReclamation,
       reponseAdmin: this.responseText,  // Réponse visible par le client
-      adminCommentaire: `Réponse envoyée via IA: ${this.responseText}`,  // Pour l'historique admin
       statut: 'EN_COURS',
       dateReponse: new Date().toISOString()
     };
 
-    console.log('📤 Envoi de la réponse admin:', payload);
+    console.log('📤 Envoi de la réponse IA:', payload);
 
-    // Envoyer la réponse IA/admin qui sera visible par le client
     this.apiService.updateReclamation(this.selectedReclamation.id, payload).subscribe({
       next: (response) => {
-        console.log('✅ Réponse envoyée avec succès:', response);
+        console.log('✅ Réponse IA envoyée avec succès:', response);
         this.showToast('Réponse envoyée au client avec succès', 'success');
         this.refreshData();
         this.closeResponseModal();
       },
       error: (err) => {
         console.error('❌ Erreur envoi réponse:', err);
+        this.showToast('Erreur lors de l\'envoi de la réponse', 'error');
+      }
+    });
+  }
+
+  envoyerReponseClient(): void {
+    if (!this.selectedReclamation || !this.reponseClient.trim()) return;
+
+    const payload = {
+      ...this.selectedReclamation,
+      reponseAdmin: this.reponseClient,
+      statut: 'EN_COURS',
+      dateReponse: new Date().toISOString()
+    };
+
+    this.apiService.updateReclamation(this.selectedReclamation.id, payload).subscribe({
+      next: () => {
+        this.showToast('Réponse envoyée au client', 'success');
+        this.refreshData();
+        this.reponseClient = '';
+      },
+      error: (err) => {
+        console.error('Error sending response:', err);
         this.showToast('Erreur lors de l\'envoi de la réponse', 'error');
       }
     });

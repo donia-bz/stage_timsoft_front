@@ -663,6 +663,9 @@
             <option value="PAIEMENT">Paiement</option>
             <option value="AUTRE">Autre</option>
           </select>
+          <button class="btn btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #6366f1); border: none;" (click)="analyserReclamationsIA()">
+            🤖 Analyser avec l'IA
+          </button>
         </div>
       </div>
 
@@ -676,6 +679,7 @@
                 <th>Type</th>
                 <th>Objet</th>
                 <th>Statut</th>
+                <th>IA Priorité</th>
                 <th>Date</th>
                 <th>Actions</th>
               </tr>
@@ -683,7 +687,7 @@
             <tbody>
               <tr *ngFor="let r of filteredReclamations">
                 <td class="mono">#{{ r.id?.substring(r.id.length - 6) || 'N/A' }}</td>
-                <td>{{ getClientNameForReclamation(r.clientId) }}</td>
+                <td>{{ getReclamationClientName(r.clientId) }}</td>
                 <td>
                   <span class="tag">{{ r.type }}</span>
                 </td>
@@ -693,13 +697,18 @@
                     {{ r.statut }}
                   </span>
                 </td>
+                <td>
+                  <span class="priority-badge" [ngClass]="getReclamationPriorityClass(r)">
+                    {{ getReclamationPriorityLabel(r) }} {{ getReclamationPriority(r) }}
+                  </span>
+                </td>
                 <td>{{ formatDate(r.dateCreation) }}</td>
                 <td class="actions">
-                  <button class="btn-icon" (click)="viewReclamationDetails(r)" title="Détails">👁️</button>
+                  <button class="btn-icon" (click)="voirDetailReclamation(r)" title="Détails">👁️</button>
                 </td>
               </tr>
               <tr *ngIf="filteredReclamations.length === 0">
-                <td colspan="7" class="empty">Aucune réclamation</td>
+                <td colspan="8" class="empty">Aucune réclamation</td>
               </tr>
             </tbody>
           </table>
@@ -896,15 +905,113 @@
         <p>{{ selectedReclamation.description }}</p>
       </div>
 
-      <div class="detail-section" *ngIf="selectedReclamation.adminCommentaire">
-        <h4>Commentaire admin</h4>
-        <p>{{ selectedReclamation.adminCommentaire }}</p>
+      <div class="detail-section" *ngIf="selectedReclamationAnalysis">
+        <h4>🤖 Analyse IA</h4>
+        <div class="ai-analysis">
+          <div class="ai-item">
+            <span class="ai-label">Sentiment</span>
+            <span class="ai-value" [ngClass]="selectedReclamationAnalysis.sentiment?.toLowerCase()">{{ selectedReclamationAnalysis.sentiment || 'NEUTRE' }}</span>
+          </div>
+          <div class="ai-item">
+            <span class="ai-label">Problème détecté</span>
+            <span class="ai-value">{{ selectedReclamationAnalysis.problemeDetecte || 'Non identifié' }}</span>
+          </div>
+          <div class="ai-item">
+            <span class="ai-label">Action recommandée</span>
+            <span class="ai-value">{{ selectedReclamationAnalysis.suggestionAction || 'Aucune' }}</span>
+          </div>
+          <div class="ai-item">
+            <span class="ai-label">Temps estimé</span>
+            <span class="ai-value">{{ selectedReclamationAnalysis.tempsResolutionEstime || 24 }}h</span>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="margin-top: 1rem; background: linear-gradient(135deg, #8b5cf6, #6366f1); border: none;" (click)="genererReponseIA(selectedReclamation)">
+          🤖 Générer réponse IA
+        </button>
       </div>
 
       <div class="detail-section">
         <h4>Répondre au client</h4>
-        <textarea [(ngModel)]="adminCommentaire" placeholder="Votre réponse..." rows="4"></textarea>
-        <button class="btn btn-primary" (click)="respondToReclamation()">Envoyer réponse</button>
+        <p class="muted">Cette réponse sera visible par le client</p>
+        <textarea [(ngModel)]="reponseClient" placeholder="Votre réponse au client..." rows="4"></textarea>
+        <button class="btn btn-primary" (click)="envoyerReponseClient()">Envoyer au client</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== AI ANOMALIES MODAL ========== -->
+  <div class="modal-overlay" *ngIf="showIAModal" (click)="closeIAModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>🤖 Analyse IA - Anomalies détectées</h3>
+        <button class="btn-icon" (click)="closeIAModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="analysis-summary">
+          <div class="summary-item">
+            <span class="label">Date</span>
+            <span class="value">{{ getCurrentDateTime() }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="label">Réclamations analysées</span>
+            <span class="value">{{ reclamations.length }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="label">Anomalies détectées</span>
+            <span class="value">{{ anomaliesDetectees.length }}</span>
+          </div>
+        </div>
+
+        <div class="anomalies-list" *ngIf="anomaliesDetectees.length > 0">
+          <div class="anomaly-card" *ngFor="let anomalie of anomaliesDetectees" [class.haut]="anomalie.niveau === 'HAUT'" [class.moyen]="anomalie.niveau === 'MOYEN'" [class.bas]="anomalie.niveau === 'BAS'">
+            <div class="anomaly-header">
+              <span class="anomaly-type">{{ anomalie.type }}</span>
+              <span class="anomaly-level" [ngClass]="anomalie.niveau?.toLowerCase()">{{ anomalie.niveau }}</span>
+            </div>
+            <div class="anomaly-description">{{ anomalie.description }}</div>
+            <div class="anomaly-action">
+              <span class="action-label">Action recommandée:</span>
+              <span class="action-text">{{ anomalie.actionRecommandee }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="empty" *ngIf="anomaliesDetectees.length === 0">
+          Aucune anomalie détectée. Tout semble normal !
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeIAModal()">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== AI RESPONSE MODAL ========== -->
+  <div class="modal-overlay" *ngIf="showResponseModal" (click)="closeResponseModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>🤖 Générer réponse IA</h3>
+        <button class="btn-icon" (click)="closeResponseModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="response-tabs">
+          <button class="tab-btn" [class.active]="activeResponseTab === 'FORMELLE'" (click)="activeResponseTab = 'FORMELLE'">Formelle</button>
+          <button class="tab-btn" [class.active]="activeResponseTab === 'EMPATHIQUE'" (click)="activeResponseTab = 'EMPATHIQUE'">Empathique</button>
+          <button class="tab-btn" [class.active]="activeResponseTab === 'TECHNIQUE'" (click)="activeResponseTab = 'TECHNIQUE'">Technique</button>
+        </div>
+
+        <div class="confidence-score" *ngIf="getActiveResponseConfidence() > 0">
+          Confiance IA: {{ getActiveResponseConfidence() }}%
+        </div>
+
+        <div class="response-content">
+          <textarea [(ngModel)]="responseText" rows="8" placeholder="La réponse IA apparaîtra ici..."></textarea>
+        </div>
+
+        <div class="response-actions">
+          <button class="btn btn-secondary" (click)="closeResponseModal()">Annuler</button>
+          <button class="btn btn-primary" (click)="envoyerReponse()">Envoyer la réponse</button>
+        </div>
       </div>
     </div>
   </div>
