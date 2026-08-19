@@ -1591,3 +1591,151 @@ tr.selected td {
   background: transparent;
   border: none;
 }
+
+// ========== LIVREURS LIST SIDEBAR STYLES ==========
+.livreurs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.livreur-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid $border;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  
+  &:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+}
+
+.livreur-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.livreur-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+
+.livreur-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  
+  strong {
+    font-size: 0.95rem;
+    color: $text;
+  }
+  
+  .muted {
+    font-size: 0.8rem;
+    color: $muted;
+  }
+}
+
+.livreur-gouvernorat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gouvernorat-display {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  
+  .gouvernorat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $muted;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .tag {
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #e0f2fe;
+    color: #0284c7;
+    
+    &.empty {
+      background: #f1f5f9;
+      color: $muted;
+    }
+  }
+}
+
+.gouvernorat-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  .small-select {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    border: 1px solid $border;
+    background: white;
+    outline: none;
+    min-width: 120px;
+    
+    &:focus {
+      border-color: $primary;
+      box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
+    }
+  }
+  
+  .btn-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    
+    &.success {
+      background: #d1fae5;
+      color: #059669;
+      
+      &:hover {
+        background: #10b981;
+        color: white;
+      }
+    }
+    
+    &.danger {
+      background: #fee2e2;
+      color: #b91c1c;
+      
+      &:hover {
+        background: #ef4444;
+        color: white;
+      }
+    }
+  }
+}

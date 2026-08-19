@@ -1017,6 +1017,51 @@
     </div>
   </div>
 
+  <!-- ========== SIDEBAR LISTE LIVREURS ========== -->
+  <div class="side-panel" *ngIf="showLivreursListSidebar" [class.open]="showLivreursListSidebar">
+    <div class="side-panel-header">
+      <h3>Liste des Livreurs</h3>
+      <button class="btn-icon" (click)="closeLivreursListSidebar()">✕</button>
+    </div>
+    <div class="side-panel-content">
+      <div class="detail-section">
+        <h4>Livreurs actifs</h4>
+        <div class="livreurs-list">
+          <div class="livreur-item" *ngFor="let livreur of livreursList">
+            <div class="livreur-info">
+              <div class="livreur-avatar" [style.background-color]="getAvatarColor(livreur.id)">
+                {{ getAvatarInitials(livreur) }}
+              </div>
+              <div class="livreur-details">
+                <strong>{{ livreur.prenom }} {{ livreur.nom }}</strong>
+                <div class="muted">{{ livreur.telephone || '—' }}</div>
+                <div class="muted">{{ livreur.email || '—' }}</div>
+              </div>
+            </div>
+            <div class="livreur-gouvernorat">
+              <div *ngIf="!editingLivreurGouvernorat[livreur.id]" class="gouvernorat-display">
+                <div class="gouvernorat-label">Gouvernorat:</div>
+                <span class="tag" [class.empty]="!livreur.gouvernorat">{{ livreur.gouvernorat || 'Non assigné' }}</span>
+                <button class="btn-icon" (click)="startEditLivreurGouvernorat(livreur.id)" title="Modifier gouvernorat">✏️</button>
+              </div>
+              <div *ngIf="editingLivreurGouvernorat[livreur.id]" class="gouvernorat-edit">
+                <select [(ngModel)]="livreur.gouvernorat" class="small-select">
+                  <option value="">Non assigné</option>
+                  <option *ngFor="let g of gouvernorats" [value]="g">{{ g }}</option>
+                </select>
+                <button class="btn-icon success" (click)="saveLivreurGouvernorat(livreur)" title="Sauvegarder">✓</button>
+                <button class="btn-icon danger" (click)="cancelEditLivreurGouvernorat(livreur.id)" title="Annuler">✕</button>
+              </div>
+            </div>
+          </div>
+          <div class="empty" *ngIf="livreursList.length === 0">
+            Aucun livreur disponible
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ========== TOASTS ========== -->
   <div class="toast-container">
     <div *ngFor="let toast of toasts" class="toast" [class.success]="toast.type === 'success'" [class.error]="toast.type === 'error'" [class.info]="toast.type === 'info'">

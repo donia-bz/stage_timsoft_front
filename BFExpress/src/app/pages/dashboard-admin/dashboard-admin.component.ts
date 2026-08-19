@@ -139,6 +139,11 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   userRoleFilter = '';
   userStatusFilter = '';
 
+  // Liste des livreurs filtrée depuis les utilisateurs
+  get livreursList(): UserProfile[] {
+    return this.usersList.filter(user => user.role === 'LIVREUR');
+  }
+
   livraisonsMap: { [orderId: string]: string } = {}; // orderId -> livreurId
   editingGouvernorat: { [livreurId: string]: boolean } = {}; // Pour l'édition inline du gouvernorat
   editingStatus: { [livreurId: string]: boolean } = {}; // Pour l'édition inline du statut
@@ -315,6 +320,7 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
   showPendingLivreurSidebar = false;
   showLivreursListSidebar = false;
+  editingLivreurGouvernorat: { [livreurId: string]: boolean } = {};
 
   selectedDrivers: { [key: string]: string } = {};
   aiPredictions: { [key: string]: { driverName: string; score: number } } = {};
@@ -729,6 +735,129 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
   closeLivreursListSidebar(): void {
     this.showLivreursListSidebar = false;
+  }
+
+  startEditLivreurGouvernorat(livreurId: string): void {
+    this.editingLivreurGouvernorat[livreurId] = true;
+  }
+
+  cancelEditLivreurGouvernorat(livreurId: string): void {
+    this.editingLivreurGouvernorat[livreurId] = false;
+  }
+
+  saveLivreurGouvernorat(livreur: Livreur): void {
+    if (!livreur.gouvernorat) {
+      this.showToast('Veuillez choisir un gouvernorat', 'error');
+      return;
+    }
+
+    const ancienGouvernorat = livreur.gouvernorat;
+    console.log('=== MISE À JOUR GOUVERNORAT LIVREUR ===');
+    console.log('Livreur ID:', livreur.id);
+    console.log('Livreur:', livreur.prenom, livreur.nom);
+    console.log('Ancien gouvernorat:', ancienGouvernorat);
+    console.log('Nouveau gouvernorat:', livreur.gouvernorat);
+
+    this.apiService.assignerGouvernoratLivreur(livreur.id || '', livreur.gouvernorat).subscribe({
+      next: (response) => {
+        console.log('Succès: Gouvernorat mis à jour via PATCH');
+        console.log('Réponse API:', response);
+        
+        // Mettre à jour directement dans usersList
+        const userIndex = this.usersList.findIndex(u => u.id === livreur.id);
+        console.log('Index utilisateur trouvé:', userIndex);
+        if (userIndex >= 0) {
+          console.log('Ancien gouvernorat dans usersList:', this.usersList[userIndex].gouvernorat);
+          this.usersList[userIndex].gouvernorat = livreur.gouvernorat;
+          console.log('Nouveau gouvernorat dans usersList:', this.usersList[userIndex].gouvernorat);
+          console.log('Gouvernorat mis à jour localement dans usersList');
+          
+          // Créer une nouvelle référence pour forcer la détection de changement Angular
+          this.usersList = [...this.usersList];
+        } else {
+          console.error('Utilisateur non trouvé dans usersList avec ID:', livreur.id);
+        }
+        
+        this.editingLivreurGouvernorat[livreur.id || ''] = false;
+        this.showToast('Gouvernorat mis à jour avec succès', 'success');
+      },
+      error: (err: any) => {
+        console.error('Erreur PATCH gouvernorat:', err);
+        console.error('Status:', err?.status);
+        
+        // Si 404, créer le livreur d'abord
+        if (err?.status === 404) {
+          console.log('Livreur non trouvé (404) - création en cours...');
+          const nouveauLivreur: Livreur = {
+            id: livreur.id,
+            nom: livreur.nom,
+            prenom: livreur.prenom,
+            email: livreur.email,
+            telephone: livreur.telephone,
+            gouvernorat: livreur.gouvernorat,
+            statut: livreur.statut || 'DISPONIBLE',
+            noteMoyenne: livreur.noteMoyenne || 5.0,
+            nombreLivraisons: livreur.nombreLivraisons || 0,
+            dateInscription: livreur.dateInscription || new Date().toISOString()
+          };
+
+          this.apiService.creerLivreur(nouveauLivreur).subscribe({
+            next: () => {
+              console.log('Succès: Livreur créé dans le service livreurs');
+              
+              // Mettre à jour dans usersList
+              const userIndex = this.usersList.findIndex(u => u.id === livreur.id);
+              if (userIndex >= 0) {
+                this.usersList[userIndex].gouvernorat = livreur.gouvernorat;
+                this.usersList = [...this.usersList];
+              }
+              
+              this.showToast('Livreur créé avec gouvernorat assigné', 'success');
+              this.editingLivreurGouvernorat[livreur.id || ''] = false;
+            },
+            error: (creationErr: any) => {
+              console.error('Erreur création livreur:', creationErr);
+              console.error('Status création:', creationErr?.status);
+              
+              // Si création échoue à cause de conflit (409), essayer PUT
+              if (creationErr?.status === 409) {
+                console.log('Conflit (409) - tentative de mise à jour via PUT');
+                this.apiService.updateLivreur(livreur.id || '', { gouvernorat: livreur.gouvernorat }).subscribe({
+                  next: () => {
+                    console.log('Succès: Livreur mis à jour via PUT');
+                    
+                    // Mettre à jour dans usersList
+                    const userIndex = this.usersList.findIndex(u => u.id === livreur.id);
+                    if (userIndex >= 0) {
+                      this.usersList[userIndex].gouvernorat = livreur.gouvernorat;
+                      this.usersList = [...this.usersList];
+                    }
+                    
+                    this.showToast('Gouvernorat mis à jour avec succès', 'success');
+                    this.editingLivreurGouvernorat[livreur.id || ''] = false;
+                  },
+                  error: (putErr: any) => {
+                    console.error('Erreur PUT:', putErr);
+                    this.showToast('Erreur lors de la mise à jour', 'error');
+                  }
+                });
+              } else {
+                this.showToast('Erreur lors de la création du livreur', 'error');
+              }
+            }
+          });
+        } else {
+          let errorMsg = `Erreur HTTP ${err?.status}` || 'Erreur inconnue';
+          if (!err?.status && err?.name === 'HttpErrorResponse') {
+            errorMsg = 'Erreur de connexion ou CORS';
+          }
+          console.error('Erreur non gérée:', errorMsg);
+          console.error('Type:', err?.name);
+          console.error('StatusText:', err?.statusText);
+          this.showToast('Erreur: ' + errorMsg, 'error');
+        }
+      }
+    });
   }
 
   openAddLivreurModal(): void {
