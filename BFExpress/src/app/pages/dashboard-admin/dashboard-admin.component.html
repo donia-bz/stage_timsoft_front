@@ -705,6 +705,7 @@
                 <td>{{ formatDate(r.dateCreation) }}</td>
                 <td class="actions">
                   <button class="btn-icon" (click)="voirDetailReclamation(r)" title="Détails">👁️</button>
+                  <button class="btn-icon" (click)="genererReponseIA(r)" title="Générer réponse IA">🤖</button>
                 </td>
               </tr>
               <tr *ngIf="filteredReclamations.length === 0">
