@@ -1,0 +1,38 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: BFExpress
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: npm
+          cache-dependency-path: BFExpress/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Angular
+        run: npm run build -- --configuration=production
+
+      - name: Build Docker image
+        run: docker build -t bfexpress-frontend:latest .
