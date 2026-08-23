@@ -7,6 +7,7 @@ import { ApiService, Commande } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { PdfService } from '../../services/pdf.service';
 import { WebSocketService } from '../../services/websocket.service';
+import { NotificationService } from '../../services/notification.service';
 import { io, Socket } from 'socket.io-client';
 import { Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -219,7 +220,8 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private router: Router,
     private pdfService: PdfService,
-    private webSocketService: WebSocketService
+    private webSocketService: WebSocketService,
+    private notificationService: NotificationService
   ) {
     this.initForms();
   }
@@ -240,6 +242,9 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
       this.startRealTimeUpdates();
       this.initializeTrackingSocket();
       this.updateServiceStats();
+
+      // Load notifications
+      this.notificationService.loadNotifications();
 
       // Rafraîchissement automatique des réclamations toutes les 30 secondes
       this.refreshInterval = setInterval(() => {

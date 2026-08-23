@@ -4,6 +4,7 @@ import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService, Commande, Livreur } from '../../services/api.service';
 import { AuthService, UserProfile } from '../../services/auth.service';
+import { NotificationService } from '../../services/notification.service';
 import { io, Socket } from 'socket.io-client';
 import { environment } from '../../../environments/environment';
 
@@ -422,13 +423,15 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   constructor(
     private apiService: ApiService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private notificationService: NotificationService
   ) {}
 
   ngOnInit(): void {
     this.refreshData();
     this.startRealTimeUpdates();
     this.initializeWebSocket();
+    this.notificationService.loadNotifications();
   }
 
   ngOnDestroy(): void {

@@ -42,12 +42,41 @@
         </a>
       </div>
       
-      <!-- Notification and Hamburger Menu for logged users -->
+      <!-- Hamburger Menu and Notifications for logged users -->
       <div class="logged-user-menu" *ngIf="authService.isLoggedIn()">
-        <button class="notification-btn">
+        <button class="notification-btn" (click)="toggleNotifications()">
           <span class="notification-icon">🔔</span>
-          <span class="notification-badge">3</span>
+          <span class="notification-badge" *ngIf="unreadCount > 0">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
         </button>
+        
+        <!-- Notifications Dropdown -->
+        <div class="notifications-dropdown" *ngIf="showNotifications">
+          <div class="notifications-header">
+            <h4>Notifications</h4>
+            <button class="mark-all-read-btn" (click)="markAllAsRead()" *ngIf="unreadCount > 0">
+              Tout marquer comme lu
+            </button>
+          </div>
+          
+          <div class="notifications-list" *ngIf="notifications.length > 0">
+            <div 
+              class="notification-item" 
+              [class.unread]="!notification.read"
+              *ngFor="let notification of notifications"
+              (click)="markAsRead(notification.id!); notification.actionLink && router.navigate([notification.actionLink])">
+              <div class="notification-content">
+                <p class="notification-message">{{ notification.message }}</p>
+                <span class="notification-time">{{ notification.createdAt | date:'short' }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="notifications-empty" *ngIf="notifications.length === 0">
+            <span class="empty-icon">📭</span>
+            <p>Aucune notification</p>
+          </div>
+        </div>
+        
         <button class="hamburger-menu" (click)="toggleMenu()">
           <span class="hamburger-icon">☰</span>
         </button>

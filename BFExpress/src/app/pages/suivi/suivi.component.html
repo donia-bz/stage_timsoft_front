@@ -7,13 +7,84 @@
         <p class="section-subtitle">Entrez votre numéro de suivi pour savoir où se trouve votre colis et recevoir un historique détaillé.</p>
       </div>
       <div class="form-card">
-        <form class="grid" style="gap:1rem;">
+        <form class="grid" style="gap:1rem;" (ngSubmit)="onSearch()">
           <div class="field-group">
             <label>Numéro de suivi</label>
-            <input type="text" placeholder="ex: 173890871951" />
+            <input type="text" placeholder="ex: 173890871951" [(ngModel)]="searchTerm" />
           </div>
-          <button type="submit" class="btn-primary">Suivre</button>
+          <button type="submit" class="btn-primary" [disabled]="loading">
+            {{ loading ? 'Recherche...' : 'Suivre' }}
+          </button>
         </form>
+      </div>
+    </div>
+
+    <div class="alert error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+    <div class="tracking-result" *ngIf="searchResult">
+      <div class="tracking-header">
+        <h3>Résultat de recherche</h3>
+        <div class="tracking-info">
+          <span class="tracking-ref">Référence: {{ searchResult.id?.substring(0, 8) || '—' }}</span>
+          <span class="tracking-status" [ngClass]="getStatusClass(searchResult.statut || '')">
+            {{ getStatusLabel(searchResult.statut || '') }}
+          </span>
+        </div>
+      </div>
+
+      <div class="tracking-details">
+        <div class="detail-row">
+          <span class="label">Destinataire:</span>
+          <span class="value">{{ searchResult.nomDestinataire || '—' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Adresse:</span>
+          <span class="value">{{ searchResult.adresseArrivee?.ville || '—' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">COD:</span>
+          <span class="value">{{ searchResult.montantTotal || 0 }} DT</span>
+        </div>
+      </div>
+
+      <div class="timeline">
+        <div class="timeline-step" [class.done]="isStatusReached('EN_ATTENTE', searchResult.statut || '')" [class.current]="searchResult.statut === 'EN_ATTENTE'">
+          <div class="dot"></div>
+          <div class="content">
+            <strong>En attente</strong>
+            <span>Commande créée</span>
+          </div>
+        </div>
+        <div class="timeline-step" [class.done]="isStatusReached('A_ENLEVER', searchResult.statut || '')" [class.current]="searchResult.statut === 'A_ENLEVER'">
+          <div class="dot"></div>
+          <div class="content">
+            <strong>À enlever</strong>
+            <span>Prêt pour enlèvement</span>
+          </div>
+        </div>
+        <div class="timeline-step" [class.done]="isStatusReached('EN_LIVRAISON', searchResult.statut || '')" [class.current]="searchResult.statut === 'EN_LIVRAISON'">
+          <div class="dot"></div>
+          <div class="content">
+            <strong>En livraison</strong>
+            <span>En tournée</span>
+          </div>
+        </div>
+        <div class="timeline-step" [class.done]="isStatusReached('ECHEC_LIVRAISON', searchResult.statut || '')" [class.current]="searchResult.statut === 'ECHEC_LIVRAISON'">
+          <div class="dot"></div>
+          <div class="content">
+            <strong>Échec livraison</strong>
+            <span *ngIf="searchResult.colis?.[0]?.raisonEchec">{{ searchResult.colis[0].raisonEchec }}</span>
+            <span *ngIf="searchResult.colis?.[0]?.descriptionEchec">{{ searchResult.colis[0].descriptionEchec }}</span>
+            <span *ngIf="!searchResult.colis?.[0]?.raisonEchec && !searchResult.colis?.[0]?.descriptionEchec">Livraison non effectuée</span>
+          </div>
+        </div>
+        <div class="timeline-step" [class.done]="isStatusReached('LIVRE', searchResult.statut || '') || isStatusReached('LIVRE_PAYE', searchResult.statut || '')" [class.current]="searchResult.statut === 'LIVRE' || searchResult.statut === 'LIVRE_PAYE'">
+          <div class="dot"></div>
+          <div class="content">
+            <strong>Livré</strong>
+            <span>Remis au destinataire</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>

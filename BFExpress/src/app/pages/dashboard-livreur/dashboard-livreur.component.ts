@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService, Livraison, Livreur, Commande } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { WebsocketSyncService } from '../../services/websocket-sync.service';
+import { NotificationService } from '../../services/notification.service';
 
 interface ToastMessage {
   id: number;
@@ -147,7 +148,8 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
     private apiService: ApiService,
     private authService: AuthService,
     private router: Router,
-    private websocketSync: WebsocketSyncService
+    private websocketSync: WebsocketSyncService,
+    private notificationService: NotificationService
   ) {}
 
   ngOnInit(): void {
@@ -169,6 +171,7 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
     this.loadDriverData();
     this.startPolling();
     this.initializeRealtimeSync();
+    this.notificationService.loadNotifications();
   }
 
   ngOnDestroy(): void {

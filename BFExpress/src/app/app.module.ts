@@ -26,6 +26,7 @@ import { AuthGuard } from './auth.guard';
 import { AuthAdminGuard } from './auth-admin.guard';
 import { AuthLivreurGuard } from './auth-livreur.guard';
 import { WebsocketSyncService } from './services/websocket-sync.service';
+import { NotificationService } from './services/notification.service';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -55,7 +56,6 @@ const routes: Routes = [
     ServicesComponent,
     FaqComponent,
     ContactComponent,
-    SuiviComponent,
     LoginComponent,
     DevenirClientComponent,
     DevenirLivreurComponent,
@@ -67,7 +67,8 @@ const routes: Routes = [
   imports: [BrowserModule, CommonModule, FormsModule, ReactiveFormsModule, HttpClientModule, RouterModule.forRoot(routes)],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
-    WebsocketSyncService
+    WebsocketSyncService,
+    NotificationService
   ],
   bootstrap: [AppComponent]
 })

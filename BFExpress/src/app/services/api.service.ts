@@ -144,6 +144,18 @@ export interface PositionTracking {
   horodatage: string;
 }
 
+export interface Notification {
+  id?: string;
+  userId: string;
+  role: string; // ADMIN, CLIENT, LIVREUR
+  type: string; // NEW_CLIENT, NEW_LIVREUR, NEW_COMMANDE, STATUS_CHANGE, DELIVERY_ASSIGNED, DELIVERY_SUCCESS, DELIVERY_FAILED, PAYMENT_RECEIVED, SYSTEM_ALERT
+  message: string;
+  read: boolean;
+  createdAt?: string;
+  relatedId?: string; // ID de l'entité liée (commandeId, livraisonId, etc.)
+  actionLink?: string; // Lien vers la page concernée
+}
+
 export interface PredictionDelai {
   id?: string;
   commandeId: string;
@@ -697,6 +709,37 @@ export class ApiService {
       reclamations: reclamations,
       days: periodeJours
     });
+  }
+
+  // ========== NOTIFICATIONS ==========
+  getNotifications(userId: string, role: string): Observable<Notification[]> {
+    return this.http.get<Notification[]>(`${this.commandesUrl}/notifications/user/${userId}`, {
+      params: new HttpParams().set('role', role)
+    });
+  }
+
+  getUnreadNotifications(userId: string, role: string): Observable<Notification[]> {
+    return this.http.get<Notification[]>(`${this.commandesUrl}/notifications/user/${userId}/unread`, {
+      params: new HttpParams().set('role', role)
+    });
+  }
+
+  markNotificationAsRead(notificationId: string): Observable<Notification> {
+    return this.http.patch<Notification>(`${this.commandesUrl}/notifications/${notificationId}/read`, null);
+  }
+
+  markAllNotificationsAsRead(userId: string, role: string): Observable<{ count: number }> {
+    return this.http.patch<{ count: number }>(`${this.commandesUrl}/notifications/user/${userId}/read-all`, null, {
+      params: new HttpParams().set('role', role)
+    });
+  }
+
+  createNotification(notification: Notification): Observable<Notification> {
+    return this.http.post<Notification>(`${this.commandesUrl}/notifications`, notification);
+  }
+
+  deleteNotification(notificationId: string): Observable<void> {
+    return this.http.delete<void>(`${this.commandesUrl}/notifications/${notificationId}`);
   }
 
   // --- Évaluations ---

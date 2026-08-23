@@ -806,56 +806,13 @@ async function initializeTestData() {
         position: { latitude: 35.8256, longitude: 10.6084 },
         capacite: 600,
         capaciteActuelle: 150,
-}
-];
+        statut: 'ACTIF'
+      }
+    ];
 
-await DriverPosition.insertMany(testDrivers);
-console.log('✅ Données de test initialisées');
-}
-
-const depotCount = await Depot.countDocuments();
-if (depotCount === 0) {
-console.log('📝 Initialisation des dépôts de test...');
-  
-const testDepots = [
-{
-id: 'DEP001',
-nom: 'Dépôt Tunis Centre',
-adresse: '123 Avenue Habib Bourguiba',
-ville: 'Tunis',
-gouvernorat: 'Tunis',
-position: { latitude: 36.8065, longitude: 10.1815 },
-capacite: 500,
-capaciteActuelle: 120,
-statut: 'ACTIF'
-},
-{
-id: 'DEP002',
-nom: 'Dépôt Sfax Sud',
-adresse: '45 Route de Gabès',
-ville: 'Sfax',
-gouvernorat: 'Sfax',
-position: { latitude: 34.7406, longitude: 10.7603 },
-capacite: 800,
-capaciteActuelle: 200,
-statut: 'ACTIF'
-},
-{
-id: 'DEP003',
-nom: 'Dépôt Sousse Nord',
-adresse: '78 Avenue du 2 Mars',
-ville: 'Sousse',
-gouvernorat: 'Sousse',
-position: { latitude: 35.8256, longitude: 10.6084 },
-capacite: 600,
-capaciteActuelle: 150,
-statut: 'ACTIF'
-}
-];
-
-await Depot.insertMany(testDepots);
-console.log('✅ Dépôts de test initialisés');
-}
+    await Depot.insertMany(testDepots);
+    console.log('✅ Dépôts de test initialisés');
+  }
 }
 
 // ========== WHATSAPP BUSINESS API ==========
@@ -865,117 +822,117 @@ const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || '';
 
 // Envoyer un message WhatsApp
 async function sendWhatsAppMessage(toPhone, message) {
-try {
-// Nettoyer le numéro de téléphone (format international sans +)
-const cleanPhone = toPhone.replace(/\D/g, '');
+  try {
+    // Nettoyer le numéro de téléphone (format international sans +)
+    const cleanPhone = toPhone.replace(/\D/g, '');
 
-const payload = {
-messaging_product: 'whatsapp',
-to: cleanPhone,
-type: 'text',
-text: {
-body: message
-}
-};
+    const payload = {
+      messaging_product: 'whatsapp',
+      to: cleanPhone,
+      type: 'text',
+      text: {
+        body: message
+      }
+    };
 
-const response = await axios.post(
-`${WHATSAPP_API_URL}/${WHATSAPP_PHONE_ID}/messages`,
-payload,
-{
-headers: {
-'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
-'Content-Type': 'application/json'
-}
-}
-);
+    const response = await axios.post(
+      `${WHATSAPP_API_URL}/${WHATSAPP_PHONE_ID}/messages`,
+      payload,
+      {
+        headers: {
+          'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
 
-console.log('✅ Message WhatsApp envoyé:', response.data);
-return { success: true, data: response.data };
-} catch (error) {
-console.error('❌ Erreur envoi WhatsApp:', error.response?.data || error.message);
-return { success: false, error: error.response?.data || error.message };
-}
+    console.log('✅ Message WhatsApp envoyé:', response.data);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error('❌ Erreur envoi WhatsApp:', error.response?.data || error.message);
+    return { success: false, error: error.response?.data || error.message };
+  }
 }
 
 // Endpoint pour envoyer une notification WhatsApp
 app.post('/api/whatsapp/send', async (req, res) => {
-const { phone, message, type, livraisonId } = req.body;
+  const { phone, message, type, livraisonId } = req.body;
 
-if (!phone || !message) {
-return res.status(400).json({ success: false, error: 'Phone et message requis' });
-}
+  if (!phone || !message) {
+    return res.status(400).json({ success: false, error: 'Phone et message requis' });
+  }
 
-const result = await sendWhatsAppMessage(phone, message);
+  const result = await sendWhatsAppMessage(phone, message);
 
-if (result.success) {
-// Log de la notification
-console.log(`📱 WhatsApp ${type} envoyé pour livraison ${livraisonId}`);
-res.json({ success: true, data: result.data });
-} else {
-res.status(500).json({ success: false, error: result.error });
-}
+  if (result.success) {
+    // Log de la notification
+    console.log(`📱 WhatsApp ${type} envoyé pour livraison ${livraisonId}`);
+    res.json({ success: true, data: result.data });
+  } else {
+    res.status(500).json({ success: false, error: result.error });
+  }
 });
 
 // Endpoint pour notifier le client (en route)
 app.post('/api/whatsapp/on-route', async (req, res) => {
-const { phone, clientName, livraisonRef, estimatedTime } = req.body;
+  const { phone, clientName, livraisonRef, estimatedTime } = req.body;
 
-const message = `🚚 *BFExpress - Votre colis est en route*\n\n` +
-`Bonjour ${clientName},\n\n` +
-`Votre livreur est en route pour vous livrer le colis ${livraisonRef}.\n` +
-`Temps estimé: ${estimatedTime || '15-30 minutes'}\n\n` +
-`Vous pouvez suivre sa position en temps réel sur votre dashboard.\n\n` +
-`Merci de votre confiance ! 📦`;
+  const message = `🚚 *BFExpress - Votre colis est en route*\n\n` +
+    `Bonjour ${clientName},\n\n` +
+    `Votre livreur est en route pour vous livrer le colis ${livraisonRef}.\n` +
+    `Temps estimé: ${estimatedTime || '15-30 minutes'}\n\n` +
+    `Vous pouvez suivre sa position en temps réel sur votre dashboard.\n\n` +
+    `Merci de votre confiance ! 📦`;
 
-const result = await sendWhatsAppMessage(phone, message);
-res.json(result);
+  const result = await sendWhatsAppMessage(phone, message);
+  res.json(result);
 });
 
 // Endpoint pour notifier le client (livré)
 app.post('/api/whatsapp/delivered', async (req, res) => {
-const { phone, clientName, livraisonRef } = req.body;
+  const { phone, clientName, livraisonRef } = req.body;
 
-const message = `✅ *BFExpress - Colis livré avec succès*\n\n` +
-`Bonjour ${clientName},\n\n` +
-`Votre colis ${livraisonRef} a été livré avec succès.\n\n` +
-`Merci d'avoir choisi BFExpress ! 🎉\n\n` +
-`Pour toute réclamation, contactez notre support.`;
+  const message = `✅ *BFExpress - Colis livré avec succès*\n\n` +
+    `Bonjour ${clientName},\n\n` +
+    `Votre colis ${livraisonRef} a été livré avec succès.\n\n` +
+    `Merci d'avoir choisi BFExpress ! 🎉\n\n` +
+    `Pour toute réclamation, contactez notre support.`;
 
-const result = await sendWhatsAppMessage(phone, message);
-res.json(result);
+  const result = await sendWhatsAppMessage(phone, message);
+  res.json(result);
 });
 
 // Endpoint pour notifier le client (échec)
 app.post('/api/whatsapp/failed', async (req, res) => {
-const { phone, clientName, livraisonRef, reason } = req.body;
+  const { phone, clientName, livraisonRef, reason } = req.body;
 
-const reasonMessages = {
-'CLIENT_ABSENT': 'Le client était absent à l\'adresse indiquée.',
-'ADDRESS_INCORRECT': 'L\'adresse fournie est incorrecte ou incomplète.',
-'CLIENT_REFUSED': 'Le client a refusé la livraison.',
-'NO_ACCESS': 'Accès impossible à l\'adresse (bâtiment fermé, etc.).',
-'OTHER': 'Problème lors de la tentative de livraison.'
-};
+  const reasonMessages = {
+    'CLIENT_ABSENT': 'Le client était absent à l\'adresse indiquée.',
+    'ADDRESS_INCORRECT': 'L\'adresse fournie est incorrecte ou incomplète.',
+    'CLIENT_REFUSED': 'Le client a refusé la livraison.',
+    'NO_ACCESS': 'Accès impossible à l\'adresse (bâtiment fermé, etc.).',
+    'OTHER': 'Problème lors de la tentative de livraison.'
+  };
 
-const reasonText = reasonMessages[reason] || reasonMessages['OTHER'];
+  const reasonText = reasonMessages[reason] || reasonMessages['OTHER'];
 
-const message = `⚠️ *BFExpress - Problème de livraison*\n\n` +
-`Bonjour ${clientName},\n\n` +
-`Nous n'avons pas pu livrer votre colis ${livraisonRef}.\n\n` +
-`Raison: ${reasonText}\n\n` +
-`Veuillez nous contacter pour réorganiser la livraison.\n` +
-`Tél: +216 XX XXX XXX\n\n` +
-`Nous nous excusons pour la gêne occasionnée.`;
+  const message = `⚠️ *BFExpress - Problème de livraison*\n\n` +
+    `Bonjour ${clientName},\n\n` +
+    `Nous n'avons pas pu livrer votre colis ${livraisonRef}.\n\n` +
+    `Raison: ${reasonText}\n\n` +
+    `Veuillez nous contacter pour réorganiser la livraison.\n` +
+    `Tél: +216 XX XXX XXX\n\n` +
+    `Nous nous excusons pour la gêne occasionnée.`;
 
-const result = await sendWhatsAppMessage(phone, message);
-res.json(result);
+  const result = await sendWhatsAppMessage(phone, message);
+  res.json(result);
 });
 
 // Démarrage du serveur
 server.listen(PORT, async () => {
-console.log(`🚀 Tracking Service démarré sur le port ${PORT}`);
-console.log(`🔌 WebSocket ready`);
-await initializeTestData();
+  console.log(`🚀 Tracking Service démarré sur le port ${PORT}`);
+  console.log(`🔌 WebSocket ready`);
+  await initializeTestData();
 });
 
 module.exports = { app, server, io };
