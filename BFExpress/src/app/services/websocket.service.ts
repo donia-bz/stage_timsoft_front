@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -17,8 +18,9 @@ export class WebSocketService {
     }
 
     console.log('🔌 Connexion WebSocket pour client:', clientId);
+    console.log('🔌 URL WebSocket:', environment.trackingWsUrl);
 
-    this.socket = io('http://localhost:8086', {
+    this.socket = io(environment.trackingWsUrl, {
       query: { clientId },
       transports: ['websocket']
     });

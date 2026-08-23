@@ -1,13 +1,13 @@
-$primary: #0ea5e9;
-$teal: #14b8a6;
-$purple: #8b5cf6;
+$primary: #1e3a5f;
+$secondary: #c9a227;
+$accent: #2d5a87;
 $success: #10b981;
 $warning: #f59e0b;
 $danger: #ef4444;
-$text: #0f172a;
+$text: #1a1a2e;
 $muted: #64748b;
 $border: #e2e8f0;
-$bg: #f1f5f9;
+$bg: #f8fafc;
 $sidebar-w: 280px;
 
 * { box-sizing: border-box; }
@@ -16,7 +16,7 @@ $sidebar-w: 280px;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f5f3ff 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 50%, #f8fafc 100%);
   font-family: Inter, system-ui, sans-serif;
   color: $text;
 }
@@ -24,7 +24,7 @@ $sidebar-w: 280px;
 .admin-topbar {
   width: 100%;
   height: 70px;
-  background: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 50%, #8b5cf6 100%);
+  background: linear-gradient(135deg, $primary 0%, $accent 50%, #1e4a6f 100%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
@@ -43,19 +43,37 @@ $sidebar-w: 280px;
   gap: 0.8rem;
 }
 
+.brand-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.brand-text {
+  font-weight: 800;
+  color: white;
+  font-size: 1.2rem;
+}
+
 .admin-sidebar {
   width: $sidebar-w;
   min-width: $sidebar-w;
-  background: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 50%, #8b5cf6 100%);
+  background: linear-gradient(135deg, $primary 0%, $accent 50%, #1e4a6f 100%);
   border-right: 1px solid rgba(255, 255, 255, 0.2);
   color: white;
   position: fixed;
-  inset: 70px auto 0 0;
+  top: 70px;
+  left: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   padding: 1.5rem 1.25rem;
-  z-index: 100;
+  z-index: 150;
   overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
@@ -220,7 +238,7 @@ $sidebar-w: 280px;
   display: grid; grid-template-columns: 110px 1fr 40px; gap: 0.75rem; align-items: center;
   .bar-label { font-size: 0.8rem; color: $muted; font-weight: 600; }
   .bar-track { height: 8px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
-  .bar-fill { height: 100%; background: linear-gradient(90deg, $primary, $teal); }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, $primary, $secondary); }
   .bar-count { font-weight: 800; font-size: 0.85rem; text-align: right; }
 }
 
@@ -228,7 +246,7 @@ $sidebar-w: 280px;
   display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
   padding: 0.65rem 1.1rem; border-radius: 10px; font-weight: 700; font-size: 0.88rem;
   border: none; cursor: pointer;
-  &.btn-primary { background: $primary; color: white; &:hover { background: #0284c7; } }
+  &.btn-primary { background: $primary; color: white; &:hover { background: $accent; } }
   &.btn-secondary { background: white; color: $text; border: 1px solid $border; }
   &.btn-warning { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; &:hover { background: linear-gradient(135deg, #d97706, #b45309); } }
   &.btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; &:hover { background: linear-gradient(135deg, #dc2626, #b91c1c); } }
@@ -356,6 +374,7 @@ $sidebar-w: 280px;
     background: #d1fae5;
     color: #065f46;
     border: 1px solid #6ee7b7;
+    font-weight: 800;
   }
   
   &.pending {
@@ -397,7 +416,7 @@ $sidebar-w: 280px;
 .depot-card.over { border-color: #fecaca; background: #fff7f7; }
 .progress-bar {
   height: 8px; background: #e2e8f0; border-radius: 99px; overflow: hidden; margin: 0.75rem 0;
-  .progress-fill { height: 100%; background: linear-gradient(90deg, $primary, $teal); }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, $primary, $secondary); }
 }
 
 .map-wrapper { position: relative; height: 480px; border-radius: 12px; overflow: hidden; }
@@ -1324,7 +1343,7 @@ tr.selected td {
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    background: linear-gradient(135deg, $primary, $teal);
+    background: linear-gradient(135deg, $primary, $secondary);
     color: white;
     font-weight: 800;
     display: flex;
@@ -2088,7 +2107,7 @@ tr.selected td {
 
   .depot-icon {
     font-size: 1.8rem;
-    background: linear-gradient(135deg, $primary, $purple);
+    background: linear-gradient(135deg, $primary, $accent);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }

@@ -3,17 +3,30 @@
   <!-- TOP HORIZONTAL BAR -->
   <header class="admin-topbar">
     <div class="topbar-brand">
-      <div class="brand-logo">⚡</div>
-      <div class="brand-info">
-        <span class="brand-text">BFExpress</span>
-        <span class="brand-sub">Administration</span>
-      </div>
+      <span class="brand-logo">⚡</span>
+      <span class="brand-text">First Delivery</span>
     </div>
   </header>
 
   <!-- SIDEBAR -->
   <aside class="admin-sidebar">
     <div class="sidebar-top">
+      <div class="brand">
+        <div class="brand-logo">⚡</div>
+        <div>
+          <span class="brand-text">First Delivery</span>
+          <span class="brand-sub">Admin Panel</span>
+        </div>
+      </div>
+
+      <div class="user-card">
+        <div class="user-avatar">A</div>
+        <div>
+          <div class="user-name">Admin</div>
+          <div class="user-role">Administrateur</div>
+        </div>
+      </div>
+
       <nav class="sidebar-nav">
         <div class="nav-group">
           <div class="nav-label">Principal</div>
@@ -68,12 +81,13 @@
         <h1 *ngIf="activeTab === 'stats'">Tableau de bord</h1>
         <h1 *ngIf="activeTab === 'commandes'">Commandes</h1>
         <h1 *ngIf="activeTab === 'manifests'">Manifestes</h1>
-        <h1 *ngIf="activeTab === 'vehicules'">Flotte</h1>
+        <h1 *ngIf="activeTab === 'livreurs'">Livreurs</h1>
+        <h1 *ngIf="activeTab === 'vehicules'">Véhicules</h1>
         <h1 *ngIf="activeTab === 'depots'">Dépôts</h1>
         <h1 *ngIf="activeTab === 'inscriptions'">Utilisateurs</h1>
         <h1 *ngIf="activeTab === 'reclamations'">Réclamations</h1>
         <h1 *ngIf="activeTab === 'carte'">Carte live</h1>
-        <p>Centre de contrôle BFExpress — First Delivery / Navex</p>
+        <p>Centre de contrôle — First Delivery / Navex</p>
       </div>
       <div class="header-actions">
         <button class="btn btn-secondary" (click)="refreshData()">Actualiser</button>
@@ -214,21 +228,20 @@
                 </td>
                 <td>
                   <div class="dispatch-status">
-                    <span *ngIf="order.dispatched" class="dispatch-badge dispatched">✓ Dispatché</span>
-                    <span *ngIf="!order.dispatched && isOrderPending(order)" class="dispatch-badge pending">En attente</span>
-                    <span *ngIf="!order.dispatched && !isOrderPending(order)" class="dispatch-badge manual">Manuel</span>
+                    <span *ngIf="getAssignedDriverNameForOrder(order.id)" class="dispatch-badge dispatched"><strong>{{ getAssignedDriverNameForOrder(order.id) }}</strong></span>
+                    <span *ngIf="!getAssignedDriverNameForOrder(order.id) && isOrderPending(order)" class="dispatch-badge pending">En attente</span>
+                    <span *ngIf="!getAssignedDriverNameForOrder(order.id) && !isOrderPending(order)" class="dispatch-badge manual">Manuel</span>
                   </div>
-                  <div class="dispatch" *ngIf="isOrderPending(order)">
+                  <div class="dispatch" *ngIf="!getAssignedDriverNameForOrder(order.id)">
                     <select [ngModel]="getSelectedDriverForOrder(order.id)" (ngModelChange)="setSelectedDriverForOrder(order.id, $event)">
                       <option value="">Livreur...</option>
-                      <option *ngFor="let l of getAvailableDrivers()" [value]="l.id">
+                      <option *ngFor="let l of livreursList" [value]="l.id">
                         {{ l.prenom }} {{ l.nom }} ({{ l.gouvernorat || '—' }})
                       </option>
                     </select>
                     <button class="btn btn-primary btn-sm" (click)="assignDriverManually(order)">Affecter</button>
                     <button class="btn btn-secondary btn-sm" (click)="assignDriverAI(order)">IA</button>
                   </div>
-                  <div *ngIf="!isOrderPending(order)" class="muted">Affectée à <strong>{{ getAssignedDriverNameForOrder(order.id) }}</strong></div>
                   <button class="btn-link" (click)="openHistory(order)">Historique</button>
                 </td>
               </tr>

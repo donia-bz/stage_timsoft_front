@@ -1,7 +1,7 @@
 /* Page Section */
 .page-section {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 50%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 50%, #c9a227 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -107,8 +107,8 @@ form {
 .field-group input:focus,
 .field-group textarea:focus {
   outline: none;
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+  border-color: #1e3a5f;
+  box-shadow: 0 0 0 4px rgba(30, 58, 95, 0.1);
 }
 
 .field-group input::placeholder,
@@ -124,21 +124,21 @@ form {
 /* Buttons */
 .btn-primary {
   padding: 1rem 2rem;
-  background: linear-gradient(135deg, #0ea5e9, #14b8a6);
-  color: white;
+  background: linear-gradient(135deg, #c9a227, #d4af37);
+  color: #1e3a5f;
   border: none;
   border-radius: 12px;
   font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 8px 24px rgba(14, 165, 233, 0.3);
+  box-shadow: 0 8px 24px rgba(201, 162, 39, 0.3);
   margin-top: 1rem;
 }
 
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(14, 165, 233, 0.4);
+  box-shadow: 0 12px 32px rgba(201, 162, 39, 0.4);
 }
 
 .btn-primary:disabled {

@@ -25,14 +25,14 @@ export class PdfService {
     pdf.setFillColor(240, 249, 255);
     pdf.rect(0, 0, 100, 150, 'F');
 
-    // En-tête BFExpress
+    // En-tête
     pdf.setFillColor(14, 165, 233);
     pdf.rect(0, 0, 100, 25, 'F');
     
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(16);
     pdf.setFont('helvetica', 'bold');
-    pdf.text('BFExpress', 50, 12, { align: 'center' });
+    pdf.text('First Delivery', 50, 12, { align: 'center' });
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
@@ -187,7 +187,7 @@ export class PdfService {
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(24);
     pdf.setFont('helvetica', 'bold');
-    pdf.text('BFExpress', 105, 15, { align: 'center' });
+    pdf.text('First Delivery', 105, 15, { align: 'center' });
     
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'normal');
@@ -295,7 +295,7 @@ export class PdfService {
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
-    pdf.text('BFExpress - Service de Livraison Professionnel', 105, footerY + 5, { align: 'center' });
+    pdf.text('First Delivery - Service de Livraison Professionnel', 105, footerY + 5, { align: 'center' });
     pdf.text(`${new Date().toLocaleDateString('fr-FR')} ${new Date().toLocaleTimeString('fr-FR')}`, 105, footerY + 12, { align: 'center' });
     pdf.text('Document généré automatiquement', 105, footerY + 19, { align: 'center' });
 

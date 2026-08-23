@@ -15,8 +15,13 @@ export class WebsocketSyncService {
   }
 
   private initializeConnections(): void {
+    console.log('🔌 Initialisation des connexions WebSocket...');
+    console.log('🔌 Livreurs URL:', environment.livreursWsUrl);
+    console.log('🔌 Véhicules URL:', environment.vehiclesWsUrl);
+    console.log('🔌 Tracking URL:', environment.trackingWsUrl);
+
     // Connexion au service livreurs
-    this.livreursSocket = io((environment as any).livreursWsUrl || 'http://localhost:8084', {
+    this.livreursSocket = io(environment.livreursWsUrl, {
       transports: ['websocket'],
       reconnection: true,
       reconnectionDelay: 1000,
@@ -34,7 +39,7 @@ export class WebsocketSyncService {
     });
 
     // Connexion au service véhicules
-    this.vehiclesSocket = io((environment as any).vehiclesWsUrl || 'http://localhost:8086', {
+    this.vehiclesSocket = io(environment.vehiclesWsUrl, {
       transports: ['websocket'],
       reconnection: true,
       reconnectionDelay: 1000,
@@ -52,7 +57,7 @@ export class WebsocketSyncService {
     });
 
     // Connexion au service tracking (déjà existant)
-    this.trackingSocket = io((environment as any).trackingWsUrl || 'http://localhost:8088', {
+    this.trackingSocket = io(environment.trackingWsUrl, {
       transports: ['websocket'],
       reconnection: true,
       reconnectionDelay: 1000,

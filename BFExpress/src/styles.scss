@@ -1,24 +1,24 @@
 :root {
   color-scheme: light;
-  --bg: #f3f6fb;
+  --bg: #f8fafc;
   --surface: #ffffff;
   --surface-strong: #edf2f7;
-  --surface-soft: #f8fbff;
-  --text: #0f172a;
+  --surface-soft: #f8fafc;
+  --text: #1a1a2e;
   --muted: #64748b;
-  --brand: #0c4a6e;
-  --brand-soft: #7dd3fc;
-  --accent: #14b8a6;
-  --accent-strong: #0f766e;
-  --border: #dbeafe;
+  --brand: #1e3a5f;
+  --brand-soft: #c9a227;
+  --accent: #2d5a87;
+  --accent-strong: #1e3a5f;
+  --border: #e2e8f0;
   --shadow: 0 24px 80px rgba(15, 23, 42, 0.08);
   --radius: 24px;
   
-  /* Modern gradient colors */
-  --primary: #0ea5e9;
-  --primary-dark: #0284c7;
-  --secondary: #14b8a6;
-  --dark: #0f172a;
+  /* Premium Professional gradient colors */
+  --primary: #1e3a5f;
+  --primary-dark: #2d5a87;
+  --secondary: #c9a227;
+  --dark: #1a1a2e;
   --light: #f8fafc;
   --gray: #64748b;
 }
@@ -36,7 +36,7 @@ body {
   min-height: 100vh;
   color: var(--text);
   font-family: Inter, 'Segoe UI', sans-serif;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  background: var(--bg);
 }
 
 button,
@@ -149,7 +149,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+  box-shadow: 0 0 0 4px rgba(30, 58, 95, 0.1);
 }
 
 textarea {
@@ -173,7 +173,7 @@ button:hover {
 .btn-primary {
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: white;
-  box-shadow: 0 20px 40px rgba(14, 165, 233, 0.3);
+  box-shadow: 0 20px 40px rgba(30, 58, 95, 0.3);
 }
 
 .btn-secondary {
@@ -193,7 +193,7 @@ button:hover {
   align-items: center;
   padding: 0.5rem 1.25rem;
   border-radius: 50px;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(20, 184, 166, 0.1));
+  background: linear-gradient(135deg, rgba(30, 58, 95, 0.1), rgba(201, 162, 39, 0.1));
   border: 2px solid var(--primary);
   color: var(--primary);
   font-weight: 700;
@@ -203,7 +203,7 @@ button:hover {
 }
 
 .hero-card {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.16), rgba(16, 185, 129, 0.12));
+  background: linear-gradient(135deg, rgba(30, 58, 95, 0.16), rgba(201, 162, 39, 0.12));
 }
 
 .info-panel {

@@ -3,17 +3,22 @@
   <!-- TOP HORIZONTAL BAR -->
   <header class="client-topbar">
     <div class="topbar-brand">
-      <div class="brand-logo">⚡</div>
-      <div class="brand-info">
-        <span class="brand-text">BFExpress</span>
-        <span class="brand-sub">Espace expéditeur</span>
-      </div>
+      <span class="brand-logo">⚡</span>
+      <span class="brand-text">First Delivery</span>
     </div>
   </header>
 
   <!-- SIDEBAR -->
   <aside class="dashboard-sidebar">
     <div class="sidebar-top">
+      <div class="brand">
+        <div class="brand-logo">⚡</div>
+        <div>
+          <span class="brand-text">First Delivery</span>
+          <span class="brand-sub">Client Panel</span>
+        </div>
+      </div>
+
       <div class="user-card">
         <div class="user-avatar">{{ clientName.charAt(0) }}</div>
         <div class="user-info">
@@ -594,6 +599,15 @@
             <div class="content">
               <strong>En livraison</strong>
               <span>En tournée</span>
+            </div>
+          </div>
+          <div class="timeline-step" [class.done]="isStatusReached('ECHEC_LIVRAISON', searchResult.statut || '')" [class.current]="searchResult.statut === 'ECHEC_LIVRAISON'">
+            <div class="dot"></div>
+            <div class="content">
+              <strong>Échec livraison</strong>
+              <span *ngIf="searchResult.colis?.[0]?.raisonEchec">{{ searchResult.colis[0].raisonEchec }}</span>
+              <span *ngIf="searchResult.colis?.[0]?.descriptionEchec">{{ searchResult.colis[0].descriptionEchec }}</span>
+              <span *ngIf="!searchResult.colis?.[0]?.raisonEchec && !searchResult.colis?.[0]?.descriptionEchec">Livraison non effectuée</span>
             </div>
           </div>
           <div class="timeline-step" [class.done]="isStatusReached('LIVRE', searchResult.statut || '') || isStatusReached('LIVRE_PAYE', searchResult.statut || '')" [class.current]="searchResult.statut === 'LIVRE' || searchResult.statut === 'LIVRE_PAYE'">

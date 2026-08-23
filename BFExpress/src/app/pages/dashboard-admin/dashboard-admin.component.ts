@@ -141,7 +141,13 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
   // Liste des livreurs filtrée depuis les utilisateurs
   get livreursList(): UserProfile[] {
-    return this.usersList.filter(user => user.role === 'LIVREUR');
+    console.log('=== livreursList getter ===');
+    console.log('usersList:', this.usersList);
+    console.log('Nombre total users:', this.usersList.length);
+    const livreurs = this.usersList.filter(user => user.role === 'LIVREUR');
+    console.log('Livreurs filtrés:', livreurs);
+    console.log('Nombre livreurs:', livreurs.length);
+    return livreurs;
   }
 
   livraisonsMap: { [orderId: string]: string } = {}; // orderId -> livreurId
@@ -150,10 +156,53 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
   getAssignedDriverNameForOrder(orderId?: string): string {
     if (!orderId) return '';
-    const livreurId = this.livraisonsMap[orderId];
+    
+    console.log('=== getAssignedDriverNameForOrder ===');
+    console.log('OrderId:', orderId);
+    console.log('livraisonsMap:', this.livraisonsMap);
+    
+    // 1. Try direct mapping (orderId itself might be the key, e.g. for old data or fallback)
+    let livreurId = this.livraisonsMap[orderId];
+    console.log('LivreurId direct (orderId):', livreurId);
+    
+    // 2. Try looking up through the colis of the command
+    if (!livreurId) {
+      const order = this.commandes.find(c => c.id === orderId);
+      console.log('Order trouvé:', order);
+      if (order && order.colis && order.colis.length > 0) {
+        console.log('Colis de la commande:', order.colis);
+        for (const col of order.colis) {
+          console.log('Vérification colis:', col.id, 'livraisonsMap[col.id]:', this.livraisonsMap[col.id]);
+          if (col.id && this.livraisonsMap[col.id]) {
+            livreurId = this.livraisonsMap[col.id];
+            console.log('LivreurId trouvé via colis:', livreurId);
+            break;
+          }
+        }
+      }
+    }
+    
+    console.log('LivreurId final:', livreurId);
     if (!livreurId) return '';
-    const livreur = this.livreurs.find(l => l.id === livreurId);
-    return livreur ? `${livreur.prenom} ${livreur.nom}` : 'Livreur inconnu';
+    
+    // Chercher d'abord dans livreursList (auth-service - utilisateurs avec rôle LIVREUR)
+    console.log('Recherche dans livreursList...');
+    const userLivreur = this.livreursList.find(u => u.id === livreurId);
+    if (userLivreur) {
+      console.log('Livreur trouvé dans livreursList:', userLivreur.prenom, userLivreur.nom);
+      return `${userLivreur.prenom} ${userLivreur.nom}`;
+    }
+    
+    // Si pas trouvé, chercher dans livreurs (livreurs-service)
+    console.log('Recherche dans livreurs...');
+    const serviceLivreur = this.livreurs.find(l => l.id === livreurId);
+    if (serviceLivreur) {
+      console.log('Livreur trouvé dans livreurs:', serviceLivreur.prenom, serviceLivreur.nom);
+      return `${serviceLivreur.prenom} ${serviceLivreur.nom}`;
+    }
+    
+    console.log('Livreur non trouvé');
+    return 'Livreur inconnu';
   }
 
   startEditGouvernorat(livreurId: string): void {
@@ -212,11 +261,6 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   }
 
   saveGouvernorat(livreur: Livreur): void {
-    if (!livreur.gouvernorat) {
-      this.showToast('Veuillez choisir un gouvernorat', 'error');
-      return;
-    }
-
     console.log('=== MISE À JOUR GOUVERNORAT ===');
     console.log('Livreur ID:', livreur.id);
     console.log('Nouveau gouvernorat:', livreur.gouvernorat);
@@ -224,8 +268,9 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
     // Étape 1 : Essayer de mettre à jour le gouvernorat directement
     this.apiService.assignerGouvernoratLivreur(livreur.id || '', livreur.gouvernorat).subscribe({
-      next: () => {
+      next: (response) => {
         console.log('Succès: Gouvernorat mis à jour via PATCH');
+        console.log('Response:', response);
         this.showToast('Gouvernorat mis à jour avec succès', 'success');
         this.editingGouvernorat[livreur.id || ''] = false;
         this.refreshData();
@@ -251,8 +296,9 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
           };
 
           this.apiService.creerLivreur(nouveauLivreur).subscribe({
-            next: () => {
+            next: (createdLivreur) => {
               console.log('Succès: Livreur créé dans le service livreurs');
+              console.log('Created livreur:', createdLivreur);
               this.showToast('Livreur créé avec gouvernorat assigné', 'success');
               this.editingGouvernorat[livreur.id || ''] = false;
               this.refreshData();
@@ -265,8 +311,9 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
               if (creationErr?.status === 409) {
                 console.log('Conflit (409) - tentative de mise à jour via PUT');
                 this.apiService.updateLivreur(livreur.id || '', { gouvernorat: livreur.gouvernorat }).subscribe({
-                  next: () => {
+                  next: (updatedLivreur) => {
                     console.log('Succès: Livreur mis à jour via PUT');
+                    console.log('Updated livreur:', updatedLivreur);
                     this.showToast('Gouvernorat mis à jour avec succès', 'success');
                     this.editingGouvernorat[livreur.id || ''] = false;
                     this.refreshData();
@@ -329,8 +376,8 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   searchFilter = '';
   private adminMap: any = null;
   private socket: Socket | null = null;
-  private trackingServiceUrl = environment.trackingServiceUrl || 'http://localhost:8083';
-  private iaServiceUrl = 'http://localhost:8001';
+  private trackingServiceUrl = environment.trackingServiceUrl;
+  private iaServiceUrl = environment.iaUrl;
   private driverPositions: any[] = [];
   private depotsPositions: any[] = [];
   mapFilterStatut: string = '';
@@ -435,7 +482,11 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
     this.authService.getAllUsers().subscribe({
       next: (res) => {
+        console.log('=== DONNÉES UTILISATEURS ===');
+        console.log('Nombre utilisateurs reçus:', res?.length || 0);
+        console.log('Utilisateurs:', res);
         this.usersList = res || [];
+        console.log('Rôles des utilisateurs:', this.usersList.map(u => ({ id: u.id, nom: u.nom, role: u.role })));
         this.mergePendingLivreurUsers();
         // Update occupancy after users are loaded in case depots loaded first
         if (this.depots.length > 0) this.updateDepotOccupancy();
@@ -782,6 +833,21 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
           console.error('Utilisateur non trouvé dans usersList avec ID:', livreur.id);
         }
         
+        // Mettre à jour aussi dans livreurs (service livreurs)
+        const livreurIndex = this.livreurs.findIndex(l => l.id === livreur.id);
+        console.log('Index livreur trouvé:', livreurIndex);
+        if (livreurIndex >= 0) {
+          console.log('Ancien gouvernorat dans livreurs:', this.livreurs[livreurIndex].gouvernorat);
+          this.livreurs[livreurIndex].gouvernorat = livreur.gouvernorat;
+          console.log('Nouveau gouvernorat dans livreurs:', this.livreurs[livreurIndex].gouvernorat);
+          console.log('Gouvernorat mis à jour localement dans livreurs');
+          
+          // Créer une nouvelle référence pour forcer la détection de changement Angular
+          this.livreurs = [...this.livreurs];
+        } else {
+          console.error('Livreur non trouvé dans livreurs avec ID:', livreur.id);
+        }
+        
         this.editingLivreurGouvernorat[livreur.id || ''] = false;
         this.showToast('Gouvernorat mis à jour avec succès', 'success');
       },
@@ -917,9 +983,22 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   }
 
   // ========== COMMANDES / DISPATCH ==========
+  getAssignedDriverIdForOrder(order: Commande): string {
+    if (!order || !order.id) return '';
+    let livreurId = this.livraisonsMap[order.id];
+    if (!livreurId && order.colis && order.colis.length > 0) {
+      for (const col of order.colis) {
+        if (col.id && this.livraisonsMap[col.id]) {
+          livreurId = this.livraisonsMap[col.id];
+          break;
+        }
+      }
+    }
+    return livreurId || '';
+  }
+
   isOrderPending(order: Commande): boolean {
-    // Une commande est en attente de dispatch si elle n'a pas encore de livreur affecté
-    const hasLivreur = this.livraisonsMap[order.id || ''];
+    const hasLivreur = this.getAssignedDriverIdForOrder(order);
     const isWaitingStatut = ['EN_ATTENTE', 'MANIFESTE', 'A_ENLEVER'].includes(order.statut || 'EN_ATTENTE');
     return isWaitingStatut && !hasLivreur;
   }
@@ -932,14 +1011,45 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     }
 
     const orderId = order.id || '';
-    console.log('Affectation manuelle - Commande:', orderId, 'Livreur:', driverId);
+    const colisId = (order.colis && order.colis.length > 0) ? order.colis[0].id : orderId;
+    if (!colisId) {
+      this.showToast('Cette commande n\'a pas de colis associé', 'error');
+      return;
+    }
+
+    console.log('=== AFFECTATION MANUELLE ===');
+    console.log('Commande ID:', orderId);
+    console.log('Colis ID:', colisId);
+    console.log('Livreur ID:', driverId);
+    console.log('trackingUrl:', this.apiService['trackingUrl']);
     
-    // Flux simplifié : seulement créer la livraison, le backend gérera les statuts
-    this.apiService.creerLivraison(orderId, driverId).subscribe({
+    // Flux : seulement créer la livraison, le backend gérera les statuts
+    this.apiService.creerLivraison(colisId, driverId, orderId).subscribe({
       next: () => {
         console.log('Livraison créée avec succès');
         // Mettre à jour la carte des livraisons pour afficher le livreur affecté
-        this.livraisonsMap[orderId] = driverId;
+        this.livraisonsMap[colisId] = driverId;
+        
+        // Si le statut actuel est EN_ATTENTE ou MANIFESTE, on transitionne vers A_ENLEVER
+        if (order.statut === 'EN_ATTENTE' || order.statut === 'MANIFESTE') {
+          this.apiService.updateCommandeStatut(orderId, 'A_ENLEVER').subscribe({
+            next: () => {
+              console.log('Statut commande mis à jour vers A_ENLEVER');
+              if (order.colis && order.colis.length > 0) {
+                order.colis.forEach(c => {
+                  if (c.id) {
+                    this.apiService.updateColisStatut(c.id, 'A_ENLEVER').subscribe({
+                      next: () => console.log('Statut colis mis à jour vers A_ENLEVER:', c.id),
+                      error: (err) => console.error('Erreur mise à jour statut colis:', err)
+                    });
+                  }
+                });
+              }
+            },
+            error: (err) => console.error('Erreur mise à jour statut commande:', err)
+          });
+        }
+
         // Marquer la commande comme dispatchée
         this.apiService.markCommandeAsDispatched(orderId).subscribe({
           next: () => {
@@ -954,8 +1064,9 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
         });
       },
       error: (err: any) => {
-        console.error('Erreur création livraison:', err);
-        this.showToast('Erreur d\'affectation: ' + (err?.message || 'Erreur inconnue'), 'error');
+        console.error('=== ERREUR CRÉATION LIVRAISON ===');
+        console.error('Erreur complète:', err);
+        this.showToast('Erreur d\'affectation: ' + (err?.message || err?.statusText || 'Erreur inconnue'), 'error');
       }
     });
   }
@@ -964,20 +1075,45 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     const orderId = order.id || '';
     if (!orderId) return;
 
-    // Utiliser les livreurs du service auth au lieu du service livreurs
-    const availableDrivers = this.getLivreurUsers().filter(l => l.statut === 'DISPONIBLE' || l.statut === 'ACTIF');
+    console.log('=== ASSIGNATION IA ===');
+    console.log('Commande ID:', orderId);
+
+    // Utiliser livreursList au lieu de getLivreurUsers
+    console.log('livreursList:', this.livreursList);
+    console.log('Nombre livreursList:', this.livreursList.length);
+    
+    const availableDrivers = this.livreursList.filter(l => l.statut === 'DISPONIBLE' || l.statut === 'ACTIF' || !l.statut);
+    console.log('Livreurs disponibles:', availableDrivers.length);
+    
     if (availableDrivers.length === 0) {
-      this.showToast('Aucun livreur disponible. Approuvez des livreurs d\'abord.', 'error');
+      this.showToast('Aucun livreur disponible. Vérifiez que des utilisateurs ont le rôle LIVREUR.', 'error');
       return;
     }
 
     const lat = 36.8;
     const lon = 10.1;
 
-    this.apiService.affecterLivreur(orderId, lat, lon, availableDrivers).subscribe({
+    console.log('Appel API affecterLivreur avec', availableDrivers.length, 'livreurs');
+    console.log('iaJavaUrl:', this.apiService['iaJavaUrl']);
+
+    // Convertir UserProfile en format Livreur pour l'API IA
+    const driversForAPI = availableDrivers.map(u => ({
+      id: u.id,
+      nom: u.nom,
+      prenom: u.prenom,
+      statut: u.statut || 'DISPONIBLE',
+      latitudeActuelle: (u as any).latitudeActuelle || 36.8,
+      longitudeActuelle: (u as any).longitudeActuelle || 10.1,
+      noteMoyenne: (u as any).noteMoyenne || 5.0,
+      gouvernorat: u.gouvernorat
+    }));
+
+    this.apiService.affecterLivreur(orderId, lat, lon, driversForAPI).subscribe({
       next: (aiRes) => {
+        console.log('Réponse IA:', aiRes);
         const bestDriver = this.livreurs.find(l => l.id === aiRes.livreurId);
         if (!bestDriver) {
+          console.error('Livreur recommandé introuvable:', aiRes.livreurId);
           this.showToast('Livreur recommandé introuvable', 'error');
           return;
         }
@@ -998,27 +1134,58 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
           this.assignDriverManually(order);
         }
       },
-      error: (err) => this.showToast('Erreur IA : ' + (err.message || ''), 'error')
+      error: (err) => {
+        console.error('=== ERREUR IA ===');
+        console.error('Erreur complète:', err);
+        console.error('Status:', err?.status);
+        console.error('StatusText:', err?.statusText);
+        console.error('Message:', err?.message);
+        console.error('Error:', err?.error);
+        console.error('Type:', err?.name);
+        this.showToast('Erreur IA : ' + (err?.message || err?.statusText || 'Erreur inconnue'), 'error');
+      }
     });
   }
 
   dispatchGlobalIA(): void {
+    console.log('=== DISPATCH GLOBAL IA ===');
+    
     // Filtrer uniquement les commandes non dispatchées et en attente
     const pendingOrders = this.commandes.filter(c => 
       c.statut === 'A_ENLEVER' && 
       (c.dispatched === false || c.dispatched === undefined)
     );
     
+    console.log('Commandes en attente:', pendingOrders.length);
+    
     if (pendingOrders.length === 0) {
       this.showToast('Aucune nouvelle commande à dispatcher (toutes les commandes ont déjà été dispatchées).', 'info');
       return;
     }
-    // Utiliser les livreurs du service auth
-    const availableDrivers = this.getLivreurUsers().filter(l => l.statut === 'DISPONIBLE' || l.statut === 'ACTIF');
+    
+    // Utiliser livreursList (utilisateurs avec rôle LIVREUR) au lieu de getLivreurUsers
+    console.log('livreursList:', this.livreursList);
+    console.log('Nombre livreursList:', this.livreursList.length);
+    
+    const availableDrivers = this.livreursList.filter(l => l.statut === 'DISPONIBLE' || l.statut === 'ACTIF' || !l.statut);
+    console.log('Livreurs disponibles:', availableDrivers.length);
+    
     if (availableDrivers.length === 0) {
-      this.showToast('Aucun livreur disponible. Approuvez des livreurs d\'abord.', 'error');
+      this.showToast('Aucun livreur disponible. Vérifiez que des utilisateurs ont le rôle LIVREUR.', 'error');
       return;
     }
+
+    // Convertir UserProfile en format Livreur pour l'API IA
+    const driversForAPI = availableDrivers.map(u => ({
+      id: u.id,
+      nom: u.nom,
+      prenom: u.prenom,
+      statut: u.statut || 'DISPONIBLE',
+      latitudeActuelle: (u as any).latitudeActuelle || 36.8,
+      longitudeActuelle: (u as any).longitudeActuelle || 10.1,
+      noteMoyenne: (u as any).noteMoyenne || 5.0,
+      gouvernorat: u.gouvernorat
+    }));
 
     this.showToast('Algorithme de Clustering IA en cours...', 'info');
     
@@ -1026,52 +1193,108 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     console.log('Livreurs disponibles:', availableDrivers.length);
     console.log('URL IA:', this.iaServiceUrl);
     
-    this.apiService.dispatchGlobal(pendingOrders, availableDrivers).subscribe({
+    this.apiService.dispatchGlobal(pendingOrders, driversForAPI).subscribe({
       next: (res: any) => {
-        console.log('Réponse IA dispatch:', res);
+        console.log('=== RÉPONSE IA DISPATCH ===');
+        console.log('Réponse complète:', res);
         const affectations = res.affectations;
+        console.log('Affectations:', affectations);
         let count = 0;
         let totalAssigned = 0;
         
+        // Calculer le total des assignations d'abord
         for (const [livreurId, orderIds] of Object.entries(affectations)) {
-          const listIds = orderIds as string[];
-          totalAssigned += listIds.length;
-          
-          for (const orderId of listIds) {
-            this.apiService.creerLivraison(orderId, livreurId).subscribe({
-              next: () => {
-                // Mettre à jour la carte des livraisons pour afficher le livreur affecté
-                this.livraisonsMap[orderId] = livreurId;
-                
-                this.apiService.updateCommandeStatut(orderId, 'EN_LIVRAISON').subscribe({
-                  next: () => {
-                    this.apiService.updateLivreurStatut(livreurId, 'EN_COURSE').subscribe({
-                      next: () => {
-                        // Marquer la commande comme dispatchée
-                        this.apiService.markCommandeAsDispatched(orderId).subscribe({
-                          next: () => {
-                            count++;
-                            if (count === totalAssigned) {
-                               this.showToast(`Dispatch terminé ! ${totalAssigned} commandes affectées (Clustering K-Means).`, 'success');
-                               this.refreshData();
-                            }
-                          },
-                          error: (err) => console.error('Erreur marquage commande dispatchée:', err)
-                        });
-                      },
-                      error: (err) => console.error('Erreur mise à jour statut livreur:', err)
-                    });
-                  },
-                  error: (err) => console.error('Erreur mise à jour statut commande:', err)
-                });
-              },
-              error: (err) => console.error('Erreur création livraison:', err)
-            });
-          }
+          totalAssigned += (orderIds as string[]).length;
         }
         
         if (totalAssigned === 0) {
-            this.showToast('L\'IA n\'a pu assigner aucune commande.', 'info');
+          this.showToast('L\'IA n\'a pu assigner aucune commande.', 'info');
+          return;
+        }
+
+        const onFinishStep = () => {
+          count++;
+          if (count === totalAssigned) {
+            console.log('=== DISPATCH TERMINÉ ===');
+            console.log('Total affectations:', totalAssigned);
+            console.log('livraisonsMap final:', this.livraisonsMap);
+            this.showToast(`Dispatch terminé ! ${totalAssigned} commandes affectées (Clustering K-Means).`, 'success');
+            this.refreshData();
+          }
+        };
+
+        for (const [livreurId, orderIds] of Object.entries(affectations)) {
+          console.log('Livreur ID:', livreurId, 'Commandes:', orderIds);
+          const listIds = orderIds as string[];
+          
+          for (const orderId of listIds) {
+            const order = this.commandes.find(c => c.id === orderId);
+            const colisId = (order && order.colis && order.colis.length > 0) ? order.colis[0].id : orderId;
+
+            console.log('Création livraison - Colis:', colisId, 'Livreur:', livreurId);
+            this.apiService.creerLivraison(colisId, livreurId, orderId).subscribe({
+              next: () => {
+                console.log('Livraison créée - Colis:', colisId, 'Livreur:', livreurId);
+                // Mettre à jour la carte des livraisons
+                this.livraisonsMap[colisId] = livreurId;
+                
+                // Si la commande est EN_ATTENTE ou MANIFESTE, on transitionne vers A_ENLEVER
+                if (order && (order.statut === 'EN_ATTENTE' || order.statut === 'MANIFESTE')) {
+                  this.apiService.updateCommandeStatut(orderId, 'A_ENLEVER').subscribe({
+                    next: () => {
+                      console.log('Statut commande mis à jour - Commande:', orderId, 'A_ENLEVER');
+                      if (order.colis && order.colis.length > 0) {
+                        order.colis.forEach(c => {
+                          if (c.id) {
+                            this.apiService.updateColisStatut(c.id, 'A_ENLEVER').subscribe({
+                              next: () => console.log('Statut colis mis à jour - Colis:', c.id, 'A_ENLEVER'),
+                              error: (err) => console.error('Erreur mise à jour statut colis:', err)
+                            });
+                          }
+                        });
+                      }
+                      
+                      // Marquer la commande comme dispatchée
+                      this.apiService.markCommandeAsDispatched(orderId).subscribe({
+                        next: () => {
+                          console.log('Commande marquée dispatchée:', orderId);
+                          onFinishStep();
+                        },
+                        error: (err) => {
+                          console.error('Erreur marquage commande dispatchée:', err);
+                          onFinishStep();
+                        }
+                      });
+                    },
+                    error: (err) => {
+                      console.error('Erreur mise à jour statut commande:', err);
+                      // Fallback: marquer quand même comme dispatchée
+                      this.apiService.markCommandeAsDispatched(orderId).subscribe({
+                        next: () => onFinishStep(),
+                        error: () => onFinishStep()
+                      });
+                    }
+                  });
+                } else {
+                  // Si l'ordre est déjà A_ENLEVER ou autre, on ne touche pas au statut, on marque juste comme dispatché
+                  this.apiService.markCommandeAsDispatched(orderId).subscribe({
+                    next: () => {
+                      console.log('Commande marquée dispatchée:', orderId);
+                      onFinishStep();
+                    },
+                    error: (err) => {
+                      console.error('Erreur marquage commande dispatchée:', err);
+                      onFinishStep();
+                    }
+                  });
+                }
+              },
+              error: (err) => {
+                console.error('=== ERREUR CRÉATION LIVRAISON ===', err);
+                onFinishStep();
+              }
+            });
+          }
         }
       },
       error: (err: any) => {
@@ -2518,14 +2741,14 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     const ref = reclamation.commandeId || reclamation.codeBarre || 'votre commande';
     const probleme = this.reclamationsAnalysis[reclamation.id]?.problemeDetecte || 'votre réclamation';
 
-    return `Madame, Monsieur ${clientName},\n\nNous accusons réception de votre réclamation concernant ${probleme} (Réf: ${ref}).\n\nVotre dossier a été enregistré sous la référence ${reclamation.id?.substring(0, 8)} et est actuellement en cours de traitement par notre service client.\n\nNous vous informerons de l'avancement de votre dossier dans les plus brefs délais.\n\nCordialement,\nLe service client BFExpress`;
+    return `Madame, Monsieur ${clientName},\n\nNous accusons réception de votre réclamation concernant ${probleme} (Réf: ${ref}).\n\nVotre dossier a été enregistré sous la référence ${reclamation.id?.substring(0, 8)} et est actuellement en cours de traitement par notre service client.\n\nNous vous informerons de l'avancement de votre dossier dans les plus brefs délais.\n\nCordialement,\nLe service client`;
   }
 
   genererReponseEmpathique(reclamation: any): string {
     const clientName = this.getReclamationClientName(reclamation.clientId);
     const ref = reclamation.commandeId || reclamation.codeBarre || 'votre commande';
 
-    return `Cher/Chère ${clientName},\n\nNous sommes vraiment désolés d'apprendre votre mécontentement concernant votre commande ${ref}. Nous comprenons parfaitement votre situation et nous allons faire notre possible pour la résoudre rapidement.\n\nNotre équipe s'occupe personnellement de votre dossier (Réf: ${reclamation.id?.substring(0, 8)}) et vous recontactera dans les plus brefs délais.\n\nMerci de votre patience et de votre compréhension.\n\nBien cordialement,\nL'équipe BFExpress`;
+    return `Cher/Chère ${clientName},\n\nNous sommes vraiment désolés d'apprendre votre mécontentement concernant votre commande ${ref}. Nous comprenons parfaitement votre situation et nous allons faire notre possible pour la résoudre rapidement.\n\nNotre équipe s'occupe personnellement de votre dossier (Réf: ${reclamation.id?.substring(0, 8)}) et vous recontactera dans les plus brefs délais.\n\nMerci de votre patience et de votre compréhension.\n\nBien cordialement,\nL'équipe`;
   }
 
   genererReponseTechnique(reclamation: any): string {

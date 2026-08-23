@@ -1,5 +1,5 @@
 .modern-footer {
-  background: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 50%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #1e3a5f, #c9a227, #2d5a87);
   color: white;
   padding: 3rem 0 1.5rem;
   margin-top: auto;
@@ -27,6 +27,12 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.footer-logo-img {
+  height: 50px;
+  width: auto;
+  object-fit: contain;
 }
 
 .footer-logo {

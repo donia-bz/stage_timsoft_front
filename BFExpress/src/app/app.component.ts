@@ -8,7 +8,7 @@ import { filter } from 'rxjs/operators';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-  title = 'BFExpress';
+  title = 'First Delivery';
   isHomePage = false;
   hideLayout = false;
 

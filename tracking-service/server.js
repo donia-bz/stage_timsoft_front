@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const { Server } = require('socket.io');
 const http = require('http');
 const { v4: uuidv4 } = require('uuid');
+const axios = require('axios');
 require('dotenv').config();
 
 const app = express();
@@ -16,8 +17,8 @@ const io = new Server(server, {
   }
 });
 
-const PORT = process.env.PORT || 8088;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/bfexpress-tracking';
+const PORT = process.env.PORT || 8090;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://donia:jCn8Pt1ZhyF5ewRy@timsoftstage.192tpcj.mongodb.net/bfexpress-tracking?retryWrites=true&w=majority';
 
 // Middleware
 app.use(cors());
@@ -132,6 +133,32 @@ const manifestTrackingSchema = new mongoose.Schema({
 });
 
 const ManifestTracking = mongoose.model('ManifestTracking', manifestTrackingSchema);
+
+// Schéma pour les livraisons
+const livraisonSchema = new mongoose.Schema({
+  colisId: { type: String, required: true, unique: true },
+  commandeId: { type: String },
+  livreurId: { type: String, required: true },
+  statut: { 
+    type: String, 
+    enum: ['ASSIGNEE', 'EN_COURS', 'LIVREE', 'ANNULEE'], 
+    default: 'ASSIGNEE' 
+  },
+  dateAffectation: { type: Date, default: Date.now },
+  dateLivraison: { type: Date },
+  positionDepart: {
+    latitude: Number,
+    longitude: Number
+  },
+  positionArrivee: {
+    latitude: Number,
+    longitude: Number
+  }
+}, {
+  timestamps: true
+});
+
+const Livraison = mongoose.model('Livraison', livraisonSchema);
 
 // Socket.io pour temps réel
 io.on('connection', (socket) => {
@@ -576,6 +603,130 @@ app.get('/api/manifests/:manifestId/positions', async (req, res) => {
   }
 });
 
+// ========== LIVRAISONS API ==========
+
+// Obtenir toutes les livraisons
+app.get('/api/livraisons', async (req, res) => {
+  try {
+    const { livreurId, statut, commandeId } = req.query;
+    const filter = {};
+    
+    if (livreurId) filter.livreurId = livreurId;
+    if (statut) filter.statut = statut;
+    if (commandeId) filter.commandeId = commandeId;
+
+    const livraisons = await Livraison.find(filter).sort({ dateAffectation: -1 });
+    res.json(livraisons);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Obtenir les livraisons d'un livreur spécifique
+app.get('/api/livraisons/livreur/:livreurId', async (req, res) => {
+  try {
+    const { livreurId } = req.params;
+    const { statut } = req.query;
+    
+    const filter = { livreurId };
+    if (statut) filter.statut = statut;
+
+    const livraisons = await Livraison.find(filter).sort({ dateAffectation: -1 });
+    res.json(livraisons);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Obtenir une livraison par ID
+app.get('/api/livraisons/:id', async (req, res) => {
+  try {
+    const livraison = await Livraison.findById(req.params.id);
+    if (!livraison) {
+      return res.status(404).json({ error: 'Livraison non trouvée' });
+    }
+    res.json(livraison);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Créer une nouvelle livraison
+app.post('/api/livraisons', async (req, res) => {
+  try {
+    const { colisId, commandeId, livreurId, positionDepart, positionArrivee } = req.body;
+    
+    const livraison = new Livraison({
+      colisId,
+
+      commandeId,
+      livreurId,
+      statut: 'ASSIGNEE',
+      positionDepart,
+      positionArrivee
+    });
+
+    await livraison.save();
+
+    // Diffuser la création de livraison
+    io.to('admin-notifications').emit('livraison-created', livraison);
+    io.to(`livreur-${livreurId}`).emit('livraison-assigned', livraison);
+
+    res.status(201).json(livraison);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Mettre à jour une livraison
+app.put('/api/livraisons/:id', async (req, res) => {
+  try {
+    const { statut, positionArrivee, dateLivraison } = req.body;
+    
+    const updateData = {};
+    if (statut) updateData.statut = statut;
+    if (positionArrivee) updateData.positionArrivee = positionArrivee;
+    if (dateLivraison) updateData.dateLivraison = dateLivraison;
+    if (statut === 'LIVREE' && !dateLivraison) updateData.dateLivraison = new Date();
+
+    const livraison = await Livraison.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+
+    if (!livraison) {
+      return res.status(404).json({ error: 'Livraison non trouvée' });
+    }
+
+    // Diffuser la mise à jour
+    io.to('admin-notifications').emit('livraison-updated', livraison);
+    io.to(`livreur-${livraison.livreurId}`).emit('livraison-updated', livraison);
+
+    res.json(livraison);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Supprimer une livraison
+app.delete('/api/livraisons/:id', async (req, res) => {
+  try {
+    const livraison = await Livraison.findByIdAndDelete(req.params.id);
+    if (!livraison) {
+      return res.status(404).json({ error: 'Livraison non trouvée' });
+    }
+
+    // Diffuser la suppression
+    io.to('admin-notifications').emit('livraison-deleted', { id: req.params.id });
+    io.to(`livreur-${livraison.livreurId}`).emit('livraison-cancelled', { id: req.params.id });
+
+    res.json({ success: true, message: 'Livraison supprimée' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Initialisation des données de test
 async function initializeTestData() {
   const count = await DriverPosition.countDocuments();
@@ -655,20 +806,176 @@ async function initializeTestData() {
         position: { latitude: 35.8256, longitude: 10.6084 },
         capacite: 600,
         capaciteActuelle: 150,
-        statut: 'ACTIF'
-      }
-    ];
-
-    await Depot.insertMany(testDepots);
-    console.log('✅ Dépôts de test initialisés');
-  }
 }
+];
+
+await DriverPosition.insertMany(testDrivers);
+console.log('✅ Données de test initialisées');
+}
+
+const depotCount = await Depot.countDocuments();
+if (depotCount === 0) {
+console.log('📝 Initialisation des dépôts de test...');
+  
+const testDepots = [
+{
+id: 'DEP001',
+nom: 'Dépôt Tunis Centre',
+adresse: '123 Avenue Habib Bourguiba',
+ville: 'Tunis',
+gouvernorat: 'Tunis',
+position: { latitude: 36.8065, longitude: 10.1815 },
+capacite: 500,
+capaciteActuelle: 120,
+statut: 'ACTIF'
+},
+{
+id: 'DEP002',
+nom: 'Dépôt Sfax Sud',
+adresse: '45 Route de Gabès',
+ville: 'Sfax',
+gouvernorat: 'Sfax',
+position: { latitude: 34.7406, longitude: 10.7603 },
+capacite: 800,
+capaciteActuelle: 200,
+statut: 'ACTIF'
+},
+{
+id: 'DEP003',
+nom: 'Dépôt Sousse Nord',
+adresse: '78 Avenue du 2 Mars',
+ville: 'Sousse',
+gouvernorat: 'Sousse',
+position: { latitude: 35.8256, longitude: 10.6084 },
+capacite: 600,
+capaciteActuelle: 150,
+statut: 'ACTIF'
+}
+];
+
+await Depot.insertMany(testDepots);
+console.log('✅ Dépôts de test initialisés');
+}
+}
+
+// ========== WHATSAPP BUSINESS API ==========
+const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v18.0';
+const WHATSAPP_PHONE_ID = process.env.WHATSAPP_PHONE_ID || '';
+const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || '';
+
+// Envoyer un message WhatsApp
+async function sendWhatsAppMessage(toPhone, message) {
+try {
+// Nettoyer le numéro de téléphone (format international sans +)
+const cleanPhone = toPhone.replace(/\D/g, '');
+
+const payload = {
+messaging_product: 'whatsapp',
+to: cleanPhone,
+type: 'text',
+text: {
+body: message
+}
+};
+
+const response = await axios.post(
+`${WHATSAPP_API_URL}/${WHATSAPP_PHONE_ID}/messages`,
+payload,
+{
+headers: {
+'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
+'Content-Type': 'application/json'
+}
+}
+);
+
+console.log('✅ Message WhatsApp envoyé:', response.data);
+return { success: true, data: response.data };
+} catch (error) {
+console.error('❌ Erreur envoi WhatsApp:', error.response?.data || error.message);
+return { success: false, error: error.response?.data || error.message };
+}
+}
+
+// Endpoint pour envoyer une notification WhatsApp
+app.post('/api/whatsapp/send', async (req, res) => {
+const { phone, message, type, livraisonId } = req.body;
+
+if (!phone || !message) {
+return res.status(400).json({ success: false, error: 'Phone et message requis' });
+}
+
+const result = await sendWhatsAppMessage(phone, message);
+
+if (result.success) {
+// Log de la notification
+console.log(`📱 WhatsApp ${type} envoyé pour livraison ${livraisonId}`);
+res.json({ success: true, data: result.data });
+} else {
+res.status(500).json({ success: false, error: result.error });
+}
+});
+
+// Endpoint pour notifier le client (en route)
+app.post('/api/whatsapp/on-route', async (req, res) => {
+const { phone, clientName, livraisonRef, estimatedTime } = req.body;
+
+const message = `🚚 *BFExpress - Votre colis est en route*\n\n` +
+`Bonjour ${clientName},\n\n` +
+`Votre livreur est en route pour vous livrer le colis ${livraisonRef}.\n` +
+`Temps estimé: ${estimatedTime || '15-30 minutes'}\n\n` +
+`Vous pouvez suivre sa position en temps réel sur votre dashboard.\n\n` +
+`Merci de votre confiance ! 📦`;
+
+const result = await sendWhatsAppMessage(phone, message);
+res.json(result);
+});
+
+// Endpoint pour notifier le client (livré)
+app.post('/api/whatsapp/delivered', async (req, res) => {
+const { phone, clientName, livraisonRef } = req.body;
+
+const message = `✅ *BFExpress - Colis livré avec succès*\n\n` +
+`Bonjour ${clientName},\n\n` +
+`Votre colis ${livraisonRef} a été livré avec succès.\n\n` +
+`Merci d'avoir choisi BFExpress ! 🎉\n\n` +
+`Pour toute réclamation, contactez notre support.`;
+
+const result = await sendWhatsAppMessage(phone, message);
+res.json(result);
+});
+
+// Endpoint pour notifier le client (échec)
+app.post('/api/whatsapp/failed', async (req, res) => {
+const { phone, clientName, livraisonRef, reason } = req.body;
+
+const reasonMessages = {
+'CLIENT_ABSENT': 'Le client était absent à l\'adresse indiquée.',
+'ADDRESS_INCORRECT': 'L\'adresse fournie est incorrecte ou incomplète.',
+'CLIENT_REFUSED': 'Le client a refusé la livraison.',
+'NO_ACCESS': 'Accès impossible à l\'adresse (bâtiment fermé, etc.).',
+'OTHER': 'Problème lors de la tentative de livraison.'
+};
+
+const reasonText = reasonMessages[reason] || reasonMessages['OTHER'];
+
+const message = `⚠️ *BFExpress - Problème de livraison*\n\n` +
+`Bonjour ${clientName},\n\n` +
+`Nous n'avons pas pu livrer votre colis ${livraisonRef}.\n\n` +
+`Raison: ${reasonText}\n\n` +
+`Veuillez nous contacter pour réorganiser la livraison.\n` +
+`Tél: +216 XX XXX XXX\n\n` +
+`Nous nous excusons pour la gêne occasionnée.`;
+
+const result = await sendWhatsAppMessage(phone, message);
+res.json(result);
+});
 
 // Démarrage du serveur
 server.listen(PORT, async () => {
-  console.log(`🚀 Tracking Service démarré sur le port ${PORT}`);
-  console.log(`🔌 WebSocket ready`);
-  await initializeTestData();
+console.log(`🚀 Tracking Service démarré sur le port ${PORT}`);
+console.log(`🔌 WebSocket ready`);
+await initializeTestData();
 });
 
 module.exports = { app, server, io };

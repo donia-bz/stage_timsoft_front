@@ -1,11 +1,19 @@
-/* Variables - these are now defined in styles.scss */
+/* Variables - Premium Professional Palette */
+$primary: #1e3a5f;
+$secondary: #c9a227;
+$accent: #2d5a87;
+$background: #f8fafc;
+$white: #ffffff;
+$dark: #1a1a2e;
+$gray: #64748b;
+$light-gray: #e2e8f0;
 
 /* Hero Section */
 .hero-section {
   padding: 0;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 50%, #8b5cf6 100%);
+  background: linear-gradient(135deg, $primary 0%, $accent 50%, #1e4a6f 100%);
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -98,15 +106,15 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  background: $secondary;
+  box-shadow: 0 0 0 0 rgba(201, 162, 39, 0.7);
   animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(16, 185, 129, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(201, 162, 39, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(201, 162, 39, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(201, 162, 39, 0); }
 }
 
 .badge-text {
@@ -200,14 +208,14 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #ffffff, #f0f9ff);
-  color: #0ea5e9;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, $secondary, #d4af37);
+  color: $primary;
+  box-shadow: 0 8px 24px rgba(201, 162, 39, 0.3);
 }
 
 .btn-primary:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 12px 32px rgba(201, 162, 39, 0.4);
 }
 
 .btn-secondary {
@@ -257,8 +265,8 @@
 
 .track-btn {
   padding: 1rem 2rem;
-  background: rgba(255, 255, 255, 0.9);
-  color: #0ea5e9;
+  background: $secondary;
+  color: $primary;
   border: none;
   border-radius: 12px;
   font-weight: 700;
@@ -268,9 +276,9 @@
 }
 
 .track-btn:hover {
-  background: white;
+  background: #d4af37;
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 20px rgba(201, 162, 39, 0.3);
 }
 
 .hero-visual {
@@ -334,13 +342,13 @@
 .card-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--dark);
+  color: $dark;
   margin-bottom: 0.25rem;
 }
 
 .card-subtitle {
   font-size: 0.8rem;
-  color: var(--gray);
+  color: $gray;
 }
 
 .floating-card-1 {
@@ -365,7 +373,7 @@
 .features-section,
 .faq-section {
   padding: 6rem 0;
-  background: white;
+  background: $background;
 }
 
 .section-header {
@@ -376,12 +384,12 @@
 .section-badge {
   display: inline-block;
   padding: 0.5rem 1.25rem;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(20, 184, 166, 0.1));
-  border: 2px solid var(--primary);
+  background: linear-gradient(135deg, rgba(30, 58, 95, 0.1), rgba(201, 162, 39, 0.1));
+  border: 2px solid $primary;
   border-radius: 50px;
   font-size: 0.85rem;
   font-weight: 700;
-  color: var(--primary);
+  color: $primary;
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-bottom: 1.5rem;
@@ -390,14 +398,14 @@
 .section-header h2 {
   font-size: clamp(2rem, 4vw, 3rem);
   font-weight: 900;
-  color: var(--dark);
+  color: $dark;
   margin: 0 0 1rem;
   line-height: 1.2;
 }
 
 .section-subtitle {
   font-size: 1.1rem;
-  color: var(--gray);
+  color: $gray;
   max-width: 600px;
   margin: 0 auto;
   line-height: 1.6;
@@ -417,9 +425,9 @@
   max-width: 350px;
   text-align: center;
   padding: 2.5rem 2rem;
-  background: white;
+  background: $white;
   border-radius: 24px;
-  border: 2px solid #e2e8f0;
+  border: 2px solid $light-gray;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
   transition: all 0.3s ease;
   position: relative;
@@ -428,12 +436,12 @@
 .workflow-step:hover {
   transform: translateY(-8px);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
-  border-color: var(--primary);
+  border-color: $primary;
 }
 
 .workflow-step.featured {
-  border: 3px solid var(--secondary);
-  background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+  border: 3px solid $secondary;
+  background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
   transform: scale(1.05);
 }
 
@@ -446,7 +454,7 @@
   height: 80px;
   margin: 0 auto 1.5rem;
   position: relative;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  background: linear-gradient(135deg, $primary, $accent);
   border-radius: 20px;
   display: flex;
   align-items: center;
@@ -454,7 +462,7 @@
 }
 
 .step-icon-wrapper.featured {
-  background: linear-gradient(135deg, var(--secondary), #10b981);
+  background: linear-gradient(135deg, $secondary, #d4af37);
 }
 
 .step-icon {
@@ -467,7 +475,7 @@
   right: -10px;
   width: 30px;
   height: 30px;
-  background: var(--dark);
+  background: $dark;
   color: white;
   border-radius: 50%;
   display: flex;
@@ -480,12 +488,12 @@
 .workflow-step h3 {
   font-size: 1.3rem;
   font-weight: 700;
-  color: var(--dark);
+  color: $dark;
   margin: 0 0 1rem;
 }
 
 .workflow-step p {
-  color: var(--gray);
+  color: $gray;
   line-height: 1.7;
   font-size: 0.95rem;
   margin: 0;
@@ -502,7 +510,7 @@
 .connector-line {
   width: 60px;
   height: 3px;
-  background: linear-gradient(to right, var(--primary), var(--secondary));
+  background: linear-gradient(to right, $primary, $secondary);
   border-radius: 2px;
   position: relative;
 }
@@ -513,7 +521,7 @@
   right: -8px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--secondary);
+  color: $secondary;
   font-size: 1.2rem;
   font-weight: 700;
 }
@@ -526,10 +534,10 @@
 }
 
 .feature-card {
-  background: white;
+  background: $white;
   border-radius: 24px;
   padding: 2.5rem 2rem;
-  border: 2px solid #e2e8f0;
+  border: 2px solid $light-gray;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
   transition: all 0.3s ease;
   text-align: center;
@@ -538,14 +546,14 @@
 .feature-card:hover {
   transform: translateY(-8px);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
-  border-color: var(--primary);
+  border-color: $primary;
 }
 
 .feature-icon {
   width: 80px;
   height: 80px;
   margin: 0 auto 1.5rem;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(20, 184, 166, 0.1));
+  background: linear-gradient(135deg, rgba(30, 58, 95, 0.1), rgba(201, 162, 39, 0.1));
   border-radius: 20px;
   display: flex;
   align-items: center;
@@ -559,12 +567,12 @@
 .feature-card h3 {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--dark);
+  color: $dark;
   margin: 0 0 1rem;
 }
 
 .feature-card p {
-  color: var(--gray);
+  color: $gray;
   line-height: 1.7;
   font-size: 0.95rem;
   margin: 0;
@@ -578,10 +586,10 @@
 }
 
 .faq-card {
-  background: white;
+  background: $white;
   border-radius: 20px;
   padding: 2rem;
-  border: 2px solid #e2e8f0;
+  border: 2px solid $light-gray;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
   transition: all 0.3s ease;
 }
@@ -589,7 +597,7 @@
 .faq-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
-  border-color: var(--secondary);
+  border-color: $secondary;
 }
 
 .faq-icon {
@@ -600,12 +608,12 @@
 .faq-card h3 {
   font-size: 1.1rem;
   font-weight: 700;
-  color: var(--dark);
+  color: $dark;
   margin: 0 0 0.75rem;
 }
 
 .faq-card p {
-  color: var(--gray);
+  color: $gray;
   line-height: 1.6;
   font-size: 0.9rem;
   margin: 0;
@@ -704,7 +712,7 @@
 /* CTA Section */
 .cta-section {
   padding: 6rem 0;
-  background: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 100%);
+  background: linear-gradient(135deg, $primary 0%, $accent 100%);
   position: relative;
   overflow: hidden;
 }
@@ -754,18 +762,19 @@
 .btn-cta-primary {
   display: inline-block;
   padding: 1rem 2.5rem;
-  background: white;
-  color: #0ea5e9;
+  background: $secondary;
+  color: $primary;
   border-radius: 12px;
   font-weight: 700;
   text-decoration: none;
   transition: all 0.3s ease;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 24px rgba(201, 162, 39, 0.3);
 }
 
 .btn-cta-primary:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  background: #d4af37;
+  box-shadow: 0 12px 32px rgba(201, 162, 39, 0.4);
 }
 
 .btn-cta-secondary {

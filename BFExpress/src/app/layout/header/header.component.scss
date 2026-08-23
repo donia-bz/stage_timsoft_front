@@ -1,3 +1,11 @@
+$primary: #1e3a5f;
+$secondary: #c9a227;
+$accent: #2d5a87;
+$text: #1a1a2e;
+$muted: #64748b;
+$border: #e2e8f0;
+$bg: #f8fafc;
+
 .modern-header {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
@@ -27,8 +35,13 @@
 .logo-link {
   text-decoration: none;
   display: flex;
-  align-items: baseline;
-  gap: 2px;
+  align-items: center;
+}
+
+.logo-img {
+  height: 50px;
+  width: auto;
+  object-fit: contain;
 }
 
 .logo-text {
@@ -65,13 +78,13 @@
 }
 
 .nav-link:hover {
-  color: var(--primary);
-  background: rgba(14, 165, 233, 0.08);
+  color: $primary;
+  background: rgba(30, 58, 95, 0.08);
 }
 
 .nav-link.active {
-  color: var(--primary);
-  background: rgba(14, 165, 233, 0.12);
+  color: $primary;
+  background: rgba(30, 58, 95, 0.12);
   font-weight: 700;
 }
 
@@ -83,19 +96,19 @@
   transform: translateX(-50%);
   width: 30px;
   height: 3px;
-  background: var(--primary);
+  background: $primary;
   border-radius: 2px;
 }
 
 .dashboard-link {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(20, 184, 166, 0.1));
-  color: var(--primary);
-  border: 1px solid rgba(14, 165, 233, 0.2);
+  background: linear-gradient(135deg, rgba(30, 58, 95, 0.1), rgba(201, 162, 39, 0.1));
+  color: $primary;
+  border: 1px solid rgba(30, 58, 95, 0.2);
 }
 
 .dashboard-link:hover {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(20, 184, 166, 0.15));
-  border-color: var(--primary);
+  background: linear-gradient(135deg, rgba(30, 58, 95, 0.15), rgba(201, 162, 39, 0.15));
+  border-color: $primary;
 }
 
 /* Auth Section */
@@ -240,21 +253,21 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.875rem 1.75rem;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  background: linear-gradient(135deg, $primary, $accent);
   color: white;
   text-decoration: none;
   border-radius: 12px;
   font-weight: 700;
   font-size: 1rem;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+  box-shadow: 0 4px 15px rgba(30, 58, 95, 0.3);
   border: none;
   cursor: pointer;
 }
 
 .btn-login:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(14, 165, 233, 0.4);
+  box-shadow: 0 8px 25px rgba(30, 58, 95, 0.4);
 }
 
 .btn-icon {

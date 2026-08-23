@@ -1,55 +1,63 @@
 <div class="livreur-dashboard">
 
+  <!-- TOP HORIZONTAL BAR -->
   <header class="livreur-topbar">
     <div class="topbar-brand">
-      <div class="brand-logo">🚚</div>
-      <div class="brand-info">
-        <span class="brand-text">BFExpress</span>
-        <span class="brand-sub">Espace livreur</span>
-      </div>
-    </div>
-    <div class="topbar-actions" *ngIf="!activeDeliveryView">
-      <select [ngModel]="driverStatus" (ngModelChange)="toggleStatut($event)" class="status-select compact">
-        <option value="DISPONIBLE">🟢 Disponible</option>
-        <option value="EN_COURSE">🟡 En course</option>
-        <option value="HORS_LIGNE">🔴 Hors ligne</option>
-      </select>
+      <span class="brand-logo">⚡</span>
+      <span class="brand-text">First Delivery</span>
     </div>
   </header>
 
+  <!-- SIDEBAR -->
   <aside class="livreur-sidebar">
     <div class="sidebar-top">
-      <div class="user-card">
-        <div class="user-avatar-wrapper">
-          <div class="user-avatar">
-            <img *ngIf="hasDriverPhoto()" [src]="driverPhoto" [alt]="getDriverNameDisplay()" />
-            <span *ngIf="!hasDriverPhoto()">{{ getDriverNameDisplay().charAt(0) }}</span>
-          </div>
-          <div class="status-indicator" [class.online]="isDriverOnline()" [class.offline]="isDriverOffline()"></div>
+      <div class="brand">
+        <div class="brand-logo">⚡</div>
+        <div>
+          <span class="brand-text">First Delivery</span>
+          <span class="brand-sub">Livreur Panel</span>
         </div>
+      </div>
+
+      <div class="user-card">
+        <div class="user-avatar">{{ getDriverNameDisplay().charAt(0) }}</div>
         <div class="user-info">
           <div class="user-name">{{ getDriverNameDisplay() }}</div>
-          <div class="user-role">⭐ {{ getDriverRating() }} · {{ getActiveTourneeCount() }} course(s) active(s)</div>
+          <div class="user-role">Livreur</div>
         </div>
       </div>
 
       <nav class="sidebar-nav">
-        <a class="nav-item" [class.active]="activeTab === 'accueil'" (click)="setTab('accueil')">
-          <span class="nav-icon">🏠</span> Accueil
-        </a>
-        <a class="nav-item" [class.active]="activeTab === 'tournee'" (click)="setTab('tournee')">
-          <span class="nav-icon">📦</span> Ma tournée
-          <span class="badge" *ngIf="getActiveTourneeCount() > 0">{{ getActiveTourneeCount() }}</span>
-        </a>
-        <a class="nav-item" [class.active]="activeTab === 'carte'" (click)="setTab('carte')">
-          <span class="nav-icon">🗺️</span> Carte
-        </a>
-        <a class="nav-item" [class.active]="activeTab === 'gains'" (click)="setTab('gains')">
-          <span class="nav-icon">💰</span> Gains
-        </a>
-        <a class="nav-item" [class.active]="activeTab === 'profil'" (click)="setTab('profil')">
-          <span class="nav-icon">👤</span> Profil
-        </a>
+        <div class="nav-group">
+          <div class="nav-label">Principal</div>
+          <a class="nav-item" [class.active]="activeTab === 'accueil'" (click)="setTab('accueil')">
+            <span class="nav-icon">🏠</span> Accueil
+          </a>
+          <a class="nav-item" [class.active]="activeTab === 'tournee'" (click)="setTab('tournee')">
+            <span class="nav-icon">📦</span> Ma tournée
+            <span class="badge" *ngIf="getActiveTourneeCount() > 0">{{ getActiveTourneeCount() }}</span>
+          </a>
+          <a class="nav-item" [class.active]="activeTab === 'carte'" (click)="setTab('carte')">
+            <span class="nav-icon">🗺️</span> Carte
+          </a>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-label">Finance</div>
+          <a class="nav-item" [class.active]="activeTab === 'gains'" (click)="setTab('gains')">
+            <span class="nav-icon">💰</span> Gains
+          </a>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-label">Compte</div>
+          <a class="nav-item" [class.active]="activeTab === 'profil'" (click)="setTab('profil')">
+            <span class="nav-icon">👤</span> Profil
+          </a>
+          <a class="nav-item" (click)="logout()">
+            <span class="nav-icon">🚪</span> Déconnexion
+          </a>
+        </div>
       </nav>
     </div>
   </aside>
@@ -140,8 +148,8 @@
     <div *ngIf="activeTab === 'accueil' && !activeDeliveryView" class="tab-panel">
       <div class="page-header">
         <div>
-          <h1>Bonjour, {{ driverName }}</h1>
-          <p>Votre journée en un coup d'œil</p>
+          <h1>Tableau de bord</h1>
+          <p>Votre activité de livraison</p>
         </div>
       </div>
 
@@ -231,6 +239,83 @@
           <h1>Ma tournée</h1>
           <p>{{ livraisons.length }} course(s) au total</p>
         </div>
+        <div class="tournee-stats">
+          <div class="stat-item">
+            <span class="stat-value">{{ getToPickupCount() }}</span>
+            <span class="stat-label">À enlever</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ getInProgressCount() + getPickedUpList().length }}</span>
+            <span class="stat-label">En cours</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ getCompletedList().length }}</span>
+            <span class="stat-label">Livrés</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="search-card">
+        <div class="search-form">
+          <input type="text"
+                 class="search-input"
+                 placeholder="🔍 Rechercher par référence, adresse, destinataire..."
+                 [(ngModel)]="searchQuery"
+                 (input)="searchQuery = $event">
+        </div>
+      </div>
+
+      <div class="filters-card">
+        <div class="filters-header">
+          <span class="filters-title">Filtres avancés</span>
+          <button type="button" class="btn btn-link btn-sm" (click)="resetFilters()">Réinitialiser</button>
+        </div>
+        <div class="filters-grid">
+          <div class="filter-item">
+            <label class="filter-label">Gouvernorat</label>
+            <select class="filter-select" [(ngModel)]="filterGouvernorat">
+              <option value="">Tous</option>
+              <option *ngFor="let gov of getAvailableGouvernorats()" [value]="gov">{{ gov }}</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label class="filter-label">Date</label>
+            <input type="date" class="filter-input" [(ngModel)]="filterDate">
+          </div>
+          <div class="filter-item">
+            <label class="filter-label">COD Min (DT)</label>
+            <input type="number" class="filter-input" [(ngModel)]="filterMinCOD" min="0" placeholder="0">
+          </div>
+          <div class="filter-item">
+            <label class="filter-label">COD Max (DT)</label>
+            <input type="number" class="filter-input" [(ngModel)]="filterMaxCOD" min="0" placeholder="∞">
+          </div>
+        </div>
+        <div class="sort-row">
+          <label class="filter-label">Trier par</label>
+          <select class="filter-select" [(ngModel)]="sortBy">
+            <option value="date">Date</option>
+            <option value="priority">Priorité</option>
+            <option value="cod">Montant COD</option>
+            <option value="distance">Distance</option>
+          </select>
+          <button type="button" class="btn btn-sm btn-secondary" (click)="sortDirection = sortDirection === 'asc' ? 'desc' : 'asc'">
+            {{ sortDirection === 'asc' ? '↑' : '↓' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="progress-card">
+        <div class="progress-header">
+          <span class="progress-label">Progression de la journée</span>
+          <span class="progress-value">{{ dailyProgress | number:'1.0' }}%</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" [style.width.%]="dailyProgress"></div>
+        </div>
+        <div class="progress-details">
+          <span>{{ getCompletedList().length }} livré(s) / {{ livraisons.length }} total</span>
+        </div>
       </div>
 
       <div class="filter-chips">
@@ -318,9 +403,14 @@
       <div class="page-header">
         <div>
           <h1>Mes gains</h1>
-          <p>Estimation basée sur vos livraisons réussies</p>
+          <p>Historique et statistiques de vos revenus</p>
+        </div>
+        <div class="view-toggle">
+          <button type="button" class="btn btn-sm" [class.btn-primary]="statsView === 'day'" (click)="statsView = 'day'">Jour</button>
+          <button type="button" class="btn btn-sm" [class.btn-primary]="statsView === 'week'" (click)="statsView = 'week'">Semaine</button>
         </div>
       </div>
+
       <div class="kpi-grid kpi-grid-3">
         <div class="kpi-card">
           <div class="kpi-top"><span class="kpi-label">Aujourd'hui</span><span class="kpi-icon success">💰</span></div>
@@ -328,13 +418,55 @@
         </div>
         <div class="kpi-card">
           <div class="kpi-top"><span class="kpi-label">Cette semaine</span><span class="kpi-icon info">📊</span></div>
-          <div class="kpi-value">{{ earnings.week }} DT</div>
+          <div class="kpi-value">{{ getWeeklyEarnings() }} DT</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-top"><span class="kpi-label">Ce mois</span><span class="kpi-icon rating">📈</span></div>
           <div class="kpi-value">{{ earnings.month }} DT</div>
         </div>
       </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Historique des gains (7 derniers jours)</h3>
+        </div>
+        <div class="earnings-chart">
+          <div class="chart-bars">
+            <div *ngFor="let day of earningsHistory" class="chart-bar-wrapper">
+              <div class="chart-bar" [style.height.%]="(day.amount / (getWeeklyEarnings() || 1)) * 100">
+                <span class="chart-value">{{ day.amount }} DT</span>
+              </div>
+              <span class="chart-label">{{ day.date | date:'dd/MM' }}</span>
+              <span class="chart-deliveries">{{ day.deliveries }} liv.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Statistiques détaillées</h3>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">Temps moyen de livraison</span>
+            <span class="stat-value">{{ getAverageDeliveryTime() }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Taux de réussite</span>
+            <span class="stat-value" [class.success]="getSuccessRate() >= 80" [class.warning]="getSuccessRate() < 80">{{ getSuccessRate() }}%</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Moyenne COD par livraison</span>
+            <span class="stat-value">{{ getAverageCOD() }} DT</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Livraisons cette semaine</span>
+            <span class="stat-value">{{ getWeeklyDeliveries() }}</span>
+          </div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="earnings-info">
           <p>{{ getCompletedList().length }} livraison(s) réussie(s) · tarif indicatif 2 DT / course.</p>

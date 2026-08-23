@@ -1,7 +1,7 @@
 /* Page Section */
 .page-section {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 50%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 50%, #c9a227 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -85,21 +85,21 @@
 }
 
 .form-card::-webkit-scrollbar-thumb {
-  background: rgba(14, 165, 233, 0.3);
+  background: rgba(30, 58, 95, 0.3);
   border-radius: 4px;
 }
 
 .form-card::-webkit-scrollbar-thumb:hover {
-  background: rgba(14, 165, 233, 0.5);
+  background: rgba(30, 58, 95, 0.5);
 }
 
 .form-section-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #0ea5e9;
+  color: #1e3a5f;
   margin: 2rem 0 1.5rem 0;
   padding-bottom: 0.75rem;
-  border-bottom: 2px solid rgba(14, 165, 233, 0.2);
+  border-bottom: 2px solid rgba(30, 58, 95, 0.2);
 }
 
 .form-section-title:first-child {
@@ -137,8 +137,8 @@ form {
 
 .field-group input:focus {
   outline: none;
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+  border-color: #1e3a5f;
+  box-shadow: 0 0 0 4px rgba(30, 58, 95, 0.1);
 }
 
 .field-group input::placeholder {
@@ -163,9 +163,9 @@ form {
 
 .field-group select:focus {
   outline: none;
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%230ea5e9' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  border-color: #1e3a5f;
+  box-shadow: 0 0 0 4px rgba(30, 58, 95, 0.1);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%231e3a5f' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
 }
 
 /* Checkbox Group */
@@ -188,15 +188,15 @@ form {
 }
 
 .checkbox-label:hover {
-  border-color: #0ea5e9;
-  background: rgba(14, 165, 233, 0.05);
+  border-color: #1e3a5f;
+  background: rgba(30, 58, 95, 0.05);
 }
 
 .checkbox-label input[type="checkbox"] {
   width: 18px;
   height: 18px;
   cursor: pointer;
-  accent-color: #0ea5e9;
+  accent-color: #1e3a5f;
 }
 
 .checkbox-label span {
@@ -207,8 +207,8 @@ form {
 
 /* Agreement Section */
 .agreement-section {
-  background: rgba(14, 165, 233, 0.05);
-  border: 1px solid rgba(14, 165, 233, 0.2);
+  background: rgba(30, 58, 95, 0.05);
+  border: 1px solid rgba(30, 58, 95, 0.2);
   border-radius: 16px;
   padding: 1.5rem;
   margin-top: 1rem;
@@ -237,7 +237,7 @@ form {
 .agreement-number {
   width: 24px;
   height: 24px;
-  background: #0ea5e9;
+  background: #c9a227;
   color: white;
   border-radius: 50%;
   display: flex;
@@ -272,15 +272,15 @@ form {
 }
 
 .agreement-checkbox-label:hover {
-  border-color: #0ea5e9;
-  background: rgba(14, 165, 233, 0.05);
+  border-color: #1e3a5f;
+  background: rgba(30, 58, 95, 0.05);
 }
 
 .agreement-checkbox-label input[type="checkbox"] {
   width: 20px;
   height: 20px;
   cursor: pointer;
-  accent-color: #0ea5e9;
+  accent-color: #1e3a5f;
 }
 
 .agreement-checkbox-label span {
@@ -292,21 +292,21 @@ form {
 /* Buttons */
 .btn-primary {
   padding: 1rem 2rem;
-  background: linear-gradient(135deg, #0ea5e9, #14b8a6);
-  color: white;
+  background: linear-gradient(135deg, #c9a227, #d4af37);
+  color: #1e3a5f;
   border: none;
   border-radius: 12px;
   font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 8px 24px rgba(14, 165, 233, 0.3);
+  box-shadow: 0 8px 24px rgba(201, 162, 39, 0.3);
   margin-top: 1rem;
 }
 
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(14, 165, 233, 0.4);
+  box-shadow: 0 12px 32px rgba(201, 162, 39, 0.4);
 }
 
 .btn-primary:disabled {

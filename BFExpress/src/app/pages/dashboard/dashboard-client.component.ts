@@ -9,6 +9,7 @@ import { PdfService } from '../../services/pdf.service';
 import { WebSocketService } from '../../services/websocket.service';
 import { io, Socket } from 'socket.io-client';
 import { Subscription } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface Reclamation {
   id?: string;
@@ -84,7 +85,7 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
 
   // Real-time tracking
   private socket: Socket | null = null;
-  private trackingServiceUrl = 'http://localhost:8090';
+  private trackingServiceUrl = environment.trackingServiceUrl;
   manifestNotifications: any[] = [];
   manifestStatusUpdates: any[] = [];
 
@@ -1133,6 +1134,7 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
       'ENLEVE',
       'AU_DEPOT',
       'EN_LIVRAISON',
+      'ECHEC_LIVRAISON',
       'LIVRE',
       'LIVRE_PAYE'
     ];

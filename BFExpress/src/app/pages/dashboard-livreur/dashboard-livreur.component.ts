@@ -40,7 +40,29 @@ type TourneeFilter = 'all' | 'to_pickup' | 'picked_up' | 'in_progress' | 'comple
 export class DashboardLivreurComponent implements OnInit, OnDestroy {
 
   activeTab: DriverTab = 'accueil';
+  sidebarCollapsed = false;
   user: any = null;
+  searchQuery = '';
+
+  // Filtres avancés
+  filterGouvernorat = '';
+  filterDate = '';
+  filterMinCOD = 0;
+  filterMaxCOD = 0;
+
+  // Tri
+  sortBy: 'date' | 'distance' | 'priority' | 'cod' = 'date';
+  sortDirection: 'asc' | 'desc' = 'desc';
+
+  // Gains et statistiques
+  earningsHistory: { date: string; amount: number; deliveries: number }[] = [];
+  statsView: 'day' | 'week' = 'day';
+
+  get dailyProgress(): number {
+    const total = this.livraisons.length;
+    const completed = this.getCompletedList().length;
+    return total > 0 ? (completed / total) * 100 : 0;
+  }
 
   driverName = 'Livreur';
   driverId = '';
@@ -136,11 +158,13 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
     }
 
     this.user = user;
-    this.driverName = `${user.prenom || ''} ${user.nom || ''}`.trim() || 'Livreur';
+    this.driverName = 'Livreur';
     this.driverId = user.id;
 
+    // Photo et notifications gardées en localStorage (préférences UI)
     this.driverPhoto = localStorage.getItem('driverPhoto') || '';
     this.notificationsEnabled = localStorage.getItem('notificationsEnabled') !== 'false';
+    // Véhicule chargé depuis le backend (pas de localStorage)
     this.loadVehicleInfo();
     this.loadDriverData();
     this.startPolling();
@@ -164,6 +188,10 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
     if (tab === 'carte') {
       setTimeout(() => this.initMap('driver-map'), 150);
     }
+  }
+
+  toggleSidebar(): void {
+    this.sidebarCollapsed = !this.sidebarCollapsed;
   }
 
   setTourneeFilter(filter: TourneeFilter): void {
@@ -221,12 +249,19 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
   loadLivraisons(): void {
     if (!this.driverId) return;
 
+    console.log('=== CHARGEMENT LIVRAISONS LIVREUR ===');
+    console.log('Driver ID:', this.driverId);
+    console.log('Tracking URL:', this.apiService['trackingUrl']);
+
     this.apiService.getLivraisonsByLivreur(this.driverId).subscribe({
       next: (livraisons) => {
+        console.log('Livraisons reçues:', livraisons);
+        console.log('Nombre de livraisons:', livraisons?.length || 0);
         this.livraisons = livraisons || [];
         this.loadCommandesDetails();
         this.updateCurrentDelivery();
         this.calculateEarnings();
+        this.calculateEarningsHistory();
         this.loading = false;
       },
       error: (err) => {
@@ -280,6 +315,10 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
     if (livraison.commandeId) return livraison.commandeId;
     const colis = this.colisMap[livraison.colisId];
     if (colis?.commandeId) return colis.commandeId;
+    // Fallback if the colisId is actually the commandeId itself (old entries)
+    if (livraison.colisId && (!colis || !colis.commandeId)) {
+      return livraison.colisId;
+    }
     return '';
   }
 
@@ -601,6 +640,9 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
         this.closeActiveDelivery();
         this.toggleStatut('DISPONIBLE');
         this.loadLivraisons();
+
+        // Envoyer notification WhatsApp au client
+        this.sendWhatsAppDeliveredNotification(livraison);
       },
       error: () => {
         this.loading = false;
@@ -636,10 +678,12 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
     }
 
     this.loading = true;
-    this.apiService.updateColisStatut(colisId, 'ECHEC_LIVRAISON').subscribe({
+    this.apiService.updateColisStatut(colisId, 'ECHEC_LIVRAISON', this.selectedFailureReason, this.failureDescription).subscribe({
       next: () => {
         if (this.colisMap[colisId]) {
           this.colisMap[colisId].statut = 'ECHEC_LIVRAISON';
+          this.colisMap[colisId].raisonEchec = this.selectedFailureReason;
+          this.colisMap[colisId].descriptionEchec = this.failureDescription;
         }
         this.showFailureModal = false;
         this.showToast(`Échec enregistré (${this.selectedFailureReason})`, 'success');
@@ -647,6 +691,11 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
         this.closeActiveDelivery();
         this.toggleStatut('DISPONIBLE');
         this.loadLivraisons();
+
+        // Envoyer notification WhatsApp au client
+        if (this.selectedDelivery) {
+          this.sendWhatsAppFailedNotification(this.selectedDelivery, this.selectedFailureReason);
+        }
       },
       error: () => {
         this.loading = false;
@@ -672,6 +721,9 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
         this.loading = false;
         this.loadLivraisons();
         this.openActiveDelivery(livraison);
+
+        // Envoyer notification WhatsApp au client
+        this.sendWhatsAppOnRouteNotification(livraison);
       },
       error: (err) => {
         console.error('Erreur démarrage livraison:', err);
@@ -722,25 +774,245 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
     if (stepKey === 'LIVRE') {
       return ['LIVRE', 'LIVRE_PAYE'].includes(currentStatus);
     }
-    return stepKey === currentStatus;
+    return false;
   }
 
-  // ========== LISTES / FILTRES ==========
   get filteredTournee(): Livraison[] {
-    switch (this.tourneeFilter) {
-      case 'to_pickup':
-        return this.getToPickupList();
-      case 'picked_up':
-        return this.getPickedUpList();
-      case 'in_progress':
-        return this.getInProgressList();
-      case 'completed':
-        return this.getCompletedList();
-      case 'failed':
-        return this.getFailedList();
-      default:
-        return this.livraisons;
+    if (!this.livraisons) return [];
+    let filtered = this.livraisons.filter(l => {
+      const statut = this.getColisStatut(l.colisId);
+      switch (this.tourneeFilter) {
+        case 'to_pickup': return statut === 'A_ENLEVER';
+        case 'picked_up': return statut === 'ENLEVE';
+        case 'in_progress': return statut === 'EN_LIVRAISON';
+        case 'completed': return statut === 'LIVRE';
+        case 'failed': return statut === 'ECHEC_LIVRAISON' || statut === 'RETOUR_DEPOT';
+        default: return true;
+      }
+    });
+
+    // Recherche rapide
+    if (this.searchQuery.trim()) {
+      const query = this.searchQuery.toLowerCase();
+      filtered = filtered.filter(l => {
+        const ref = this.getLivraisonRefShort(l).toLowerCase();
+        const commande = this.getCommandeForLivraison(l);
+        const adresse = this.getCommandeFullAddress(commande).toLowerCase();
+        const destinataire = this.getCommandeDestinataire(commande).toLowerCase();
+        return ref.includes(query) || adresse.includes(query) || destinataire.includes(query);
+      });
     }
+
+    // Filtres avancés
+    if (this.filterGouvernorat) {
+      filtered = filtered.filter(l => {
+        const commande = this.getCommandeForLivraison(l);
+        const gouvernorat = commande?.adresseArrivee?.gouvernorat || '';
+        return gouvernorat.toLowerCase().includes(this.filterGouvernorat.toLowerCase());
+      });
+    }
+
+    if (this.filterDate) {
+      filtered = filtered.filter(l => {
+        const commande = this.getCommandeForLivraison(l);
+        const date = commande?.dateCreation || '';
+        return date.startsWith(this.filterDate);
+      });
+    }
+
+    if (this.filterMinCOD > 0) {
+      filtered = filtered.filter(l => {
+        const commande = this.getCommandeForLivraison(l);
+        const cod = commande?.montantTotal || 0;
+        return cod >= this.filterMinCOD;
+      });
+    }
+
+    if (this.filterMaxCOD > 0) {
+      filtered = filtered.filter(l => {
+        const commande = this.getCommandeForLivraison(l);
+        const cod = commande?.montantTotal || 0;
+        return cod <= this.filterMaxCOD;
+      });
+    }
+
+    // Tri
+    filtered = [...filtered].sort((a, b) => {
+      const commandeA = this.getCommandeForLivraison(a);
+      const commandeB = this.getCommandeForLivraison(b);
+
+      let comparison = 0;
+
+      switch (this.sortBy) {
+        case 'date':
+          const dateA = commandeA?.dateCreation || '';
+          const dateB = commandeB?.dateCreation || '';
+          comparison = dateA.localeCompare(dateB);
+          break;
+        case 'cod':
+          const codA = commandeA?.montantTotal || 0;
+          const codB = commandeB?.montantTotal || 0;
+          comparison = codA - codB;
+          break;
+        case 'priority':
+          const priorityA = this.getPriorityValue(a);
+          const priorityB = this.getPriorityValue(b);
+          comparison = priorityA - priorityB;
+          break;
+        case 'distance':
+          // Distance approximation (would need actual coordinates)
+          comparison = 0;
+          break;
+      }
+
+      return this.sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return filtered;
+  }
+
+  getPriorityValue(livraison: Livraison): number {
+    const statut = this.getColisStatut(livraison.colisId);
+    const priorityMap: Record<string, number> = {
+      'A_ENLEVER': 1,
+      'ENLEVE': 2,
+      'EN_LIVRAISON': 3,
+      'LIVRE': 4,
+      'LIVRE_PAYE': 4,
+      'ECHEC_LIVRAISON': 5,
+      'RETOUR_DEPOT': 5
+    };
+    return priorityMap[statut] || 99;
+  }
+
+  getAvailableGouvernorats(): string[] {
+    const gouvernorats = new Set<string>();
+    this.livraisons.forEach(l => {
+      const commande = this.getCommandeForLivraison(l);
+      const gov = commande?.adresseArrivee?.gouvernorat;
+      if (gov) gouvernorats.add(gov);
+    });
+    return Array.from(gouvernorats).sort();
+  }
+
+  resetFilters(): void {
+    this.filterGouvernorat = '';
+    this.filterDate = '';
+    this.filterMinCOD = 0;
+    this.filterMaxCOD = 0;
+    this.searchQuery = '';
+  }
+
+  // ========== GAINS ET STATISTIQUES ==========
+  calculateEarningsHistory(): void {
+    const historyMap = new Map<string, { amount: number; deliveries: number }>();
+    const rate = 2; // DT par livraison
+
+    this.livraisons.forEach(l => {
+      const commande = this.getCommandeForLivraison(l);
+      const statut = this.getColisStatut(l.colisId);
+      const date = commande?.dateCreation || new Date().toISOString().split('T')[0];
+      const day = date.split('T')[0];
+
+      if (['LIVRE', 'LIVRE_PAYE'].includes(statut)) {
+        const current = historyMap.get(day) || { amount: 0, deliveries: 0 };
+        current.amount += rate;
+        current.deliveries += 1;
+        historyMap.set(day, current);
+      }
+    });
+
+    this.earningsHistory = Array.from(historyMap.entries())
+      .map(([date, data]) => ({ date, ...data }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-7); // Derniers 7 jours
+  }
+
+  getWeeklyEarnings(): number {
+    return this.earningsHistory.reduce((sum, day) => sum + day.amount, 0);
+  }
+
+  getWeeklyDeliveries(): number {
+    return this.earningsHistory.reduce((sum, day) => sum + day.deliveries, 0);
+  }
+
+  getAverageDeliveryTime(): string {
+    // Simulation - en production, utiliser les timestamps réels
+    const completed = this.getCompletedList().length;
+    if (completed === 0) return '—';
+    const avgMinutes = Math.round(25 + Math.random() * 15); // 25-40 min simulés
+    return `${avgMinutes} min`;
+  }
+
+  getSuccessRate(): number {
+    const total = this.livraisons.length;
+    if (total === 0) return 0;
+    const completed = this.getCompletedList().length;
+    const failed = this.getFailedList().length;
+    const successful = completed - failed;
+    return Math.round((successful / total) * 100);
+  }
+
+  getAverageCOD(): number {
+    const completed = this.getCompletedList();
+    if (completed.length === 0) return 0;
+    const totalCOD = completed.reduce((sum, l) => {
+      const commande = this.getCommandeForLivraison(l);
+      return sum + (commande?.montantTotal || 0);
+    }, 0);
+    return Math.round(totalCOD / completed.length);
+  }
+
+  // ========== WHATSAPP NOTIFICATIONS ==========
+  sendWhatsAppOnRouteNotification(livraison: Livraison): void {
+    const commande = this.getCommandeForLivraison(livraison);
+    const phone = this.getCommandePhone(commande);
+    const clientName = this.getCommandeDestinataire(commande);
+    const livraisonRef = this.getLivraisonRefShort(livraison);
+
+    if (!phone || phone === '—') {
+      console.log('Pas de numéro de téléphone pour notification WhatsApp');
+      return;
+    }
+
+    this.apiService.sendWhatsAppOnRoute(phone, clientName, livraisonRef, '15-30 minutes').subscribe({
+      next: () => console.log('✅ WhatsApp notification envoyé (en route)'),
+      error: (err) => console.error('❌ Erreur WhatsApp notification:', err)
+    });
+  }
+
+  sendWhatsAppDeliveredNotification(livraison: Livraison): void {
+    const commande = this.getCommandeForLivraison(livraison);
+    const phone = this.getCommandePhone(commande);
+    const clientName = this.getCommandeDestinataire(commande);
+    const livraisonRef = this.getLivraisonRefShort(livraison);
+
+    if (!phone || phone === '—') {
+      console.log('Pas de numéro de téléphone pour notification WhatsApp');
+      return;
+    }
+
+    this.apiService.sendWhatsAppDelivered(phone, clientName, livraisonRef).subscribe({
+      next: () => console.log('✅ WhatsApp notification envoyé (livré)'),
+      error: (err) => console.error('❌ Erreur WhatsApp notification:', err)
+    });
+  }
+
+  sendWhatsAppFailedNotification(livraison: Livraison, reason: string): void {
+    const commande = this.getCommandeForLivraison(livraison);
+    const phone = this.getCommandePhone(commande);
+    const clientName = this.getCommandeDestinataire(commande);
+    const livraisonRef = this.getLivraisonRefShort(livraison);
+
+    if (!phone || phone === '—') {
+      console.log('Pas de numéro de téléphone pour notification WhatsApp');
+      return;
+    }
+
+    this.apiService.sendWhatsAppFailed(phone, clientName, livraisonRef, reason).subscribe({
+      next: () => console.log('✅ WhatsApp notification envoyé (échec)'),
+      error: (err) => console.error('❌ Erreur WhatsApp notification:', err)
+    });
   }
 
   getActiveDeliveries(): Livraison[] {
@@ -916,14 +1188,7 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
 
   // ========== VEHICULE / SETTINGS ==========
   loadVehicleInfo(): void {
-    try {
-      const stored = localStorage.getItem('driverVehicle');
-      this.vehicleInfo = stored
-        ? JSON.parse(stored)
-        : { marque: '', modele: '', immatriculation: '', type: 'Voiture' };
-    } catch {
-      this.vehicleInfo = { marque: '', modele: '', immatriculation: '', type: 'Voiture' };
-    }
+    // Charger les véhicules depuis le backend (pas de localStorage)
     this.loadAssignedVehicles();
   }
 
@@ -933,9 +1198,19 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
     this.apiService.getVehiculeByLivreurId(this.driverId).subscribe({
       next: (vehicle) => {
         this.assignedVehicles = vehicle ? [vehicle] : [];
+        // Mettre à jour vehicleInfo depuis le backend
+        if (vehicle) {
+          this.vehicleInfo = {
+            marque: vehicle.marque || '',
+            modele: vehicle.modele || '',
+            immatriculation: vehicle.immatriculation || '',
+            type: vehicle.type || 'Voiture'
+          };
+        }
       },
       error: () => {
         this.assignedVehicles = [];
+        this.vehicleInfo = { marque: '', modele: '', immatriculation: '', type: 'Voiture' };
       }
     });
   }

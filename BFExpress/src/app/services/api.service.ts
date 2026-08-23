@@ -50,7 +50,9 @@ export interface Colis {
   poids: number;
   dimensions?: string;
   fragile?: boolean;
-  statut: string; // EN_ATTENTE, NON_SERIEUX, A_VERIFIER, A_ENLEVER, ENLEVE, AU_DEPOT, RETOUR_DEPOT, EN_TRANSIT, LIVRE, LIVRE_PAYE, ECHANGE, REMBOURSE
+  statut: string; // EN_ATTENTE, NON_SERIEUX, A_VERIFIER, A_ENLEVER, ENLEVE, AU_DEPOT, RETOUR_DEPOT, EN_TRANSIT, LIVRE, LIVRE_PAYE, ECHANGE, REMBOURSE, ECHEC_LIVRAISON
+  raisonEchec?: string; // Raison de l'échec de livraison
+  descriptionEchec?: string; // Description détaillée de l'échec
 }
 
 export interface Destinataire {
@@ -203,7 +205,7 @@ export class ApiService {
   private livreursUrl = environment.livreursUrl;
   private trackingUrl = environment.trackingUrl;
   private iaUrl = environment.iaUrl;
-  private iaJavaUrl = (environment as any).iaJavaUrl || 'http://localhost:8085/api/ia';
+  private iaJavaUrl = environment.iaJavaUrl;
   private adressesUrl = environment.adressesUrl;
   private vehiclesUrl = environment.vehiclesUrl;
   private depotsUrl = environment.depotsUrl;
@@ -306,8 +308,11 @@ export class ApiService {
     });
   }
 
-  updateColisStatut(id: string, statut: string): Observable<Colis> {
-    return this.http.patch<Colis>(`${this.commandesUrl}/colis/${id}/statut`, null, {
+  updateColisStatut(id: string, statut: string, raisonEchec?: string, descriptionEchec?: string): Observable<Colis> {
+    const body: any = {};
+    if (raisonEchec) body.raisonEchec = raisonEchec;
+    if (descriptionEchec) body.descriptionEchec = descriptionEchec;
+    return this.http.patch<Colis>(`${this.commandesUrl}/colis/${id}/statut`, body, {
       params: new HttpParams().set('statut', statut)
     });
   }
@@ -427,10 +432,13 @@ export class ApiService {
   }
 
   // --- Livraisons & Tracking ---
-  creerLivraison(colisId: string, livreurId: string): Observable<Livraison> {
-    return this.http.post<Livraison>(`${this.trackingUrl}/livraisons`, null, {
-      params: new HttpParams().set('colisId', colisId).set('livreurId', livreurId)
-    });
+  creerLivraison(colisId: string, livreurId: string, commandeId?: string): Observable<Livraison> {
+    const body = {
+      colisId,
+      livreurId,
+      commandeId
+    };
+    return this.http.post<Livraison>(`${this.trackingUrl}/livraisons`, body);
   }
 
   demarrerLivraison(id: string): Observable<Livraison> {
@@ -505,7 +513,8 @@ export class ApiService {
       noteMoyenne: l.noteMoyenne || 5.0
     }));
 
-    return this.http.post<AffectationIA>(`${this.iaUrl}/affecter-livreur`, livreurDTOs, { params });
+    // Utiliser le service IA Java (iaJavaUrl) au lieu du service FastAPI
+    return this.http.post<AffectationIA>(`${this.iaJavaUrl}/affecter-livreur`, livreurDTOs, { params });
   }
 
   dispatchGlobal(commandes: any[], livreurs: Livreur[]): Observable<any> {
@@ -528,7 +537,8 @@ export class ApiService {
         gouvernorat: l.gouvernorat || "Tunis"
       }))
     };
-    return this.http.post<any>(`${this.iaUrl}/dispatch-global`, payload);
+    // Utiliser le service IA Java (iaJavaUrl) au lieu du service FastAPI
+    return this.http.post<any>(`${this.iaJavaUrl}/dispatch-global`, payload);
   }
 
   // --- Véhicules ---
@@ -642,7 +652,43 @@ export class ApiService {
     return this.http.post<any>(`${this.iaUrl}/api/ia/generer-reponse`, {
       reclamation_id: reclamationId,
       type_reponse: typeReponse,
-      contexte: contexte
+      contexte
+    });
+  }
+
+  // ========== WHATSAPP NOTIFICATIONS ==========
+  sendWhatsAppNotification(phone: string, message: string, type: string, livraisonId?: string): Observable<any> {
+    return this.http.post<any>(`${this.trackingUrl}/api/whatsapp/send`, {
+      phone,
+      message,
+      type,
+      livraisonId
+    });
+  }
+
+  sendWhatsAppOnRoute(phone: string, clientName: string, livraisonRef: string, estimatedTime?: string): Observable<any> {
+    return this.http.post<any>(`${this.trackingUrl}/api/whatsapp/on-route`, {
+      phone,
+      clientName,
+      livraisonRef,
+      estimatedTime
+    });
+  }
+
+  sendWhatsAppDelivered(phone: string, clientName: string, livraisonRef: string): Observable<any> {
+    return this.http.post<any>(`${this.trackingUrl}/api/whatsapp/delivered`, {
+      phone,
+      clientName,
+      livraisonRef
+    });
+  }
+
+  sendWhatsAppFailed(phone: string, clientName: string, livraisonRef: string, reason: string): Observable<any> {
+    return this.http.post<any>(`${this.trackingUrl}/api/whatsapp/failed`, {
+      phone,
+      clientName,
+      livraisonRef,
+      reason
     });
   }
 
