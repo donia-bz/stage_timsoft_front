@@ -23,40 +23,127 @@ $shadow: 0 4px 20px rgba(30, 58, 95, 0.08);
 .client-topbar {
   width: 100%;
   height: 70px;
-  background: linear-gradient(135deg, $primary 0%, $accent 50%, #1e4a6f 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  background: white;
+  border-bottom: 1px solid $border;
   display: flex;
   align-items: center;
-  padding: 0 2rem;
+  justify-content: space-between;
+  padding: 0 12rem;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 200;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .topbar-brand {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
 }
 
-.brand-logo {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
+.logo-img {
+  height: 60px;
+  width: auto;
+}
+
+.topbar-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
+  gap: 1rem;
 }
 
-.brand-text {
-  font-weight: 800;
-  color: white;
-  font-size: 1.2rem;
+.notification-btn {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: $bg;
+  }
+
+  .notification-icon {
+    font-size: 1.2rem;
+  }
+
+  .notification-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: #ef4444;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.15rem 0.4rem;
+    border-radius: 999px;
+    min-width: 16px;
+    text-align: center;
+  }
+}
+
+.hamburger-menu {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: $bg;
+  }
+
+  .hamburger-icon {
+    font-size: 1.5rem;
+  }
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 70px;
+  right: 2rem;
+  background: white;
+  border: 1px solid $border;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  z-index: 201;
+  animation: slideDown 0.2s ease;
+  overflow: hidden;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  text-decoration: none;
+  color: $text;
+  transition: background 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    background: $bg;
+  }
+
+  .dropdown-icon {
+    font-size: 1.1rem;
+  }
 }
 
 .dashboard-sidebar {

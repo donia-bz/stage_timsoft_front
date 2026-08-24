@@ -62,6 +62,10 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     | 'reclamations'
     | 'parametres' = 'stats';
 
+  showMenu: boolean = false;
+  showNotifications: boolean = false;
+  unreadCount: number = 0;
+
   commandes: Commande[] = [];
   livreurs: Livreur[] = [];
   usersList: UserProfile[] = [];
@@ -458,6 +462,27 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
   removeToast(id: number): void {
     this.toasts = this.toasts.filter(t => t.id !== id);
+  }
+
+  // ========== TOPBAR MENU ==========
+  toggleMenu(): void {
+    this.showMenu = !this.showMenu;
+    this.showNotifications = false;
+  }
+
+  toggleNotificationsMenu(): void {
+    this.showNotifications = !this.showNotifications;
+    this.showMenu = false;
+  }
+
+  closeMenu(): void {
+    this.showMenu = false;
+    this.showNotifications = false;
+  }
+
+  logoutFromTopbar(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 
   // ========== DATA ==========
@@ -1006,6 +1031,10 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     return isWaitingStatut && !hasLivreur;
   }
 
+  isColisAlreadyAssigned(colisId: string): boolean {
+    return !!this.livraisonsMap[colisId];
+  }
+
   assignDriverManually(order: Commande): void {
     const driverId = this.selectedDrivers[order.id || ''];
     if (!driverId) {
@@ -1017,6 +1046,15 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     const colisId = (order.colis && order.colis.length > 0) ? order.colis[0].id : orderId;
     if (!colisId) {
       this.showToast('Cette commande n\'a pas de colis associé', 'error');
+      return;
+    }
+
+    // Vérifier si le colis est déjà affecté à un livreur
+    if (this.isColisAlreadyAssigned(colisId)) {
+      const existingDriverId = this.livraisonsMap[colisId];
+      const existingDriver = this.getAssignedDriverNameForOrder(orderId);
+      this.showToast(`Ce colis est déjà affecté à ${existingDriver}. Réaffectation non autorisée.`, 'error');
+      console.warn('Tentative de réaffectation - Colis:', colisId, 'Livreur actuel:', existingDriverId, 'Nouveau livreur:', driverId);
       return;
     }
 
@@ -1165,6 +1203,19 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
       this.showToast('Aucune nouvelle commande à dispatcher (toutes les commandes ont déjà été dispatchées).', 'info');
       return;
     }
+
+    // Filtrer uniquement les commandes dont les colis ne sont PAS déjà affectés
+    const unassignedOrders = pendingOrders.filter(order => {
+      const colisId = (order.colis && order.colis.length > 0) ? order.colis[0].id : order.id;
+      return !this.isColisAlreadyAssigned(colisId || '');
+    });
+
+    console.log('Commandes non affectées:', unassignedOrders.length);
+    
+    if (unassignedOrders.length === 0) {
+      this.showToast('Toutes les commandes en attente ont déjà un livreur affecté.', 'info');
+      return;
+    }
     
     // Utiliser livreursList (utilisateurs avec rôle LIVREUR) au lieu de getLivreurUsers
     console.log('livreursList:', this.livreursList);
@@ -1192,11 +1243,11 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
     this.showToast('Algorithme de Clustering IA en cours...', 'info');
     
-    console.log('Commandes à dispatcher:', pendingOrders.length);
+    console.log('Commandes à dispatcher:', unassignedOrders.length);
     console.log('Livreurs disponibles:', availableDrivers.length);
     console.log('URL IA:', this.iaServiceUrl);
     
-    this.apiService.dispatchGlobal(pendingOrders, driversForAPI).subscribe({
+    this.apiService.dispatchGlobal(unassignedOrders, driversForAPI).subscribe({
       next: (res: any) => {
         console.log('=== RÉPONSE IA DISPATCH ===');
         console.log('Réponse complète:', res);

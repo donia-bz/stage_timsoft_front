@@ -44,6 +44,9 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
   sidebarCollapsed = false;
   user: any = null;
   searchQuery = '';
+  showMenu: boolean = false;
+  showNotifications: boolean = false;
+  unreadCount: number = 0;
 
   // Filtres avancés
   filterGouvernorat = '';
@@ -195,6 +198,26 @@ export class DashboardLivreurComponent implements OnInit, OnDestroy {
 
   toggleSidebar(): void {
     this.sidebarCollapsed = !this.sidebarCollapsed;
+  }
+
+  toggleMenu(): void {
+    this.showMenu = !this.showMenu;
+    this.showNotifications = false;
+  }
+
+  toggleNotificationsMenu(): void {
+    this.showNotifications = !this.showNotifications;
+    this.showMenu = false;
+  }
+
+  closeMenu(): void {
+    this.showMenu = false;
+    this.showNotifications = false;
+  }
+
+  logoutFromTopbar(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 
   setTourneeFilter(filter: TourneeFilter): void {

@@ -3,30 +3,33 @@
   <!-- TOP HORIZONTAL BAR -->
   <header class="livreur-topbar">
     <div class="topbar-brand">
-      <span class="brand-logo">⚡</span>
-      <span class="brand-text">First Delivery</span>
+      <img src="assets/logo-custom.png" alt="Logo" class="logo-img">
+    </div>
+    <div class="topbar-actions">
+      <button class="notification-btn" (click)="toggleNotificationsMenu()">
+        <span class="notification-icon">🔔</span>
+        <span class="notification-badge" *ngIf="unreadCount > 0">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+      </button>
+      <button class="hamburger-menu" (click)="toggleMenu()">
+        <span class="hamburger-icon">☰</span>
+      </button>
+    </div>
+    <!-- Dropdown Menu -->
+    <div class="dropdown-menu" *ngIf="showMenu">
+      <a routerLink="/contact" (click)="closeMenu()" class="dropdown-item">
+        <span class="dropdown-icon">📞</span>
+        <span>Contact</span>
+      </a>
+      <a (click)="logoutFromTopbar(); closeMenu()" class="dropdown-item">
+        <span class="dropdown-icon">🚪</span>
+        <span>Déconnexion</span>
+      </a>
     </div>
   </header>
 
   <!-- SIDEBAR -->
   <aside class="livreur-sidebar">
     <div class="sidebar-top">
-      <div class="brand">
-        <div class="brand-logo">⚡</div>
-        <div>
-          <span class="brand-text">First Delivery</span>
-          <span class="brand-sub">Livreur Panel</span>
-        </div>
-      </div>
-
-      <div class="user-card">
-        <div class="user-avatar">{{ getDriverNameDisplay().charAt(0) }}</div>
-        <div class="user-info">
-          <div class="user-name">{{ getDriverNameDisplay() }}</div>
-          <div class="user-role">Livreur</div>
-        </div>
-      </div>
-
       <nav class="sidebar-nav">
         <div class="nav-group">
           <div class="nav-label">Principal</div>

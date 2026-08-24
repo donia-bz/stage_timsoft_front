@@ -56,6 +56,9 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
   activeTab = 'dashboard';
   clientName = 'Client';
   clientId = '';
+  showMenu: boolean = false;
+  showNotifications: boolean = false;
+  unreadCount: number = 0;
 
   commandes: Commande[] = [];
   pendingCommandes: Commande[] = [];
@@ -368,8 +371,26 @@ export class DashboardClientComponent implements OnInit, OnDestroy {
   // ========== NAVIGATION ==========
   setTab(tab: string): void {
     this.activeTab = tab;
-    this.errorMessage = '';
-    this.searchResult = null;
+  }
+
+  toggleMenu(): void {
+    this.showMenu = !this.showMenu;
+    this.showNotifications = false;
+  }
+
+  toggleNotificationsMenu(): void {
+    this.showNotifications = !this.showNotifications;
+    this.showMenu = false;
+  }
+
+  closeMenu(): void {
+    this.showMenu = false;
+    this.showNotifications = false;
+  }
+
+  logoutFromTopbar(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 
   logout(): void {
