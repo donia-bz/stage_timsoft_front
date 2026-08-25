@@ -7,14 +7,30 @@ import uvicorn
 import os
 from datetime import datetime
 import random
+import google.generativeai as genai
+
+# Load .env explicitly from the directory of this file
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path=env_path)
+
+# Configuration Gemini API
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if GEMINI_API_KEY:
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        gemini_model = genai.GenerativeModel('gemini-3.5-flash')
+    except Exception as e:
+        print(f"Error configuring Gemini API: {e}")
+        gemini_model = None
+else:
+    gemini_model = None
+
 try:
     from textblob import TextBlob
     from textblob_fr import PatternTagger, PatternAnalyzer
     HAS_TEXTBLOB = True
 except ImportError:
     HAS_TEXTBLOB = False
-
-load_dotenv()
 
 app = FastAPI(title="BFExpress IA Service")
 
@@ -250,6 +266,55 @@ def analyze_reclamation(reclamation: Reclamation):
         return analysis
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+class ChatMessage(BaseModel):
+    clientId: str
+    message: str
+    context: Optional[str] = None
+
+@app.post("/api/chatbot/ask")
+def chatbot_ask(req: ChatMessage):
+    global gemini_model
+    
+    # Tentative de rechargement si la clé a été ajoutée après le lancement du serveur
+    if not gemini_model:
+        from dotenv import load_dotenv
+        env_path = os.path.join(os.path.dirname(__file__), '.env')
+        load_dotenv(dotenv_path=env_path, override=True)
+        new_key = os.getenv("GEMINI_API_KEY")
+        if new_key:
+            try:
+                genai.configure(api_key=new_key)
+                gemini_model = genai.GenerativeModel('gemini-3.5-flash')
+                # Test it to ensure the key is actually valid and not an oauth token
+                # that would throw a 404/403 later
+            except Exception as e:
+                print(f"Failed to load Gemini model dynamically: {e}")
+                
+    if not gemini_model:
+        return {"reply": "L'API Gemini n'est pas configurée dans le backend. Veuillez vérifier la variable GEMINI_API_KEY dans le fichier .env du service ia-service."}
+    
+    try:
+        context_str = req.context if req.context else "Aucune commande en cours."
+        prompt = f"""Tu es l'assistant virtuel intelligent de BFExpress, une entreprise de logistique et de livraison.
+Tu réponds aux clients de manière professionnelle, concise et courtoise, en français.
+Si on te pose une question sur un colis, base-toi uniquement sur le contexte fourni.
+
+Contexte des colis du client :
+{context_str}
+
+Question du client :
+{req.message}
+
+Réponse :"""
+        
+        response = gemini_model.generate_content(prompt)
+        return {"reply": response.text}
+    except Exception as e:
+        error_msg = str(e)
+        if "API_KEY_INVALID" in error_msg:
+            return {"reply": "La clé API Gemini configurée semble invalide."}
+        return {"reply": f"Désolé, je rencontre des difficultés techniques pour le moment. (Erreur interne de l'IA: {error_msg[:100]}...)"}
 
 class ReponseGenererRequest(BaseModel):
     reclamation_id: str
